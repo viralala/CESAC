@@ -1,11 +1,9 @@
 "use client";
 
 import { useEffect } from "react";
-import { RotateCcw } from "lucide-react";
+import Link from "next/link";
 
-import { Button, LinkButton } from "@/components/ui/button";
-import { Container } from "@/components/ui/container";
-import { Eyebrow } from "@/components/ui/eyebrow";
+import { Container, Label } from "@/components/aot/bits";
 
 export default function Error({
   error,
@@ -19,27 +17,25 @@ export default function Error({
   }, [error]);
 
   return (
-    <Container className="flex min-h-[60vh] flex-col items-start justify-center gap-6 py-24">
-      <Eyebrow>Something went wrong</Eyebrow>
-      <h1 className="font-display text-4xl font-medium text-fg sm:text-5xl">
-        That did not load correctly.
-      </h1>
-      <p className="max-w-md text-lg text-fg-muted">
-        An unexpected error interrupted this page. You can try again, or head back to the
-        homepage.
-      </p>
-      <div className="flex flex-wrap gap-4">
-        <Button onClick={() => retry()} variant="primary">
-          <RotateCcw className="size-4" aria-hidden />
-          Try again
-        </Button>
-        <LinkButton href="/" variant="secondary">
-          Back to home
-        </LinkButton>
-      </div>
-      {error.digest ? (
-        <p className="font-mono text-xs text-fg-muted/60">Reference: {error.digest}</p>
-      ) : null}
-    </Container>
+    <section className="washi grain flex min-h-[100svh] items-center pt-24">
+      <Container className="relative py-24">
+        <Label>Something broke through</Label>
+        <h1 className="d-tall mt-5 text-[clamp(2.6rem,8vw,5.5rem)] text-ink">
+          That did not <span className="text-red">load</span>.
+        </h1>
+        <p className="serif-it mt-5 max-w-[48ch] text-[1.1rem] leading-relaxed text-muted">
+          An unexpected error interrupted this page. Try again, or head back to the event brief.
+        </p>
+        <div className="mt-9 flex flex-wrap gap-3">
+          <button type="button" onClick={() => retry()} className="pill pill-red">
+            Try again
+          </button>
+          <Link href="/" className="pill pill-ghost">
+            Back to the event
+          </Link>
+        </div>
+        {error.digest ? <p className="label mt-8 text-muted">Reference: {error.digest}</p> : null}
+      </Container>
+    </section>
   );
 }

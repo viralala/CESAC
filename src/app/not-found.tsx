@@ -1,9 +1,8 @@
 import type { Metadata } from "next";
-import { Compass } from "lucide-react";
+import Link from "next/link";
 
-import { Container } from "@/components/ui/container";
-import { Eyebrow } from "@/components/ui/eyebrow";
-import { LinkButton } from "@/components/ui/button";
+import { TitanFigure } from "@/components/aot/art";
+import { Container, Label } from "@/components/aot/bits";
 
 export const metadata: Metadata = {
   title: "Page not found",
@@ -11,24 +10,32 @@ export const metadata: Metadata = {
 
 export default function NotFound() {
   return (
-    <Container className="flex min-h-[60vh] flex-col items-start justify-center gap-6 py-24">
-      <Eyebrow>404</Eyebrow>
-      <h1 className="font-display text-5xl font-medium text-fg sm:text-6xl">
-        This page wandered off.
-      </h1>
-      <p className="max-w-md text-lg text-fg-muted">
-        The page you are looking for does not exist, or may have moved. Try the homepage, or
-        browse upcoming events.
-      </p>
-      <div className="flex flex-wrap gap-4">
-        <LinkButton href="/" variant="primary">
-          Back to home
-        </LinkButton>
-        <LinkButton href="/events" variant="secondary">
-          <Compass className="size-4" aria-hidden />
-          Browse events
-        </LinkButton>
-      </div>
-    </Container>
+    <section className="washi grain relative isolate flex min-h-[100svh] items-center overflow-hidden pt-24">
+      <div
+        aria-hidden
+        className="pointer-events-none absolute right-[8%] top-[16%] -z-20 aspect-square w-[min(34vw,420px)] rounded-full bg-red opacity-90"
+      />
+      <TitanFigure className="pointer-events-none absolute bottom-0 right-[6%] -z-10 h-[58vh] w-auto text-ink" />
+
+      <Container className="relative py-24">
+        <Label>Error 404</Label>
+        <p className="d-wide mt-5 text-[clamp(4.5rem,20vw,13rem)] leading-[0.8] text-red">404</p>
+        <h1 className="d-tall mt-6 text-[clamp(1.8rem,4.5vw,3rem)] text-ink">
+          This wall has no gate.
+        </h1>
+        <p className="serif-it mt-4 max-w-[48ch] text-[1.1rem] leading-relaxed text-muted">
+          The page you are looking for does not exist, or it moved before the bell. Head back to the
+          event brief.
+        </p>
+        <div className="mt-9 flex flex-wrap gap-3">
+          <Link href="/" className="pill pill-red">
+            Back to the event
+          </Link>
+          <Link href="/signin" className="pill pill-ghost">
+            Sign in
+          </Link>
+        </div>
+      </Container>
+    </section>
   );
 }

@@ -13,29 +13,77 @@ export default function Image() {
           display: "flex",
           flexDirection: "column",
           justifyContent: "space-between",
-          padding: 80,
-          backgroundColor: "#070C1A",
-          color: "#F1F5FC",
+          padding: 72,
+          backgroundColor: "#f5f1e7",
+          color: "#15141a",
           fontFamily: "sans-serif",
+          position: "relative",
         }}
       >
-        <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
-          <div style={{ width: 22, height: 22, backgroundColor: "#00B2FF" }} />
-          <span style={{ fontSize: 32, fontWeight: 700, letterSpacing: -0.5 }}>
-            CESAC
+        <div
+          style={{
+            position: "absolute",
+            right: -110,
+            top: 90,
+            width: 470,
+            height: 470,
+            borderRadius: 999,
+            backgroundColor: "#e51f2c",
+          }}
+        />
+        <div
+          style={{
+            display: "flex",
+            justifyContent: "space-between",
+            fontSize: 19,
+            letterSpacing: 5,
+            textTransform: "uppercase",
+            color: "rgba(21,20,26,0.55)",
+          }}
+        >
+          <span>CESAC / VIT Pune</span>
+          <span>Prompt Engineering Hackathon</span>
+        </div>
+
+        <div style={{ display: "flex", flexDirection: "column" }}>
+          <span
+            style={{
+              fontSize: 24,
+              letterSpacing: 6,
+              textTransform: "uppercase",
+              color: "#e51f2c",
+              marginBottom: 22,
+            }}
+          >
+            Three chapters. One battlefield.
+          </span>
+          <span style={{ fontSize: 132, fontWeight: 800, lineHeight: 0.86, letterSpacing: -2 }}>
+            ATTACK
+          </span>
+          <span style={{ fontSize: 132, fontWeight: 800, lineHeight: 0.86, letterSpacing: -2 }}>
+            ON <span style={{ color: "#e51f2c" }}>TOKEN</span>
           </span>
         </div>
-        <div style={{ display: "flex", flexDirection: "column", gap: 24 }}>
-          <span style={{ fontSize: 76, fontWeight: 700, lineHeight: 1.05, maxWidth: 900 }}>
-            Community, events and programs.
-          </span>
-          <span style={{ fontSize: 28, color: "#93A2C4", maxWidth: 760 }}>
-            Browse upcoming events, meet the people behind them, and register through the
-            student portal.
-          </span>
+
+        <div style={{ display: "flex", gap: 12 }}>
+          {["Vision Forge", "Token Trials", "Fusion Awakening"].map((c, i) => (
+            <span
+              key={c}
+              style={{
+                fontSize: 21,
+                letterSpacing: 3,
+                textTransform: "uppercase",
+                padding: "10px 20px",
+                backgroundColor: i === 1 ? "#e51f2c" : "#15141a",
+                color: "#f5f1e7",
+              }}
+            >
+              {c}
+            </span>
+          ))}
         </div>
       </div>
     ),
-    { ...size }
+    { ...size },
   );
 }

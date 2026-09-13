@@ -1,12 +1,18 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
-  <rect width="64" height="64" rx="10" fill="#00B2FF" />
-  <text
-    x="32"
-    y="45"
-    font-family="Georgia, 'Times New Roman', serif"
-    font-size="38"
-    font-weight="700"
-    fill="#070C1A"
-    text-anchor="middle"
-  >C</text>
+  <rect width="64" height="64" rx="14" fill="#15141a" />
+  <g transform="translate(2 12) scale(0.5)">
+    <g fill="#f5f1e7">
+      <path d="M59,46 L17,13 L13,22 L52,51 Z" />
+      <path d="M59,46 L21,26 L19,35 L54,54 Z" />
+      <path d="M59,46 L27,38 L27,46 L56,56 Z" />
+      <path d="M59,46 L33,50 L35,57 L57,59 Z" />
+    </g>
+    <g fill="#e51f2c" transform="translate(120,0) scale(-1,1)">
+      <path d="M59,46 L17,13 L13,22 L52,51 Z" />
+      <path d="M59,46 L21,26 L19,35 L54,54 Z" />
+      <path d="M59,46 L27,38 L27,46 L56,56 Z" />
+      <path d="M59,46 L33,50 L35,57 L57,59 Z" />
+    </g>
+    <path d="M60,24 L67,45 L60,66 L53,45 Z" fill="#f5f1e7" />
+  </g>
 </svg>

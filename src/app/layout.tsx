@@ -1,27 +1,29 @@
 import type { Metadata, Viewport } from "next";
-import { Fraunces, Rubik, JetBrains_Mono } from "next/font/google";
-import { MotionConfig } from "framer-motion";
+import { Anton, Archivo, Playfair_Display } from "next/font/google";
 
 import "./globals.css";
-import { SiteHeader } from "@/components/layout/site-header";
-import { SiteFooter } from "@/components/layout/site-footer";
-import { SkipLink } from "@/components/ui/skip-link";
+import { SiteHeader } from "@/components/site/header";
 
-const fraunces = Fraunces({
-  variable: "--font-fraunces",
+// Crypko's tall condensed headline voice.
+const anton = Anton({
+  variable: "--font-anton",
   subsets: ["latin"],
-  axes: ["opsz", "SOFT", "WONK"],
+  weight: ["400"],
 });
 
-const rubik = Rubik({
-  variable: "--font-rubik",
+// Reika's heavy wide statement type, and the UI voice at lighter weights.
+const archivo = Archivo({
+  variable: "--font-archivo",
   subsets: ["latin"],
+  weight: ["400", "500", "600", "700", "800", "900"],
 });
 
-const jetbrainsMono = JetBrains_Mono({
-  variable: "--font-jetbrains-mono",
+// Yonika's elegant serif italic, for asides and pull quotes.
+const playfair = Playfair_Display({
+  variable: "--font-playfair",
   subsets: ["latin"],
-  weight: ["400", "500"],
+  style: ["italic", "normal"],
+  weight: ["400", "500", "600"],
 });
 
 const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000";
@@ -29,28 +31,26 @@ const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000";
 export const metadata: Metadata = {
   metadataBase: new URL(siteUrl),
   title: {
-    default: "CESAC: Community, Events & Programs",
-    template: "%s | CESAC",
+    default: "Attack on Token — Prompt Engineering Hackathon | CESAC, VIT Pune",
+    template: "%s | Attack on Token",
   },
   description:
-    "CESAC is the community and events hub at Vishwakarma Institute of Technology, Pune: browse upcoming events, meet the people behind them, and register through the student portal.",
+    "Three chapters. One battlefield. Attack on Token is CESAC's prompt engineering hackathon at VIT Pune: Vision Forge, the Token Trials and Fusion Awakening.",
   openGraph: {
     type: "website",
-    siteName: "CESAC",
-    title: "CESAC: Community, Events & Programs",
-    description:
-      "The community and events hub at Vishwakarma Institute of Technology, Pune.",
+    siteName: "Attack on Token",
+    title: "Attack on Token — Prompt Engineering Hackathon",
+    description: "Three chapters. One battlefield. Hosted by CESAC, Computer Engineering, VIT Pune.",
   },
   twitter: {
     card: "summary_large_image",
-    title: "CESAC: Community, Events & Programs",
-    description:
-      "The community and events hub at Vishwakarma Institute of Technology, Pune.",
+    title: "Attack on Token — Prompt Engineering Hackathon",
+    description: "Three chapters. One battlefield. Hosted by CESAC, Computer Engineering, VIT Pune.",
   },
 };
 
 export const viewport: Viewport = {
-  themeColor: "#070c1a",
+  themeColor: "#15141a",
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
@@ -58,17 +58,19 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
     <html
       lang="en"
       data-scroll-behavior="smooth"
-      className={`${fraunces.variable} ${rubik.variable} ${jetbrainsMono.variable} h-full`}
+      className={`${anton.variable} ${archivo.variable} ${playfair.variable} h-full`}
     >
-      <body className="flex min-h-full flex-col font-sans antialiased">
-        <MotionConfig reducedMotion="user">
-          <SkipLink />
-          <SiteHeader />
-          <main id="main-content" className="flex-1">
-            {children}
-          </main>
-          <SiteFooter />
-        </MotionConfig>
+      <body className="flex min-h-full flex-col antialiased">
+        <a
+          href="#main-content"
+          className="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-[60] focus:rounded-full focus:bg-ink focus:px-5 focus:py-2.5 focus:text-cream"
+        >
+          Skip to content
+        </a>
+        <SiteHeader />
+        <main id="main-content" className="flex-1">
+          {children}
+        </main>
       </body>
     </html>
   );
