@@ -12,6 +12,7 @@ import {
 import { Emblem, WallMark } from "@/components/aot/art";
 import { Container, Label, Ticks } from "@/components/aot/bits";
 import { Notice } from "@/components/console/shell";
+import { PROVIDER_LABEL, type Provider } from "@/lib/auth/providers";
 import { EVENT } from "@/lib/data/event";
 
 type Mode = "signin" | "signup";
@@ -34,12 +35,6 @@ const COPY: Record<Mode, { tab: string; title: string; lede: string; submit: str
     },
   };
 
-const PROVIDERS = [
-  { id: "google", label: "Google" },
-  { id: "github", label: "GitHub" },
-  { id: "facebook", label: "Facebook" },
-] as const;
-
 /**
  * Crypko's shell again: one rounded frame holding a deep panel and a white
  * form, with Yonika's pill fields and buttons.
@@ -54,11 +49,18 @@ export function SignInPanel({
   next,
   urlError,
   notice,
+  providers,
 }: {
   initialMode: Mode;
   next?: string;
   urlError?: string;
   notice?: string;
+  /**
+   * Only the providers Supabase reports as enabled. A button for a provider
+   * that is switched off would send a student to a raw JSON error page on a
+   * domain they have never seen.
+   */
+  providers: readonly Provider[];
 }) {
   const [mode, setMode] = useState<Mode>(initialMode);
   const [signInState, signInAction, signingIn] = useActionState<AuthState, FormData>(
@@ -173,27 +175,33 @@ export function SignInPanel({
                 </div>
 
                 {/* the social routes first: fewer steps, and no password to lose */}
-                <div className="mt-7 grid gap-2.5">
-                  {PROVIDERS.map((provider) => (
-                    <form key={provider.id} action={signInWithProvider}>
-                      <input type="hidden" name="provider" value={provider.id} />
-                      {next ? <input type="hidden" name="next" value={next} /> : null}
-                      <button
-                        type="submit"
-                        className="flex w-full items-center justify-center gap-3 rounded-full border-2 border-ink/15 bg-white px-5 py-3.5 text-[0.95rem] text-ink transition-colors hover:border-ink/35 hover:bg-cream-2"
-                      >
-                        <ProviderMark id={provider.id} />
-                        <span className="label">Continue with {provider.label}</span>
-                      </button>
-                    </form>
-                  ))}
-                </div>
+                {providers.length > 0 ? (
+                  <>
+                    <div className="mt-7 grid gap-2.5">
+                      {providers.map((provider) => (
+                        <form key={provider} action={signInWithProvider}>
+                          <input type="hidden" name="provider" value={provider} />
+                          {next ? <input type="hidden" name="next" value={next} /> : null}
+                          <button
+                            type="submit"
+                            className="flex w-full items-center justify-center gap-3 rounded-full border-2 border-ink/15 bg-white px-5 py-3.5 text-[0.95rem] text-ink transition-colors hover:border-ink/35 hover:bg-cream-2"
+                          >
+                            <ProviderMark id={provider} />
+                            <span className="label">Continue with {PROVIDER_LABEL[provider]}</span>
+                          </button>
+                        </form>
+                      ))}
+                    </div>
 
-                <div className="my-7 flex items-center gap-4">
-                  <span aria-hidden className="h-px flex-1 bg-ink/10" />
-                  <span className="label-sm text-muted">or with an email</span>
-                  <span aria-hidden className="h-px flex-1 bg-ink/10" />
-                </div>
+                    <div className="my-7 flex items-center gap-4">
+                      <span aria-hidden className="h-px flex-1 bg-ink/10" />
+                      <span className="label-sm text-muted">or with an email</span>
+                      <span aria-hidden className="h-px flex-1 bg-ink/10" />
+                    </div>
+                  </>
+                ) : (
+                  <div className="mb-7 mt-7 h-px bg-ink/10" aria-hidden />
+                )}
 
                 <form
                   key={mode}
@@ -305,7 +313,7 @@ export function SignInPanel({
 }
 
 /** Provider marks, drawn rather than fetched so nothing blocks on a CDN. */
-function ProviderMark({ id }: { id: (typeof PROVIDERS)[number]["id"] }) {
+function ProviderMark({ id }: { id: Provider }) {
   if (id === "google") {
     return (
       <svg viewBox="0 0 18 18" className="h-[1.15rem] w-[1.15rem]" aria-hidden>

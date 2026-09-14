@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 
 import { SignInPanel } from "@/components/sections/signin-panel";
+import { authMethods } from "@/lib/auth/methods";
 
 export const metadata: Metadata = {
   title: "Create an account",
@@ -15,12 +16,14 @@ export const metadata: Metadata = {
  */
 export default async function SignUpPage(props: PageProps<"/signup">) {
   const { next, error } = await props.searchParams;
+  const { providers } = await authMethods();
 
   return (
     <SignInPanel
       initialMode="signup"
       next={typeof next === "string" ? next : undefined}
       urlError={typeof error === "string" ? error : undefined}
+      providers={providers}
     />
   );
 }

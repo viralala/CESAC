@@ -103,9 +103,11 @@ Supabase. The callback URL Supabase needs you to give them is always:
 https://lgshgaltulbnjqfxjsme.supabase.co/auth/v1/callback
 ```
 
-The buttons for all three are already on the sign-in page. Until a provider is
-enabled, pressing it returns a clear message rather than a broken page, so a
-half-finished setup does not embarrass you.
+**The sign-in page shows only the providers that are actually switched on.** It
+asks Supabase which those are, so right now there are no social buttons at all
+and email is the only way in. Enable one in the dashboard and its button appears
+on the site within a minute, with no deploy and nothing for me to change. Do them
+in any order, or only the ones you want.
 
 ### Google, about 15 minutes, do this one first
 
