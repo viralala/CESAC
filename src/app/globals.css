@@ -3,51 +3,67 @@
 /* ==========================================================================
    ATTACK ON TOKEN — design system
 
-   Visual language comes from the four reference boards, not from the deck:
-     · Reika / Cyberpunk — cream washi ground, one saturated red, massive
-       display type occluded by the character, small white info cards.
-     · Crypko          — rounded outer frame wrapping a deep teal panel,
-                         notched tab navigation, rotating seal, clipped plates.
-     · Samurai         — inset glass frame, outlined kanji watermark,
-                         pill buttons, carousel dots.
-     · Yonika          — near-black panel, serif-italic display, fanned deck,
-                         gradient strip.
-   The sponsorship deck supplies the words and numbers only.
+   Two boards drive the look:
+     · Reika / Cyberpunk — cream seigaiha ground, one giant display word, and
+       a character standing in front of it so the type reads around the figure.
+       Small white info cards, micro corner labels, brush-set Japanese.
+     · The sticker board — a loud, many-coloured kit of floating badges
+       (starburst, blob, leaf, ribbon, scallop, octagon), one continuous
+       squiggle threading the headline, and a segmented pill toolbar.
+
+   Colour: teal is the brand and carries the page. Red was the brand and is
+   now a spot accent only. Lime / pink / violet / azure are sticker pops —
+   they appear on the badges and nowhere structural.
    ========================================================================== */
 
 :root {
   /* washi grounds */
   --cream: #f5f1e7;
-  --cream-2: #ece6d8;
-  --cream-3: #e0d8c6;
+  --cream-2: #ebe5d6;
+  --cream-3: #ded5c1;
   --white: #ffffff;
 
-  /* ink */
-  --ink: #15141a;
-  --ink-2: #211f29;
-  --ink-3: #2e2b38;
+  /* ink — teal-black, not purple-black, so shadows sit in the brand family */
+  --ink: #0c1418;
+  --ink-2: #13212a;
+  --ink-3: #1d303b;
 
-  /* the one saturated accent */
-  --red: #e51f2c;
-  --red-deep: #b3141f;
-  --red-soft: #ff6b74;
-
-  /* deep feature panel */
+  /* THE BRAND — deep teal, promoted from feature panel to primary */
   --teal: #12656f;
-  --teal-2: #0c4b53;
+  --teal-2: #093c44;
   --teal-3: #17808c;
+  --teal-4: #2aa7b6;
 
-  --muted: #6b6a72;
-  --muted-dark: #a9a6b4;
+  /* sticker pops */
+  --azure: #2fc4dd;
+  --blue: #2b4cf0;
+  --violet: #6a2ff0;
+  --lime: #c6f733;
+  --pink: #ff3d8f;
 
-  --line: rgba(21, 20, 26, 0.12);
-  --line-dark: rgba(245, 241, 231, 0.16);
+  /* the spot accent — demoted from brand, used sparingly */
+  --red: #e83b2a;
+  --red-deep: #b3141f;
+  --red-soft: #ff8a7a;
+
+  --muted: #5c6b70;
+  --muted-dark: #9db4ba;
+
+  --line: rgba(12, 20, 24, 0.12);
+  --line-dark: rgba(245, 241, 231, 0.18);
 
   /* rounded geometry — every reference is soft-cornered */
   --r-sm: 14px;
   --r-md: 22px;
   --r-lg: 32px;
   --r-xl: 44px;
+
+  /* one shadow ramp, tinted teal rather than neutral grey */
+  --sh-1: 0 2px 8px -2px rgba(9, 60, 68, 0.14);
+  --sh-2: 0 18px 40px -28px rgba(9, 60, 68, 0.55);
+  --sh-3: 0 28px 70px -36px rgba(9, 60, 68, 0.62);
+
+  --ease: cubic-bezier(0.2, 0.8, 0.3, 1);
 }
 
 @theme inline {
@@ -60,13 +76,20 @@
   --color-ink-2: var(--ink-2);
   --color-ink-3: var(--ink-3);
 
-  --color-red: var(--red);
-  --color-red-deep: var(--red-deep);
-  --color-red-soft: var(--red-soft);
-
   --color-teal: var(--teal);
   --color-teal-2: var(--teal-2);
   --color-teal-3: var(--teal-3);
+  --color-teal-4: var(--teal-4);
+
+  --color-azure: var(--azure);
+  --color-blue: var(--blue);
+  --color-violet: var(--violet);
+  --color-lime: var(--lime);
+  --color-pink: var(--pink);
+
+  --color-red: var(--red);
+  --color-red-deep: var(--red-deep);
+  --color-red-soft: var(--red-soft);
 
   --color-muted: var(--muted);
   --color-muted-dark: var(--muted-dark);
@@ -85,7 +108,8 @@
 
   --animate-seal: seal-spin 26s linear infinite;
   --animate-drift: drift 34s linear infinite;
-  --animate-steam: steam 7s ease-in-out infinite;
+  --animate-float: float 6s ease-in-out infinite;
+  --animate-shaft: shaft 7s ease-in-out infinite;
 }
 
 /* ---------- base ---------- */
@@ -109,12 +133,12 @@ body {
 }
 
 ::selection {
-  background: var(--red);
+  background: var(--teal);
   color: var(--white);
 }
 
 :focus-visible {
-  outline: 2px solid var(--red);
+  outline: 2px solid var(--teal);
   outline-offset: 3px;
   border-radius: 4px;
 }
@@ -122,8 +146,8 @@ body {
 /* Custom classes sit in the components layer so Tailwind utilities still win. */
 @layer components {
   /* ---------- typography ----------
-     Two display voices, as on the boards: Anton for tall condensed headlines
-     (Crypko), heavy wide Archivo for the giant statement word (Reika). */
+     Two display voices: Anton for tall condensed headlines, heavy wide
+     Archivo for the giant statement word the character stands in front of. */
 
   .d-tall {
     font-family: var(--font-display);
@@ -137,11 +161,10 @@ body {
     font-family: var(--font-sans);
     font-weight: 900;
     text-transform: uppercase;
-    line-height: 0.88;
-    letter-spacing: -0.035em;
+    line-height: 0.86;
+    letter-spacing: -0.04em;
   }
 
-  /* Yonika's elegant serif italic, used for asides and pull quotes. */
   .serif-it {
     font-family: var(--font-serif);
     font-style: italic;
@@ -149,7 +172,7 @@ body {
     letter-spacing: -0.01em;
   }
 
-  /* Reika's "LVL-20" micro label. */
+  /* The board's "LVL-20" micro label. */
   .label {
     font-family: var(--font-sans);
     font-size: 0.6875rem;
@@ -175,22 +198,23 @@ body {
 
   /* ---------- surfaces ---------- */
 
-  /* Seigaiha wave ground — the traditional motif behind the Reika board. */
+  /* Seigaiha wave ground — the motif behind the character board. Kept, as it
+     is the one thing the page is not allowed to lose. */
   .washi {
     background-color: var(--cream);
-    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='60' height='30'%3E%3Cg fill='none' stroke='%23e2dac6' stroke-width='1.2'%3E%3Cpath d='M-30 30a30 30 0 0 1 60 0M-22 30a22 22 0 0 1 44 0M-14 30a14 14 0 0 1 28 0M-6 30a6 6 0 0 1 12 0'/%3E%3Cpath d='M30 30a30 30 0 0 1 60 0M38 30a22 22 0 0 1 44 0M46 30a14 14 0 0 1 28 0M54 30a6 6 0 0 1 12 0'/%3E%3Cpath d='M0 0a30 30 0 0 1 60 0M8 0a22 22 0 0 1 44 0M16 0a14 14 0 0 1 28 0M24 0a6 6 0 0 1 12 0'/%3E%3C/g%3E%3C/svg%3E");
-    background-size: 60px 30px;
-  }
-
-  .washi-dark {
-    background-color: var(--ink);
-    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='60' height='30'%3E%3Cg fill='none' stroke='%232b2836' stroke-width='1.2'%3E%3Cpath d='M-30 30a30 30 0 0 1 60 0M-22 30a22 22 0 0 1 44 0M-14 30a14 14 0 0 1 28 0M-6 30a6 6 0 0 1 12 0'/%3E%3Cpath d='M30 30a30 30 0 0 1 60 0M38 30a22 22 0 0 1 44 0M46 30a14 14 0 0 1 28 0M54 30a6 6 0 0 1 12 0'/%3E%3Cpath d='M0 0a30 30 0 0 1 60 0M8 0a22 22 0 0 1 44 0M16 0a14 14 0 0 1 28 0M24 0a6 6 0 0 1 12 0'/%3E%3C/g%3E%3C/svg%3E");
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='60' height='30'%3E%3Cg fill='none' stroke='%23dbd9c6' stroke-width='1.2'%3E%3Cpath d='M-30 30a30 30 0 0 1 60 0M-22 30a22 22 0 0 1 44 0M-14 30a14 14 0 0 1 28 0M-6 30a6 6 0 0 1 12 0'/%3E%3Cpath d='M30 30a30 30 0 0 1 60 0M38 30a22 22 0 0 1 44 0M46 30a14 14 0 0 1 28 0M54 30a6 6 0 0 1 12 0'/%3E%3Cpath d='M0 0a30 30 0 0 1 60 0M8 0a22 22 0 0 1 44 0M16 0a14 14 0 0 1 28 0M24 0a6 6 0 0 1 12 0'/%3E%3C/g%3E%3C/svg%3E");
     background-size: 60px 30px;
   }
 
   .washi-teal {
     background-color: var(--teal);
-    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='60' height='30'%3E%3Cg fill='none' stroke='%231a7581' stroke-width='1.2'%3E%3Cpath d='M-30 30a30 30 0 0 1 60 0M-22 30a22 22 0 0 1 44 0M-14 30a14 14 0 0 1 28 0M-6 30a6 6 0 0 1 12 0'/%3E%3Cpath d='M30 30a30 30 0 0 1 60 0M38 30a22 22 0 0 1 44 0M46 30a14 14 0 0 1 28 0M54 30a6 6 0 0 1 12 0'/%3E%3Cpath d='M0 0a30 30 0 0 1 60 0M8 0a22 22 0 0 1 44 0M16 0a14 14 0 0 1 28 0M24 0a6 6 0 0 1 12 0'/%3E%3C/g%3E%3C/svg%3E");
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='60' height='30'%3E%3Cg fill='none' stroke='%231b7d88' stroke-width='1.2'%3E%3Cpath d='M-30 30a30 30 0 0 1 60 0M-22 30a22 22 0 0 1 44 0M-14 30a14 14 0 0 1 28 0M-6 30a6 6 0 0 1 12 0'/%3E%3Cpath d='M30 30a30 30 0 0 1 60 0M38 30a22 22 0 0 1 44 0M46 30a14 14 0 0 1 28 0M54 30a6 6 0 0 1 12 0'/%3E%3Cpath d='M0 0a30 30 0 0 1 60 0M8 0a22 22 0 0 1 44 0M16 0a14 14 0 0 1 28 0M24 0a6 6 0 0 1 12 0'/%3E%3C/g%3E%3C/svg%3E");
+    background-size: 60px 30px;
+  }
+
+  .washi-deep {
+    background-color: var(--teal-2);
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='60' height='30'%3E%3Cg fill='none' stroke='%230f5059' stroke-width='1.2'%3E%3Cpath d='M-30 30a30 30 0 0 1 60 0M-22 30a22 22 0 0 1 44 0M-14 30a14 14 0 0 1 28 0M-6 30a6 6 0 0 1 12 0'/%3E%3Cpath d='M30 30a30 30 0 0 1 60 0M38 30a22 22 0 0 1 44 0M46 30a14 14 0 0 1 28 0M54 30a6 6 0 0 1 12 0'/%3E%3Cpath d='M0 0a30 30 0 0 1 60 0M8 0a22 22 0 0 1 44 0M16 0a14 14 0 0 1 28 0M24 0a6 6 0 0 1 12 0'/%3E%3C/g%3E%3C/svg%3E");
     background-size: 60px 30px;
   }
 
@@ -212,7 +236,7 @@ body {
 
   /* ---------- plates ---------- */
 
-  /* Crypko's signature: a cream frame wrapped around a coloured panel. */
+  /* A cream frame wrapped around a coloured panel. */
   .shell {
     border-radius: var(--r-xl);
     padding: 12px;
@@ -224,21 +248,17 @@ body {
     overflow: hidden;
   }
 
-  /* Clipped-and-rounded plate — the Crypko image cards. */
-  .plate {
-    border-radius: var(--r-md);
-    clip-path: polygon(
-      0 0,
-      100% 0,
-      100% calc(100% - 34px),
-      calc(100% - 34px) 100%,
-      0 100%
-    );
-  }
-
+  /* Clipped-and-rounded plate. */
   .plate-tr {
     border-radius: var(--r-md);
     clip-path: polygon(0 0, calc(100% - 34px) 0, 100% 34px, 100% 100%, 0 100%);
+  }
+
+  /* The standard white card. One shadow, one radius, everywhere. */
+  .card {
+    border-radius: var(--r-lg);
+    background: var(--white);
+    box-shadow: var(--sh-2);
   }
 
   /* ---------- controls ---------- */
@@ -254,32 +274,40 @@ body {
     font-size: 0.875rem;
     font-weight: 700;
     letter-spacing: 0.01em;
-    background: var(--ink);
+    background: var(--teal);
     color: var(--cream);
-    border: 2px solid var(--ink);
+    border: 2px solid var(--teal);
     transition:
-      transform 0.2s cubic-bezier(0.2, 0.8, 0.3, 1),
+      transform 0.2s var(--ease),
       background-color 0.2s ease,
       border-color 0.2s ease,
-      color 0.2s ease;
+      color 0.2s ease,
+      box-shadow 0.2s ease;
   }
 
   .pill:hover {
     transform: translateY(-2px);
-    background: var(--red);
-    border-color: var(--red);
-    color: var(--white);
-  }
-
-  .pill-red {
-    background: var(--red);
-    border-color: var(--red);
-    color: var(--white);
-  }
-
-  .pill-red:hover {
     background: var(--ink);
     border-color: var(--ink);
+    color: var(--cream);
+    box-shadow: var(--sh-2);
+  }
+
+  .pill:active {
+    transform: translateY(0);
+  }
+
+  /* The one loud button on the page — lime on ink, straight off the board. */
+  .pill-lime {
+    background: var(--lime);
+    border-color: var(--lime);
+    color: var(--ink);
+  }
+
+  .pill-lime:hover {
+    background: var(--ink);
+    border-color: var(--ink);
+    color: var(--lime);
   }
 
   .pill-ghost {
@@ -296,27 +324,27 @@ body {
 
   .pill-ghost-light {
     background: transparent;
-    border-color: rgba(245, 241, 231, 0.55);
+    border-color: rgba(245, 241, 231, 0.5);
     color: var(--cream);
   }
 
   .pill-ghost-light:hover {
     background: var(--cream);
     border-color: var(--cream);
-    color: var(--ink);
+    color: var(--teal-2);
   }
 
-  /* Reika's small red circular arrow button. */
+  /* Small circular arrow button. */
   .dot-btn {
     display: inline-grid;
     place-items: center;
     width: 2.75rem;
     height: 2.75rem;
     border-radius: 999px;
-    background: var(--red);
+    background: var(--teal);
     color: var(--white);
     transition:
-      transform 0.2s cubic-bezier(0.2, 0.8, 0.3, 1),
+      transform 0.2s var(--ease),
       background-color 0.2s ease;
   }
 
@@ -338,12 +366,162 @@ body {
   }
 
   .field::placeholder {
-    color: rgba(107, 106, 114, 0.7);
+    color: rgba(92, 107, 112, 0.7);
   }
 
   .field:focus {
     outline: none;
-    border-color: var(--red);
+    border-color: var(--teal);
+  }
+
+  /* ---------- sticker kit ----------
+     The loud floating badges. Shape comes from clip-path so the label inside
+     stays real text; colour is set per instance with --st. */
+
+  .sticker {
+    display: grid;
+    place-items: center;
+    text-align: center;
+    background: var(--st, var(--lime));
+    color: var(--st-fg, var(--ink));
+    font-family: var(--font-sans);
+    font-weight: 800;
+    line-height: 1.12;
+    letter-spacing: 0.01em;
+    will-change: transform;
+  }
+
+  .st-blob {
+    border-radius: 999px;
+    padding: 0.5rem 1.05rem;
+  }
+
+  .st-leaf {
+    border-radius: 999px 6px 999px 6px;
+    padding: 0.7rem 1.15rem;
+  }
+
+  .st-ribbon {
+    padding: 0.7rem 1.25rem;
+    clip-path: polygon(
+      0 10%,
+      8% 0,
+      92% 8%,
+      100% 0,
+      100% 90%,
+      92% 100%,
+      8% 92%,
+      0 100%
+    );
+  }
+
+  .st-burst {
+    padding: 1.15rem;
+    aspect-ratio: 1;
+    clip-path: polygon(
+      50% 0%, 59% 11%, 73% 6%, 76% 21%, 90% 22%, 87% 36%, 100% 43%, 91% 54%,
+      99% 66%, 86% 71%, 88% 85%, 74% 84%, 70% 98%, 57% 91%, 47% 100%, 40% 88%,
+      26% 93%, 24% 79%, 10% 78%, 14% 64%, 1% 56%, 11% 45%, 3% 33%, 16% 28%,
+      14% 14%, 28% 16%, 33% 2%, 44% 10%
+    );
+  }
+
+  .st-scallop {
+    padding: 1.1rem;
+    aspect-ratio: 1;
+    clip-path: polygon(
+      50% 0%, 62% 8%, 75% 4%, 81% 16%, 95% 18%, 94% 32%, 100% 45%, 92% 55%,
+      97% 69%, 84% 74%, 82% 88%, 68% 86%, 58% 97%, 47% 89%, 34% 95%, 27% 83%,
+      13% 82%, 14% 68%, 3% 58%, 11% 47%, 4% 34%, 17% 27%, 18% 13%, 32% 14%,
+      39% 3%
+    );
+  }
+
+  .st-octo {
+    padding: 1rem;
+    aspect-ratio: 1;
+    clip-path: polygon(
+      30% 0, 70% 0, 100% 30%, 100% 70%, 70% 100%, 30% 100%, 0 70%, 0 30%
+    );
+  }
+
+  /* The segmented dark toolbar that closes the board. */
+  .toolbar {
+    display: flex;
+    align-items: center;
+    gap: 0.3rem;
+    border-radius: 999px;
+    background: var(--ink);
+    padding: 0.4rem;
+    box-shadow: var(--sh-3);
+  }
+
+  .toolbar-seg {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.55rem;
+    border-radius: 999px;
+    padding: 0.6rem 1.05rem;
+    color: rgba(245, 241, 231, 0.62);
+    transition:
+      color 0.2s ease,
+      background-color 0.2s ease;
+  }
+
+  .toolbar-seg:hover {
+    color: var(--cream);
+    background: rgba(245, 241, 231, 0.08);
+  }
+
+  /* ---------- the depth rig ----------
+     The scene damps the pointer into --px/--py and the scroll into --sy, and
+     every plane inside reads them. Moving a plane is one transform, so a
+     pointer sweep repaints and never re-renders. */
+
+  .px-scene {
+    --px: 0;
+    --py: 0;
+    --sy: 0;
+    perspective: 1200px;
+  }
+
+  .px-layer {
+    transform: translate3d(
+        calc(var(--px) * var(--dx, 0px)),
+        calc(var(--py) * var(--dy, 0px) + var(--sy) * var(--drift, 0px)),
+        0
+      )
+      rotateY(calc(var(--px) * var(--tilt, 0deg)))
+      rotateX(calc(var(--py) * var(--tilt, 0deg) * -1));
+    transform-style: preserve-3d;
+    will-change: transform;
+  }
+
+  /* ---------- the running ribbon ----------
+     A curve, not a rule. The band is the path stroked fat; the words ride the
+     same path so they bank with it. */
+
+  .ribbon {
+    display: block;
+    width: 100%;
+    height: auto;
+    aspect-ratio: 1090 / 300;
+    overflow: hidden;
+  }
+
+  /* A taller box at phone width makes preserveAspectRatio="slice" zoom into
+     the curve rather than shrink it, so the words stay readable. */
+  @media (max-width: 639px) {
+    .ribbon {
+      aspect-ratio: 1090 / 620;
+    }
+  }
+
+  .ribbon-text {
+    font-family: var(--font-display);
+    font-size: 25px;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
   }
 
   /* ---------- misc ---------- */
@@ -361,18 +539,18 @@ body {
     inset: 0 auto 0 0;
     width: 100%;
     border-radius: 999px;
-    background: var(--red);
+    background: var(--teal);
     transform-origin: left center;
     transform: scaleX(var(--v, 0));
-    transition: transform 1.1s cubic-bezier(0.2, 0.8, 0.2, 1);
+    transition: transform 1.1s var(--ease);
   }
 
   .reveal {
     opacity: 0;
     transform: translateY(22px);
     transition:
-      opacity 0.7s cubic-bezier(0.2, 0.7, 0.3, 1),
-      transform 0.7s cubic-bezier(0.2, 0.7, 0.3, 1);
+      opacity 0.7s var(--ease),
+      transform 0.7s var(--ease);
     will-change: opacity, transform;
   }
 
@@ -407,15 +585,28 @@ body {
   }
 }
 
-@keyframes steam {
+/* Light rising through the wall's gate. Slow and small on purpose: it is
+   behind type on three pages and must never pull the eye. */
+@keyframes shaft {
   0%,
   100% {
-    transform: translateY(0) scaleY(1);
-    opacity: 0.5;
+    opacity: 0.3;
+    transform: translateY(0);
   }
   50% {
-    transform: translateY(-16px) scaleY(1.12);
-    opacity: 0.2;
+    opacity: 0.85;
+    transform: translateY(-7px);
+  }
+}
+
+/* Stickers keep their authored tilt in --st-rot and bob around it. */
+@keyframes float {
+  0%,
+  100% {
+    transform: translate3d(0, 0, 0) rotate(var(--st-rot, 0deg));
+  }
+  50% {
+    transform: translate3d(0, -9px, 0) rotate(calc(var(--st-rot, 0deg) + 1.5deg));
   }
 }
 
@@ -428,7 +619,8 @@ body {
 
   .animate-seal,
   .animate-drift,
-  .animate-steam {
+  .animate-float,
+  .animate-shaft {
     animation: none !important;
   }
 }

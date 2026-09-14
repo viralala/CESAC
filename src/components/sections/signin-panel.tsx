@@ -3,8 +3,8 @@
 import Link from "next/link";
 import { useId, useState, type FormEvent } from "react";
 
-import { Emblem, TitanFigure } from "@/components/aot/art";
-import { Container, Dots, Label } from "@/components/aot/bits";
+import { Emblem, WallMark } from "@/components/aot/art";
+import { Container, Label, Ticks } from "@/components/aot/bits";
 import { EVENT } from "@/lib/data/event";
 
 type Role = "participant" | "admin";
@@ -71,17 +71,17 @@ export function SignInPanel({ initialRole }: { initialRole: Role }) {
           <div className="shell-inner grid lg:grid-cols-[1fr_1fr]">
             {/* the wall side */}
             <aside
-              style={{ ["--panel" as string]: isAdmin ? "var(--ink)" : "var(--teal)" }}
+              style={{ ["--panel" as string]: isAdmin ? "var(--teal-2)" : "var(--teal)" }}
               className={`relative isolate hidden overflow-hidden p-10 text-cream lg:flex lg:flex-col xl:p-12 ${
-                isAdmin ? "washi-dark" : "washi-teal"
+                isAdmin ? "washi-deep" : "washi-teal"
               } transition-colors duration-500`}
             >
               <div
                 aria-hidden
-                className="pointer-events-none absolute left-1/2 top-[18%] -z-10 aspect-square w-[62%] -translate-x-1/2 rounded-full bg-red opacity-90"
+                className="pointer-events-none absolute left-1/2 top-[18%] -z-10 aspect-square w-[62%] -translate-x-1/2 rounded-full bg-lime opacity-90"
               />
-              <TitanFigure className="pointer-events-none absolute bottom-0 left-1/2 -z-10 h-[64%] w-auto -translate-x-1/2 text-ink" />
-              {/* scrim so the creed stays readable where it crosses the figure */}
+              <WallMark className="pointer-events-none absolute bottom-0 left-1/2 -z-10 h-[64%] w-auto -translate-x-1/2 text-ink" />
+              {/* scrim so the creed stays readable where it crosses the wall */}
               <div
                 aria-hidden
                 className="pointer-events-none absolute inset-x-0 bottom-0 -z-10 h-1/2"
@@ -99,7 +99,7 @@ export function SignInPanel({ initialRole }: { initialRole: Role }) {
               <Link href="/" className="relative flex items-center gap-3">
                 <Emblem className="h-7 w-12 text-cream" />
                 <span className="d-wide text-lg">
-                  Attack on <span className="text-red">Token</span>
+                  Attack on <span className="text-lime">Token</span>
                 </span>
               </Link>
 
@@ -110,10 +110,10 @@ export function SignInPanel({ initialRole }: { initialRole: Role }) {
                   <br />
                   Survive the token.
                   <br />
-                  <span className="text-red">Build what comes next.</span>
+                  <span className="text-lime">Build what comes next.</span>
                 </p>
                 <div className="mt-7 flex items-center gap-5">
-                  <Dots count={3} active={isAdmin ? 2 : 0} tone="dark" />
+                  <Ticks count={3} active={isAdmin ? 2 : 0} tone="dark" />
                   <span className="label-sm text-cream/50">{EVENT.dateVenue}</span>
                 </div>
               </div>
@@ -122,7 +122,7 @@ export function SignInPanel({ initialRole }: { initialRole: Role }) {
             {/* the form side */}
             <div className="flex items-center justify-center bg-white px-6 py-14 sm:px-12">
               <div className="w-full max-w-[420px]">
-                <Label tone={isAdmin ? "muted" : "red"}>Access</Label>
+                <Label tone={isAdmin ? "muted" : "teal"}>Access</Label>
                 <h1 className="d-tall mt-3 text-[2.5rem] text-ink">{copy.title}</h1>
                 <p className="serif-it mt-3 text-[1.05rem] leading-relaxed text-muted">
                   {copy.lede}
@@ -150,7 +150,7 @@ export function SignInPanel({ initialRole }: { initialRole: Role }) {
                           active
                             ? key === "admin"
                               ? "bg-ink text-cream"
-                              : "bg-red text-white"
+                              : "bg-teal text-white"
                             : "text-muted hover:text-ink"
                         }`}
                       >
@@ -219,14 +219,14 @@ export function SignInPanel({ initialRole }: { initialRole: Role }) {
                       />
                       Keep me signed in
                     </label>
-                    <button type="button" className="label text-red hover:underline">
+                    <button type="button" className="label text-teal hover:underline">
                       Forgot password
                     </button>
                   </div>
 
                   <button
                     type="submit"
-                    className={`pill mt-1 w-full ${isAdmin ? "" : "pill-red"}`}
+                    className={`pill mt-1 w-full ${isAdmin ? "" : "pill-lime"}`}
                   >
                     {copy.submit}
                   </button>
@@ -236,7 +236,7 @@ export function SignInPanel({ initialRole }: { initialRole: Role }) {
                       role="status"
                       className="serif-it rounded-[var(--r-md)] bg-cream-2 px-5 py-4 text-[0.95rem] leading-relaxed text-ink/75"
                     >
-                      Sign-in isn&apos;t wired up yet — this is the front door only. Accounts go live
+                      Sign-in isn&apos;t wired up yet, so this is the front door only. Accounts go live
                       with registration.
                     </p>
                   ) : null}
@@ -247,7 +247,7 @@ export function SignInPanel({ initialRole }: { initialRole: Role }) {
                 </p>
 
                 <p className="label mt-6 text-muted">
-                  <Link href="/" className="hover:text-red">
+                  <Link href="/" className="hover:text-teal">
                     ← Back to the event
                   </Link>
                 </p>

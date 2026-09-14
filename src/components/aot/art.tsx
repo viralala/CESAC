@@ -1,6 +1,9 @@
 /**
- * Original artwork only — flat vector, no copyrighted characters or frames.
- * Drawn to sit on the cream washi ground as the boards' character graphics do.
+ * Original artwork only, and nothing figurative.
+ *
+ * There are no characters anywhere in this file, and none anywhere on the
+ * site: no likeness, no silhouette of a person, no licensed or third-party
+ * asset. Marks here are crests, masonry and colour. Keep it that way.
  */
 
 /** "Wings of Prompt" — an original two-tone fanned-blade crest. */
@@ -19,7 +22,7 @@ export function Emblem({ className = "" }: { className?: string }) {
           <path key={d} d={d} />
         ))}
       </g>
-      <g fill="var(--red)" transform="translate(120,0) scale(-1,1)">
+      <g fill="var(--lime)" transform="translate(120,0) scale(-1,1)">
         {blades.map((d) => (
           <path key={d} d={d} />
         ))}
@@ -30,135 +33,108 @@ export function Emblem({ className = "" }: { className?: string }) {
 }
 
 /**
- * The Token Titan — the character graphic that the giant headline runs behind,
- * the way the Reika board layers its subject over the display word.
+ * The Wall — an original geometric mark, and there is no figure in it.
+ *
+ * It stands in for the character graphic that used to sit behind the display
+ * word. Masonry and a gate: the motif the event copy already leans on ("this
+ * wall has no gate"), drawn as architecture rather than as a body.
+ *
+ * Two rules keep it from reading as clip art. The bricks are deliberately few
+ * and large, so at any size it reads as a graphic device rather than as a
+ * texture of tiny rectangles. And every joint is cream, the page's own ground,
+ * so the courses separate by paper rather than by a drawn line.
  */
-export function TitanFigure({
+export function WallMark({
   className = "",
   style,
 }: {
   className?: string;
   style?: React.CSSProperties;
 }) {
-  const teeth = Array.from({ length: 10 }, (_, i) => 110 + i * 9.2);
-  const steam = [
-    { x: 52, d: "0s", h: 118 },
-    { x: 100, d: "1.1s", h: 168 },
-    { x: 150, d: "2.3s", h: 94 },
-    { x: 200, d: "0.6s", h: 146 },
-    { x: 244, d: "1.8s", h: 108 },
+  // Odd rows step half a brick, the way a real bond is laid, so the joints
+  // never stack into a vertical seam down the middle of the mark.
+  const COURSE_H = 46;
+  const BRICK_W = 104;
+  const courses = Array.from({ length: 6 }, (_, row) => {
+    const y = 124 + row * COURSE_H;
+    const offset = row % 2 === 0 ? 0 : -BRICK_W / 2;
+    return Array.from({ length: 6 }, (_, i) => ({ x: offset + i * BRICK_W - 60, y }));
+  }).flat();
+
+  // Light coming up through the gate, so the mark is never completely static
+  // behind the type. The old graphic carried an `animate-steam` class that no
+  // keyframe ever defined, so it did nothing at all; this is a real animation,
+  // and reduced motion switches it off.
+  const shafts = [
+    { x: 128, d: "0s", h: 104 },
+    { x: 152, d: "1.4s", h: 142 },
+    { x: 176, d: "2.6s", h: 88 },
   ];
 
-  // Cream stroke on every part, so the figure stays cut out against the
-  // display word behind it and the limbs read separately from the torso.
-  const cut = {
-    fill: "currentColor",
-    stroke: "var(--cream)",
-    strokeWidth: 9,
-    strokeLinejoin: "round" as const,
-  };
-
   return (
-    <svg viewBox="0 0 300 400" className={className} style={style} aria-hidden="true">
+    <svg viewBox="0 0 320 400" className={className} style={style} aria-hidden="true">
       <defs>
-        <linearGradient id="titan-steam" x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0%" stopColor="currentColor" stopOpacity="0" />
-          <stop offset="100%" stopColor="currentColor" stopOpacity="0.5" />
+        {/* the arch: everything under this mask is wall, the hole is the gate */}
+        <mask id="wall-gate">
+          <rect x="0" y="0" width="320" height="400" fill="white" />
+          <path d="M112 400 L112 252 A48 48 0 0 1 208 252 L208 400 Z" fill="black" />
+        </mask>
+        <linearGradient id="wall-shaft" x1="0" y1="1" x2="0" y2="0">
+          <stop offset="0%" stopColor="currentColor" stopOpacity="0.5" />
+          <stop offset="100%" stopColor="currentColor" stopOpacity="0" />
         </linearGradient>
       </defs>
 
-      <g fill="url(#titan-steam)" opacity="0.18">
-        {steam.map((s) => (
+      <g mask="url(#wall-gate)" fill="currentColor" stroke="var(--cream)" strokeWidth="7">
+        {courses.map((b) => (
+          <rect key={`${b.x}-${b.y}`} x={b.x} y={b.y} width={BRICK_W} height={COURSE_H} rx="5" />
+        ))}
+
+        {/* the coping course, wider than the wall and set proud of it */}
+        <rect x="-18" y="92" width="356" height="34" rx="7" />
+      </g>
+
+      {/* the arch ring, drawn over the masked edge so the cut reads as built */}
+      <path
+        d="M112 400 L112 252 A48 48 0 0 1 208 252 L208 400"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="11"
+        strokeLinecap="square"
+      />
+
+      <g fill="url(#wall-shaft)">
+        {shafts.map((s) => (
           <rect
             key={s.x}
-            className="animate-steam"
+            className="animate-shaft"
             x={s.x}
-            y={330 - s.h}
-            width="7"
+            y={400 - s.h}
+            width="11"
             height={s.h}
-            rx="3.5"
+            rx="5.5"
             style={{ animationDelay: s.d }}
           />
         ))}
       </g>
-
-      {/* arms, hanging outside the torso */}
-      <path d="M40,228 L14,274 L5,342 L3,400 L41,400 L43,338 L54,280 Z" {...cut} />
-      <path d="M260,228 L286,274 L295,342 L297,400 L259,400 L257,338 L246,280 Z" {...cut} />
-
-      {/* torso — heavy shoulders tapering down */}
-      <path d="M114,170 L74,186 L36,224 L24,288 L28,400 L272,400 L276,288 L264,224 L226,186 L186,170 Z" {...cut} />
-
-      {/* skull */}
-      <path
-        d="M150,8 C110,8 86,42 86,88 C86,116 97,138 113,152 L113,168 L187,168
-           L187,152 C203,138 214,116 214,88 C214,42 190,8 150,8 Z"
-        {...cut}
-      />
-
-      {/* the grin */}
-      <rect x="102" y="112" width="96" height="32" rx="9" fill="var(--cream)" />
-      <g stroke="currentColor" strokeWidth="3.4">
-        {teeth.map((x) => (
-          <line key={x} x1={x} y1="112" x2={x} y2="144" />
-        ))}
-        <line x1="102" y1="128" x2="198" y2="128" strokeWidth="2.4" opacity="0.55" />
-      </g>
-
-      {/* eye slits, set deep under the brow */}
-      <g fill="var(--red)">
-        <rect x="99" y="68" width="28" height="10" rx="5" />
-        <rect x="173" y="68" width="28" height="10" rx="5" />
-      </g>
-
-      {/* exposed musculature, drawn in the ground colour */}
-      <g stroke="var(--cream)" strokeLinecap="round" fill="none">
-        <path d="M150,214 L150,392" strokeWidth="4" opacity="0.5" />
-        <path d="M62,258 Q106,276 148,264" strokeWidth="4.5" opacity="0.6" />
-        <path d="M238,258 Q194,276 152,264" strokeWidth="4.5" opacity="0.6" />
-        <path d="M78,314 Q150,330 222,314" strokeWidth="3.6" opacity="0.4" />
-        <path d="M30,286 Q46,300 52,322" strokeWidth="3.4" opacity="0.4" />
-        <path d="M270,286 Q254,300 248,322" strokeWidth="3.4" opacity="0.4" />
-      </g>
     </svg>
-  );
-}
-
-/** Stone course wall — used behind the three-walls panel. */
-export function WallBand({ className = "" }: { className?: string }) {
-  return (
-    <div className={`flex flex-col ${className}`} aria-hidden="true">
-      <span className="h-[9px] w-full shrink-0 rounded-full bg-current opacity-90" />
-      <span className="h-[6px] w-full shrink-0" />
-      <span
-        className="w-full flex-1 bg-current opacity-80"
-        style={{
-          maskImage:
-            "repeating-linear-gradient(90deg, #000 0 56px, transparent 56px 58px), repeating-linear-gradient(0deg, #000 0 50px, transparent 50px 52px)",
-          maskComposite: "intersect",
-          WebkitMaskImage:
-            "repeating-linear-gradient(90deg, #000 0 56px, transparent 56px 58px), repeating-linear-gradient(0deg, #000 0 50px, transparent 50px 52px)",
-          WebkitMaskComposite: "source-in",
-        }}
-      />
-    </div>
   );
 }
 
 /** Yonika's gradient strip, used to close a dark panel. */
 export function GradientStrip({ className = "" }: { className?: string }) {
   const swatches = [
-    "#e51f2c",
-    "#8e1a2e",
-    "#3b2340",
     "#12656f",
+    "#2fc4dd",
+    "#6a2ff0",
+    "#c6f733",
+    "#ff3d8f",
     "#17808c",
-    "#c9a227",
-    "#e07a4a",
-    "#7b2e3c",
-    "#1d3b52",
-    "#e51f2c",
-    "#2a2233",
+    "#2b4cf0",
+    "#c6f733",
+    "#e83b2a",
+    "#2fc4dd",
+    "#6a2ff0",
     "#12656f",
   ];
   return (

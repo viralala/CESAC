@@ -5,7 +5,7 @@ import { SignInPanel } from "@/components/sections/signin-panel";
 export const metadata: Metadata = {
   title: "Sign in",
   description:
-    "Sign in to Attack on Token — participant access for registered teams, organiser access for the CESAC committee.",
+    "Sign in to Attack on Token. Participant access for registered teams, organiser access for the CESAC committee.",
 };
 
 export default async function SignInPage(props: PageProps<"/signin">) {

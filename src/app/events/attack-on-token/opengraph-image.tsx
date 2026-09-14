@@ -2,12 +2,7 @@ import { ImageResponse } from "next/og";
 
 export const size = { width: 1200, height: 630 };
 export const contentType = "image/png";
-export const alt = "CESAC, the Computer Engineering Student Activities Committee at VIT Pune";
 
-/**
- * The site-wide share card. Every route inherits this except the event, which
- * ships its own at `events/attack-on-token/opengraph-image.tsx`.
- */
 export default function Image() {
   return new ImageResponse(
     (
@@ -28,26 +23,14 @@ export default function Image() {
         <div
           style={{
             position: "absolute",
-            right: -130,
-            top: -90,
-            width: 520,
-            height: 520,
+            right: -110,
+            top: 90,
+            width: 470,
+            height: 470,
             borderRadius: 999,
             backgroundColor: "#12656f",
           }}
         />
-        <div
-          style={{
-            position: "absolute",
-            right: 180,
-            bottom: -70,
-            width: 240,
-            height: 240,
-            borderRadius: 999,
-            backgroundColor: "#c6f733",
-          }}
-        />
-
         <div
           style={{
             display: "flex",
@@ -58,29 +41,32 @@ export default function Image() {
             color: "rgba(12,20,24,0.55)",
           }}
         >
-          <span>Computer Engineering</span>
-          <span>VIT Pune</span>
+          <span>CESAC / VIT Pune</span>
+          <span>Prompt Engineering Hackathon</span>
         </div>
 
         <div style={{ display: "flex", flexDirection: "column" }}>
-          <span style={{ fontSize: 176, fontWeight: 800, lineHeight: 0.84, letterSpacing: -4 }}>
-            CE<span style={{ color: "#12656f" }}>SAC</span>
-          </span>
           <span
             style={{
-              fontSize: 30,
-              lineHeight: 1.3,
-              marginTop: 28,
-              maxWidth: 760,
-              color: "rgba(12,20,24,0.72)",
+              fontSize: 24,
+              letterSpacing: 6,
+              textTransform: "uppercase",
+              color: "#12656f",
+              marginBottom: 22,
             }}
           >
-            The student activities committee of the Computer Engineering department at VIT Pune.
+            Three chapters. One battlefield.
+          </span>
+          <span style={{ fontSize: 132, fontWeight: 800, lineHeight: 0.86, letterSpacing: -2 }}>
+            ATTACK
+          </span>
+          <span style={{ fontSize: 132, fontWeight: 800, lineHeight: 0.86, letterSpacing: -2 }}>
+            ON <span style={{ color: "#12656f" }}>TOKEN</span>
           </span>
         </div>
 
         <div style={{ display: "flex", gap: 12 }}>
-          {["Events", "Build", "Tell", "Connect"].map((c, i) => (
+          {["Vision Forge", "Token Trials", "Fusion Awakening"].map((c, i) => (
             <span
               key={c}
               style={{
@@ -88,8 +74,8 @@ export default function Image() {
                 letterSpacing: 3,
                 textTransform: "uppercase",
                 padding: "10px 20px",
-                backgroundColor: ["#2fc4dd", "#6a2ff0", "#c6f733", "#ff3d8f"][i],
-                color: i === 1 || i === 3 ? "#f5f1e7" : "#0c1418",
+                backgroundColor: ["#2fc4dd", "#6a2ff0", "#c6f733"][i],
+                color: i === 1 ? "#f5f1e7" : "#0c1418",
               }}
             >
               {c}
