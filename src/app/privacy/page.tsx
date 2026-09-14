@@ -7,94 +7,114 @@ import { CESAC, CONTACT } from "@/lib/data/cesac";
 export const metadata: Metadata = {
   title: "Privacy policy",
   description:
-    "What the CESAC website collects, what it does not, and who to contact about it. No analytics, no tracking cookies, no third-party scripts.",
+    "What the CESAC website collects, what it does not, and who to contact about it. No analytics and no tracking cookies.",
   alternates: { canonical: "/privacy" },
 };
 
 /**
- * This describes what the site does TODAY, verified against the source: no
- * analytics package is installed, no third-party script is loaded, fonts are
- * self-hosted at build time by next/font, and the only cookie the site sets is
- * the sign-in session cookie, which exists only once someone signs in.
+ * This describes what the site does TODAY, verified against the source.
  *
- * If any of that changes, this page changes in the same commit. A privacy
+ * It changed substantially when accounts and registration landed: there is now
+ * a database, an authentication provider, optional social sign-in and an
+ * optional payment gateway. Every one of those is named below, because a
+ * policy that still claimed "no third parties" would be a lie by omission.
+ *
+ * If any of it changes again, this page changes in the same commit. A privacy
  * policy that describes an intention rather than the build is worthless.
  */
 const BLOCKS: readonly LegalBlock[] = [
   {
     heading: "The short version",
     body: [
-      "This website does not track you. It runs no analytics, embeds no social widgets, and loads no third-party scripts. There is no advertising on it and nothing on it is sold or shared.",
-      "It sets exactly one cookie, and only if you sign in. Browsing the site signed out sets none at all.",
-      "You can read every page of this site without giving us anything at all.",
+      "This website does not track you. It runs no analytics, embeds no social widgets and shows no advertising. Nothing it holds is sold or shared with anyone outside the committee.",
+      "You can read every page of this site, including the whole event brief, without signing in and without giving us anything at all. Browsing signed out sets no cookies.",
+      "Everything we hold about a person exists because they made an account and registered a team. That is described in full below.",
+    ],
+  },
+  {
+    heading: "Where your data lives",
+    body: [
+      "Accounts, teams, payments records and chapter hand-ins are stored in a Supabase project hosted in Mumbai, India. Supabase is our database and authentication provider and processes this data on our behalf.",
+      "The pages themselves are served by Vercel. Like any web server it records standard request information so pages can be delivered and abuse blocked, typically your IP address, the page requested, the time and your browser's user-agent string. We do not use those logs to build a profile of you and we do not combine them with your account.",
+      "Nothing is copied to a third service for analysis, and no part of this data is used to train anything.",
+    ],
+  },
+  {
+    heading: "Making an account",
+    body: [
+      "You can sign up with an email address and a password, or with Google, GitHub or Facebook.",
+      "If you use an email and password, we store your email address, the name you type, and a one-way hash of your password. The hash cannot be turned back into your password, and nobody on the committee can read it. Password checking is handled by Supabase Auth and the password you type is never written to our own tables or logs.",
+      "If you use Google, GitHub or Facebook, you are sent to them to sign in and you give us no password at all. They then tell us your email address, your display name, and the address of your profile picture. We store those three things and nothing else. We do not receive, and cannot see, your password or anything else in that account.",
+      "Choosing one of those buttons means your browser contacts that company, and that visit is covered by their privacy policy as well as this one. Nothing on this site contacts them until you press the button.",
     ],
   },
   {
     heading: "Cookies and local storage",
     body: [
-      "The site sets no cookies for analytics, advertising or profiling.",
-      "Signing in sets one cookie, named aot_session. It holds a signed token carrying your account id, whether you are a participant or an organiser, and the name shown at the top of your console. It carries no password, no email address and no team data. It is marked HttpOnly, so no script on the page can read it, and SameSite=Lax, so it is not sent from other sites.",
-      "If you leave the box unticked it is a session cookie and your browser discards it when you close it. If you tick it, it lasts seven days. Signing out deletes it immediately.",
-      "Three preferences are saved in your browser's local storage, and nothing else is: cesac.consent records your answer to the cookie notice so it does not reappear on every page, and cesac.music and cesac.music.volume remember whether you turned the music on the Attack on Token page on or off and how loud you set it.",
-      "Local storage stays on your device. It is not a cookie, it is not sent to our server, it is not attached to requests, and it is not readable by anyone else. Nothing in it identifies you.",
-      "You can clear it at any time through your browser's site-data settings. The notice will simply ask again and the music control will go back to its default.",
+      "The site sets no cookies for analytics, advertising or profiling, and none at all until you sign in.",
+      "Signing in sets session cookies whose names begin with sb-, placed by Supabase Auth. They hold the tokens that keep you signed in and identify your account to the server. They are HttpOnly, so no script on the page can read them, and SameSite=Lax, so they are not sent from other sites. Signing out clears them.",
+      "These cookies are strictly necessary: they exist only because you asked to sign in, they do nothing else, and there is no version of a sign-in that works without them.",
+      "Three preferences are saved in your browser's local storage and nothing else is: cesac.consent records your answer to the cookie notice so it does not reappear on every page, and cesac.music and cesac.music.volume remember whether you turned the music on the Attack on Token page on or off and how loud you set it.",
+      "Local storage stays on your device. It is not sent to our server, not attached to requests, and nothing in it identifies you. You can clear it at any time through your browser's site-data settings.",
     ],
   },
   {
-    heading: "What our host records",
+    heading: "Registering a team",
     body: [
-      "The site is served by Vercel. Like any web server, it records standard request information so that pages can be delivered and abuse can be blocked. That typically includes your IP address, the page requested, the time, and your browser's user-agent string.",
-      "We do not use those logs to build a profile of you, and we do not combine them with anything else. They are handled under Vercel's own privacy terms as our hosting provider.",
+      "Making a team stores the team name, a join code, and which two accounts belong to it. If the captain fills in the optional partner name and partner email before their partner joins, those are stored too, as a note for the organisers.",
+      "Your team's details are visible to you, to your partner, and to CESAC organisers. They are not visible to other teams.",
+      "Once organisers publish the leaderboard, every signed-in participant can see every registered team's name and score. Until they publish it, each team sees only its own. Nothing about a team is visible to anyone signed out.",
     ],
   },
   {
-    heading: "Fonts and images",
+    heading: "The entry fee",
     body: [
-      "Typefaces are downloaded at build time and served from this site's own domain, so loading a page does not send a request to Google Fonts or any other font host.",
-      "All artwork on the site is original vector work created for CESAC. There are no character figures anywhere on it and no third-party or licensed assets are embedded in it.",
+      "If you pay by UPI or at the desk, we store what you type: the method, the transaction or receipt reference and any note you add. An organiser checks that against the account and marks it verified.",
+      "If you pay through Razorpay, the checkout window is Razorpay's own and opens only when you press the pay button. Your card, UPI or netbanking details go to Razorpay and never reach this site. We store the Razorpay order and payment identifiers so an organiser can find the payment in the Razorpay dashboard, and nothing else.",
+      "We never see, receive or store card numbers, UPI PINs, bank credentials or anything else you enter in that window.",
     ],
   },
   {
-    heading: "Music and motion",
+    heading: "Chapter hand-ins",
     body: [
-      "The Attack on Token page can play a background track. The audio file is served from this site's own domain, not from a streaming service or an embedded player, so playing it contacts nobody. It can be turned off with the control in the bottom right corner, and once it is off it stays off.",
-      "The falling petals that follow your cursor are drawn locally in your browser. Your pointer position is never recorded, stored or transmitted. If your device is set to reduce motion, or has no mouse pointer, they do not run at all.",
+      "What you hand in for each chapter is stored against your team: the text you write, and any files you upload.",
+      "Uploaded files are held in private storage. They are not public, they have no guessable address, and they cannot be listed or read by other teams. When an organiser opens one for grading, the link generated expires within the hour.",
+      "Hand-ins and scores are visible to your team and to organisers. Grading notes written by organisers are internal and are not shown to participants.",
     ],
   },
   {
-    heading: "The sign-in form",
+    heading: "What organisers do is recorded",
     body: [
-      "Submitting the sign-in form sends the ID and password you typed to this site's own server, over HTTPS, so they can be checked against the account list. Nothing is sent to a third party and there is no authentication provider in the chain.",
-      "Passwords are never stored in readable form. The account list holds a scrypt digest of each password, which cannot be turned back into the password. What you typed is checked against the digest and then discarded. It is not written to a log or a database.",
-      "There is no user database on this site yet, so the account list is configuration held by the site's hosting settings. It contains only what a sign-in needs: an ID, a display name, a password digest, and for organisers an access code.",
-      "Failed attempts are counted in memory for five minutes so one browser cannot try passwords endlessly. That counter holds the ID that was tried and nothing else, and it is not written to disk.",
-      "When event registration goes live this page will be updated before that happens to describe exactly what registration collects, why, how long it is kept and who can see it.",
+      "When an organiser verifies a payment, opens or closes a chapter, sets a score, applies a cut or changes somebody's role, that action is written to a log with their account and the time.",
+      "That record exists so a disputed decision on the day can be checked. It is visible only to organisers.",
     ],
   },
   {
-    heading: "Event registration",
+    heading: "How long it is kept",
     body: [
-      "Registration for CESAC events is not currently handled on this website. If you register for an event through a form, spreadsheet or portal run elsewhere, that process is covered by whatever notice is given to you at the time, not by this page.",
+      "Account, team, payment and hand-in records are kept while the event runs and for as long as the committee needs them to settle results, issue certificates and reconcile the entry fees.",
+      "After that they are of no further use to us, and you can ask for yours to be removed at any point before or after.",
     ],
   },
   {
     heading: "Children",
     body: [
-      "This site is aimed at students and staff of the Computer Engineering department and the wider institute. It is not directed at children, and it collects nothing from anyone.",
+      "This site is aimed at students and staff of the Computer Engineering department and the wider institute. It is not directed at children.",
     ],
   },
   {
     heading: "Your rights",
     body: [
-      "If you have never signed in, the site holds nothing about you and there is nothing for us to export, correct or erase.",
-      "If you hold an account, the only data attached to it is the ID, display name and password digest the committee entered for you. Ask the Technical vertical to correct or remove it and they can do so directly.",
+      "If you have never signed in, the site holds nothing about you and there is nothing to export, correct or erase.",
+      "If you hold an account, you can see everything attached to it from your console: your name and email, your team, your payment state and your hand-ins.",
+      "Ask the Technical vertical to correct anything that is wrong, or to delete your account. Deleting an account removes the profile and, if you made the team, the team and its hand-ins with it.",
       "If you believe something on this site is handling your data in a way this page does not describe, tell us and we will fix it.",
     ],
   },
   {
     heading: "Changes to this policy",
     body: [
-      "If the site starts collecting anything, this page is updated in the same change that introduces it, and the date at the top moves.",
+      "If the site starts collecting anything new, this page is updated in the same change that introduces it, and the date at the top moves.",
     ],
   },
   {

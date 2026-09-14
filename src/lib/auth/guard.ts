@@ -1,41 +1,66 @@
 import "server-only";
 
-import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { cache } from "react";
 
-import { SESSION_COOKIE, verifySession, type Role, type Session } from "@/lib/auth/session";
+import { createClient } from "@/lib/supabase/server";
+import { homeFor, viewerFrom, type Role, type Viewer } from "./session";
 
 /**
  * The authoritative check.
  *
- * `src/proxy.ts` also looks at the cookie, but only to bounce obvious cases
- * early. Nothing is allowed to trust that: every protected page calls one of
- * these, which re-verifies the signature on the server. `cache` keeps that to
- * one verification per request even when a layout and its page both ask.
+ * The proxy bounces the obvious cases early, but it is an optimisation and
+ * nothing more: it reads a cookie on the edge and can be wrong about a role
+ * that changed a second ago. Every protected page calls one of these, and
+ * this is the call that decides.
+ *
+ * cache() makes it once per request no matter how many components ask.
  */
-export const getSession = cache(async (): Promise<Session | null> => {
-  const token = (await cookies()).get(SESSION_COOKIE)?.value;
-  return verifySession(token);
+export const getViewer = cache(async (): Promise<Viewer | null> => {
+  const supabase = await createClient();
+
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return null;
+
+  const { data: profile } = await supabase
+    .from("profiles")
+    .select("*")
+    .eq("id", user.id)
+    .single();
+
+  // No profile means the sign-up trigger has not landed yet, which is a blink
+  // on a fresh OAuth account. Treat it as signed out rather than crashing;
+  // the next request will find the row.
+  return profile ? viewerFrom(profile) : null;
 });
 
-/** Send a signed-out visitor to the gate, remembering where they were headed. */
 function toGate(role: Role, next: string): never {
-  const params = new URLSearchParams({ role, next });
-  redirect(`/signin?${params.toString()}`);
+  redirect(`/signin?next=${encodeURIComponent(next)}${role === "admin" ? "&role=admin" : ""}`);
 }
 
-export async function requireRole(role: Role, next: string): Promise<Session> {
-  const session = await getSession();
+async function requireRole(role: Role, next: string): Promise<Viewer> {
+  const viewer = await getViewer();
+  if (!viewer) toGate(role, next);
 
-  if (!session) toGate(role, next);
+  const wantsAdmin = role === "admin" || role === "owner";
+  if (wantsAdmin && !viewer.isAdmin) redirect("/dashboard");
+  if (!wantsAdmin && viewer.isAdmin) redirect("/admin");
 
-  // A participant who finds /admin is not told the page exists; they get their
-  // own console back. Wrong-role traffic is a mistake, not an attack surface.
-  if (session.role !== role) redirect(session.role === "admin" ? "/admin" : "/dashboard");
-
-  return session;
+  return viewer;
 }
 
-export const requireParticipant = () => requireRole("participant", "/dashboard");
-export const requireAdmin = () => requireRole("admin", "/admin");
+/**
+ * Organisers are sent to their own console rather than shown the participant
+ * one, because an organiser has no team and every panel would be empty.
+ */
+export function requireParticipant(): Promise<Viewer> {
+  return requireRole("participant", "/dashboard");
+}
+
+export function requireAdmin(): Promise<Viewer> {
+  return requireRole("admin", "/admin");
+}
+
+export { homeFor };

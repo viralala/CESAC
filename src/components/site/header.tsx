@@ -24,7 +24,15 @@ const NAV = [
  * Flat on the cream ground at rest, the way the Reika board sits its nav
  * straight on the paper; on scroll it lifts into a floating pill bar.
  */
-export function SiteHeader() {
+export function SiteHeader({ signedIn = false, consoleHref = "/dashboard" }: {
+  /**
+   * Read on the server in the root layout and passed down, because this bar
+   * is a client component and has no session of its own. Signed in, the
+   * call to action stops inviting people through a door they already walked.
+   */
+  signedIn?: boolean;
+  consoleHref?: string;
+} = {}) {
   const pathname = usePathname();
   const [lifted, setLifted] = useState(false);
   const [open, setOpen] = useState(false);
@@ -86,10 +94,10 @@ export function SiteHeader() {
         </nav>
 
         <Link
-          href="/signin"
+          href={signedIn ? consoleHref : "/signin"}
           className="pill pill-lime ml-auto hidden px-6 py-2.5 text-[0.8rem] lg:ml-2 lg:inline-flex"
         >
-          Sign in
+          {signedIn ? "Your console" : "Sign in"}
         </Link>
 
         <button
@@ -128,8 +136,12 @@ export function SiteHeader() {
               {item.label}
             </Link>
           ))}
-          <Link href="/signin" onClick={() => setOpen(false)} className="pill pill-lime mt-2">
-            Sign in
+          <Link
+            href={signedIn ? consoleHref : "/signin"}
+            onClick={() => setOpen(false)}
+            className="pill pill-lime mt-2"
+          >
+            {signedIn ? "Your console" : "Sign in"}
           </Link>
         </nav>
       ) : null}

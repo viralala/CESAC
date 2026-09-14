@@ -4,6 +4,7 @@ import { Anton, Archivo, Playfair_Display } from "next/font/google";
 import "./globals.css";
 import { CookieNotice } from "@/components/site/cookie-notice";
 import { SiteHeader } from "@/components/site/header";
+import { getViewer } from "@/lib/auth/guard";
 import { PetalCursor } from "@/components/site/petal-cursor";
 
 // Tall condensed headline voice.
@@ -62,7 +63,12 @@ export const viewport: Viewport = {
   themeColor: "#12656f",
 };
 
-export default function RootLayout({ children }: LayoutProps<"/">) {
+export default async function RootLayout({ children }: LayoutProps<"/">) {
+  // The header is a client component and cannot read a session, so the one
+  // fact it needs is read here and handed down. getViewer is memoised per
+  // request, so a page that also guards on it does not pay for this twice.
+  const viewer = await getViewer();
+
   return (
     <html
       lang="en"
@@ -76,7 +82,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
         >
           Skip to content
         </a>
-        <SiteHeader />
+        <SiteHeader signedIn={Boolean(viewer)} consoleHref={viewer?.isAdmin ? "/admin" : "/dashboard"} />
         <main id="main-content" className="flex-1">
           {children}
         </main>

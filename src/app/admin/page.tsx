@@ -1,40 +1,66 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 
+import {
+  addOrganiserEmail,
+  applyCut,
+  removeOrganiserEmail,
+  setChapterState,
+  setRole,
+  updateSettings,
+} from "@/app/actions/admin";
 import { Container, Label } from "@/components/aot/bits";
-import { ConsoleBar, Empty, Panel, Row } from "@/components/console/shell";
-import { accountSummary } from "@/lib/auth/accounts";
+import { ActionForm } from "@/components/console/action-form";
+import { Chip, ConsoleBar, Empty, Notice, Panel, Stat } from "@/components/console/shell";
 import { requireAdmin } from "@/lib/auth/guard";
-import { ASSOCIATES, BOARD, FACULTY, TEAM_TOTAL, VERTICALS } from "@/lib/data/committee";
-import { AWARDS, CHAPTERS, EVENT, VITALS } from "@/lib/data/event";
+import { createClient } from "@/lib/supabase/server";
+import {
+  getAdminOverview,
+  getAuditLog,
+  getChapters,
+  getOrganisers,
+  getSettings,
+} from "@/lib/data/console";
+import { EVENT } from "@/lib/data/event";
+import { ADMIN_NAV } from "./nav";
 
 export const metadata: Metadata = {
   title: "Organiser console",
   robots: { index: false, follow: false },
 };
 
-const NAV = [
-  { href: "/people", label: "Roster" },
-  { href: "/events/attack-on-token", label: "Event page" },
-  { href: "/", label: "Site" },
-];
+const CHAPTER_STATES = [
+  { value: "locked", label: "Lock" },
+  { value: "open", label: "Open" },
+  { value: "closed", label: "Close" },
+  { value: "graded", label: "Mark graded" },
+] as const;
 
 /**
  * The organiser console.
  *
- * Same rule as the participant side: the only figures on this page are ones
- * the build can actually count. The account tallies are read from the store at
- * request time, the roster and chapter figures are the transcribed deck, and
- * every control that needs a backend says so instead of rendering a dead
- * button next to a made-up number.
+ * Every number on this page is counted from the database at request time.
+ * Where a thing has genuinely not happened yet, the panel says so instead of
+ * showing a zero dressed up as a result.
  */
 export default async function AdminPage() {
-  const session = await requireAdmin();
-  const accounts = accountSummary();
-  const demo = accounts.source === "demo";
+  const viewer = await requireAdmin();
+  const supabase = await createClient();
+
+  const [settings, chapters, overview, organisers, audit, allowlist] = await Promise.all([
+    getSettings(),
+    getChapters(),
+    getAdminOverview(),
+    getOrganisers(),
+    getAuditLog(10),
+    supabase.from("admin_emails").select("*").order("created_at"),
+  ]);
+
+  const { counts } = overview;
 
   return (
     <>
-      <ConsoleBar session={session} area="Organiser console" nav={NAV} />
+      <ConsoleBar viewer={viewer} area="Organiser console" nav={ADMIN_NAV} />
 
       <div className="washi grain min-h-[100svh] py-12 sm:py-16">
         <Container>
@@ -42,142 +68,376 @@ export default async function AdminPage() {
             <Label tone="teal">{EVENT.host}</Label>
             <h1 className="d-tall mt-4 text-[clamp(2.6rem,7vw,4.5rem)] text-ink">Command</h1>
             <p className="serif-it mt-4 text-[1.1rem] leading-relaxed text-muted">
-              Signed in as {session.name}. Everything below is read from the build. Where a
-              control needs a backend that does not exist yet, it says so rather than pretending.
+              Signed in as {viewer.name}. Everything here is live: a switch flipped on this page
+              changes what every participant sees on their next request.
             </p>
           </header>
 
-          {demo ? (
-            <p
-              role="status"
-              className="mt-8 flex items-start gap-4 rounded-[var(--r-md)] border-2 border-red/30 bg-red/[0.06] px-6 py-5 text-[1rem] leading-relaxed text-ink"
-            >
-              <span aria-hidden className="mt-2 h-2.5 w-2.5 shrink-0 rounded-full bg-red" />
-              <span>
-                <strong className="font-semibold">Demo accounts are live.</strong> AOT_ACCOUNTS is
-                not set, so this deployment accepts the two public logins from the README. Set it
-                in the Vercel project settings before this console holds anything real.
-              </span>
-            </p>
+          {!settings.registration_open ? (
+            <div className="mt-8">
+              <Notice tone="error">
+                Registration is closed. Nobody can make a team, though anyone can still make an
+                account. Open it in Event controls below when you are ready to take sign-ups.
+              </Notice>
+            </div>
           ) : null}
 
-          <div className="mt-8 grid gap-6 lg:grid-cols-[1fr_1.15fr]">
-            <Panel
-              eyebrow="Access"
-              title="Account store"
-              aside={demo ? "Demo fallback" : "Configured"}
-            >
-              <dl>
-                <Row
-                  k="Source"
-                  v={demo ? "Built-in demo accounts" : "AOT_ACCOUNTS environment variable"}
-                />
-                <Row k="Participant accounts" v={accounts.participants} />
-                <Row k="Organiser accounts" v={accounts.admins} />
-                <Row k="Password storage" v="scrypt digest, N=16384" />
-                <Row k="Session" v="Signed HS256 cookie, 7 day maximum" />
-              </dl>
-              <p className="serif-it mt-6 text-[0.95rem] leading-relaxed text-muted">
-                Accounts are configuration, not a database. Add or revoke one by editing
-                AOT_ACCOUNTS and redeploying. The README carries the JSON shape and the command
-                that mints a password digest.
-              </p>
+          <div className="mt-8 grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-6">
+            <Stat value={counts.teams} label="Teams" note="Made, any status" />
+            <Stat value={counts.registered} label="Registered" note="Two people, paid" />
+            <Stat value={counts.forming} label="Forming" note="Incomplete" />
+            <Stat
+              value={`${counts.seated}/${settings.seats_cap}`}
+              label="Seats"
+              note="Held against the cap"
+            />
+            <Stat
+              value={counts.awaitingVerification}
+              label="To verify"
+              note="Payments waiting on you"
+            />
+            <Stat value={counts.participants} label="Accounts" note="Participants" />
+          </div>
+
+          <div className="mt-6 grid gap-6 lg:grid-cols-[1fr_1.1fr]">
+            <Panel eyebrow="Switches" title="Event controls">
+              <ActionForm action={updateSettings} submit="Save controls" tone="lime">
+                <div className="grid gap-4">
+                  {[
+                    {
+                      name: "registration_open",
+                      label: "Registration open",
+                      note: "Lets participants make and join teams.",
+                      on: settings.registration_open,
+                    },
+                    {
+                      name: "leaderboard_public",
+                      label: "Leaderboard published",
+                      note: "Opens every team's standing to every participant. Off means each team sees only its own.",
+                      on: settings.leaderboard_public,
+                    },
+                    {
+                      name: "online_payment",
+                      label: "Razorpay checkout",
+                      note: "Only takes effect if the deployment also holds the Razorpay keys.",
+                      on: settings.online_payment,
+                    },
+                  ].map((toggle) => (
+                    <label
+                      key={toggle.name}
+                      className="flex cursor-pointer items-start gap-4 rounded-[var(--r-md)] bg-cream-2 px-5 py-4"
+                    >
+                      <input
+                        type="checkbox"
+                        name={toggle.name}
+                        defaultChecked={toggle.on}
+                        className="mt-1 h-4.5 w-4.5 shrink-0 accent-[var(--teal)]"
+                      />
+                      <span>
+                        <span className="label block text-ink">{toggle.label}</span>
+                        <span className="mt-1 block text-[0.9rem] leading-relaxed text-muted">
+                          {toggle.note}
+                        </span>
+                      </span>
+                    </label>
+                  ))}
+
+                  <div className="grid gap-4 sm:grid-cols-2">
+                    <div>
+                      <label htmlFor="seats_cap" className="label block text-ink">
+                        Seat cap
+                      </label>
+                      <input
+                        id="seats_cap"
+                        name="seats_cap"
+                        type="number"
+                        min={1}
+                        defaultValue={settings.seats_cap}
+                        className="field mt-2.5"
+                      />
+                    </div>
+                    <div>
+                      <label htmlFor="entry_fee_inr" className="label block text-ink">
+                        Entry fee, rupees
+                      </label>
+                      <input
+                        id="entry_fee_inr"
+                        name="entry_fee_inr"
+                        type="number"
+                        min={0}
+                        defaultValue={settings.entry_fee_inr}
+                        className="field mt-2.5"
+                      />
+                    </div>
+                    <div>
+                      <label htmlFor="upi_id" className="label block text-ink">
+                        UPI ID
+                      </label>
+                      <input
+                        id="upi_id"
+                        name="upi_id"
+                        type="text"
+                        defaultValue={settings.upi_id ?? ""}
+                        placeholder="cesac@bank"
+                        className="field mt-2.5"
+                      />
+                    </div>
+                    <div>
+                      <label htmlFor="upi_payee_name" className="label block text-ink">
+                        Payee name
+                      </label>
+                      <input
+                        id="upi_payee_name"
+                        name="upi_payee_name"
+                        type="text"
+                        defaultValue={settings.upi_payee_name ?? ""}
+                        className="field mt-2.5"
+                      />
+                    </div>
+                  </div>
+
+                  <div>
+                    <label htmlFor="announcement" className="label block text-ink">
+                      Announcement
+                    </label>
+                    <textarea
+                      id="announcement"
+                      name="announcement"
+                      rows={3}
+                      maxLength={400}
+                      defaultValue={settings.announcement ?? ""}
+                      placeholder="Shown at the top of every participant console. Leave empty for none."
+                      className="field mt-2.5 min-h-[5rem] resize-y py-3 leading-relaxed"
+                    />
+                  </div>
+                </div>
+              </ActionForm>
             </Panel>
 
-            <Panel eyebrow="Registration" title="Teams" aside={EVENT.dateVenue}>
-              <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
-                {VITALS.map((vital) => (
+            <Panel eyebrow="Run of show" title="Chapter control" aside={EVENT.tagline}>
+              <div className="grid gap-4">
+                {chapters.map((chapter) => (
                   <div
-                    key={vital.label}
-                    className="rounded-[var(--r-md)] bg-cream-2 px-5 py-5 text-center"
+                    key={chapter.id}
+                    className="rounded-[var(--r-md)] border-2 border-ink/10 p-6"
                   >
-                    <p className="d-tall text-[2.2rem] leading-none text-ink">{vital.value}</p>
-                    <p className="label mt-2.5 text-teal">{vital.label}</p>
-                    <p className="mt-1.5 text-[0.85rem] leading-snug text-muted">{vital.note}</p>
+                    <div className="flex flex-wrap items-baseline justify-between gap-x-6 gap-y-2">
+                      <div className="flex items-baseline gap-4">
+                        <span className="d-tall text-[2rem] leading-none text-ink">
+                          {chapter.numeral}
+                        </span>
+                        <div>
+                          <h3 className="d-tall text-[1.25rem] text-ink">{chapter.title}</h3>
+                          <p className="label-sm mt-1 text-muted">
+                            {chapter.weight}% of score, cut {chapter.cut_from} to {chapter.cut_to}
+                          </p>
+                        </div>
+                      </div>
+                      <Chip
+                        tone={
+                          chapter.state === "open"
+                            ? "teal"
+                            : chapter.state === "graded"
+                              ? "lime"
+                              : chapter.state === "closed"
+                                ? "ink"
+                                : "muted"
+                        }
+                      >
+                        {chapter.state}
+                      </Chip>
+                    </div>
+
+                    <div className="mt-5 flex flex-wrap items-center gap-2.5">
+                      {CHAPTER_STATES.filter((s) => s.value !== chapter.state).map((s) => (
+                        <ActionForm
+                          key={s.value}
+                          action={setChapterState}
+                          submit={s.label}
+                          tone={s.value === "open" ? "lime" : "ghost"}
+                          className="contents"
+                        >
+                          <input type="hidden" name="chapter_id" value={chapter.id} />
+                          <input type="hidden" name="state" value={s.value} />
+                        </ActionForm>
+                      ))}
+
+                      <Link
+                        href={`/admin/grade/${chapter.id}`}
+                        className="pill pill-ghost mt-4"
+                      >
+                        Grade
+                      </Link>
+                    </div>
+
+                    <div className="mt-5 border-t border-ink/10 pt-5">
+                      <ActionForm
+                        action={applyCut}
+                        submit={`Cut to ${chapter.cut_to} ${chapter.cut_to === 1 ? "team" : "teams"}`}
+                        tone="danger"
+                        confirm={`This marks every team below the top ${chapter.cut_to} as eliminated at ${chapter.title}. Teams can be put back one at a time. Continue?`}
+                      >
+                        <input type="hidden" name="chapter_id" value={chapter.id} />
+                        <p className="serif-it text-[0.9rem] leading-relaxed text-muted">
+                          Ranks the teams still in by their score for this chapter and keeps the
+                          top {chapter.cut_to}. Score everyone first.
+                        </p>
+                      </ActionForm>
+                    </div>
                   </div>
                 ))}
-              </div>
-              <div className="mt-6">
-                <Empty>
-                  These are the caps from the deck, not a count of anyone who has signed up. No
-                  registration backend is connected to this site, so there is nothing to tally
-                  yet. When registration lands, the filled and remaining counts belong here.
-                </Empty>
               </div>
             </Panel>
           </div>
 
-          <section className="mt-6">
-            <Panel eyebrow="Run of show" title="Chapter control" aside={EVENT.tagline}>
-              <ol className="grid gap-4 md:grid-cols-3">
-                {CHAPTERS.map((chapter) => (
+          <div className="mt-6 grid gap-6 lg:grid-cols-[1.1fr_1fr]">
+            <Panel
+              eyebrow="Access"
+              title="Organisers"
+              aside={`${counts.organisers} with the role`}
+            >
+              <ul className="grid gap-2.5">
+                {organisers.map((person) => (
                   <li
-                    key={chapter.id}
-                    className="flex flex-col rounded-[var(--r-md)] border-2 border-ink/10 p-6"
+                    key={person.id}
+                    className="flex flex-wrap items-center gap-x-4 gap-y-2 rounded-[var(--r-md)] bg-cream-2 px-5 py-3.5"
                   >
-                    <div className="flex items-baseline justify-between gap-4">
-                      <span className="d-tall text-[2.5rem] leading-none text-ink">
-                        {chapter.numeral}
+                    <span className="min-w-0 flex-1">
+                      <span className="label block truncate text-ink">
+                        {person.full_name ?? person.email}
                       </span>
-                      <span className="label-sm rounded-full bg-cream-2 px-3 py-1.5 text-muted">
-                        {chapter.weight}%
-                      </span>
-                    </div>
-                    <h3 className="d-tall mt-4 text-[1.3rem] text-ink">{chapter.title}</h3>
-                    <p className="mt-2.5 text-[0.95rem] leading-relaxed text-muted">
-                      {chapter.task}
-                    </p>
-                    <dl className="mt-5 border-t border-ink/10 pt-4">
-                      <Row k="Collects" v={chapter.deliver} />
-                      <Row k="Cut" v={`${chapter.from} to ${chapter.to}`} />
-                      <Row k="Window" v={chapter.tools} />
-                    </dl>
-                  </li>
-                ))}
-              </ol>
-              <div className="mt-6">
-                <Empty>
-                  Opening a chapter, locking Chapter II prompts and publishing a cut all need the
-                  grading pipeline, which is not built. The deck describes it; nothing on this
-                  site implements it yet, so there are no buttons here to press.
-                </Empty>
-              </div>
-            </Panel>
-          </section>
-
-          <div className="mt-6 grid gap-6 lg:grid-cols-[1.15fr_1fr]">
-            <Panel eyebrow="Committee" title="Who runs it" aside={`${TEAM_TOTAL} people`}>
-              <dl>
-                <Row k="Faculty" v={`${FACULTY.length}`} />
-                <Row k="Board of executives" v={`${BOARD.length}`} />
-                <Row k="Associate executives" v={`${ASSOCIATES.length}`} />
-                {VERTICALS.map((vertical) => (
-                  <Row
-                    key={vertical.id}
-                    k={vertical.name}
-                    v={`${vertical.members.length} members`}
-                  />
-                ))}
-              </dl>
-            </Panel>
-
-            <Panel eyebrow="Prizes" title="Awards to call">
-              <ul className="grid gap-3">
-                {AWARDS.map((award) => (
-                  <li
-                    key={award.title}
-                    className="flex items-center gap-4 rounded-[var(--r-md)] bg-cream-2 px-5 py-3.5"
-                  >
-                    <span className="d-tall w-7 shrink-0 text-[1.2rem] text-teal">
-                      {award.chapter}
+                      <span className="label-sm block truncate text-muted">{person.email}</span>
                     </span>
-                    <span className="min-w-0">
-                      <span className="label block truncate text-ink">{award.title}</span>
-                      <span className="mt-1 block text-[0.85rem] text-muted">{award.note}</span>
-                    </span>
+                    <Chip tone={person.role === "owner" ? "ink" : "teal"}>{person.role}</Chip>
+                    {person.id === viewer.id ? (
+                      <span className="label-sm text-muted">You</span>
+                    ) : (
+                      <ActionForm
+                        action={setRole}
+                        submit="Remove"
+                        tone="danger"
+                        className="contents"
+                        confirm={`Remove organiser access from ${person.email}?`}
+                      >
+                        <input type="hidden" name="profile_id" value={person.id} />
+                        <input type="hidden" name="role" value="participant" />
+                      </ActionForm>
+                    )}
                   </li>
                 ))}
               </ul>
+
+              <div className="mt-7 border-t border-ink/10 pt-6">
+                <p className="label text-ink">Allowlist</p>
+                <p className="serif-it mt-2 text-[0.92rem] leading-relaxed text-muted">
+                  An email here becomes an organiser the moment it signs in, through any provider.
+                  Use it for people who do not have an account yet.
+                </p>
+
+                {allowlist.data?.length ? (
+                  <ul className="mt-4 grid gap-2">
+                    {allowlist.data.map((entry) => (
+                      <li
+                        key={entry.email}
+                        className="flex flex-wrap items-center gap-x-4 gap-y-1 rounded-[var(--r-md)] bg-cream-2 px-5 py-3"
+                      >
+                        <span className="min-w-0 flex-1 truncate text-[0.95rem] text-ink">
+                          {entry.email}
+                        </span>
+                        {entry.note ? (
+                          <span className="label-sm text-muted">{entry.note}</span>
+                        ) : null}
+                        <ActionForm
+                          action={removeOrganiserEmail}
+                          submit="Remove"
+                          tone="danger"
+                          className="contents"
+                        >
+                          <input type="hidden" name="email" value={entry.email} />
+                        </ActionForm>
+                      </li>
+                    ))}
+                  </ul>
+                ) : null}
+
+                <ActionForm action={addOrganiserEmail} submit="Add to the allowlist" tone="solid">
+                  <div className="mt-4 grid gap-4 sm:grid-cols-2">
+                    <div>
+                      <label htmlFor="organiser-email" className="label block text-ink">
+                        Email
+                      </label>
+                      <input
+                        id="organiser-email"
+                        name="email"
+                        type="email"
+                        required
+                        placeholder="name@vit.edu"
+                        className="field mt-2.5"
+                      />
+                    </div>
+                    <div>
+                      <label htmlFor="organiser-note" className="label block text-ink">
+                        Note
+                      </label>
+                      <input
+                        id="organiser-note"
+                        name="note"
+                        type="text"
+                        placeholder="Technical vertical"
+                        className="field mt-2.5"
+                      />
+                    </div>
+                  </div>
+                </ActionForm>
+              </div>
+            </Panel>
+
+            <Panel eyebrow="Record" title="Recent actions">
+              {audit.length ? (
+                <ul className="grid gap-2">
+                  {audit.map((entry) => (
+                    <li
+                      key={entry.id}
+                      className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1 border-b border-ink/10 py-3 last:border-0"
+                    >
+                      <span className="font-mono text-[0.85rem] text-ink">{entry.action}</span>
+                      <span className="label-sm text-muted">
+                        {new Date(entry.created_at).toLocaleString("en-IN", {
+                          dateStyle: "medium",
+                          timeStyle: "short",
+                        })}
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+              ) : (
+                <Empty>
+                  Nothing has happened yet. Every payment verified, chapter opened, score set and
+                  cut applied is written here with who did it, so a disputed decision has a record.
+                </Empty>
+              )}
+            </Panel>
+          </div>
+
+          <div className="mt-6">
+            <Panel eyebrow="Teams" title="Registration and payments" aside={`${counts.teams} teams`}>
+              {counts.teams === 0 ? (
+                <Empty>
+                  No team has been made yet. Teams appear here the moment somebody makes one, with
+                  their payment state and the controls to verify it.
+                </Empty>
+              ) : (
+                <>
+                  <p className="serif-it text-[1rem] leading-relaxed text-muted">
+                    {counts.awaitingVerification > 0
+                      ? `${counts.awaitingVerification} ${counts.awaitingVerification === 1 ? "payment is" : "payments are"} waiting on a check.`
+                      : "No payment is waiting on a check."}
+                  </p>
+                  <Link href="/admin/teams" className="pill pill-lime mt-6">
+                    Open the team list
+                  </Link>
+                </>
+              )}
             </Panel>
           </div>
         </Container>

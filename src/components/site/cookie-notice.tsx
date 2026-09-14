@@ -16,7 +16,7 @@ import {
  * The cookie notice.
  *
  * It tells the truth about the build it ships with. Right now that build loads
- * no trackers, and its only cookie is the sign-in session, which is strictly
+ * no trackers, and its only cookies are the sign-in session, which is strictly
  * necessary and needs no consent, so the notice is a statement with one dismiss
  * button, not a fake choice between Accept and Manage Preferences that both do
  * nothing.

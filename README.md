@@ -183,13 +183,20 @@ glyphs, pauses when scrolled out of view, and never re-renders.
 
 ## 🔒 Privacy and tracking
 
-Audited, and the policy pages are written against what is actually deployed:
+Audited, and the policy page is written against what is actually deployed:
 
-- No analytics package, no tag manager, no third-party scripts, no embeds. The
+- No analytics package, no tag manager, no embeds, no tracking cookies. The
   audio file is served from this origin, not from a player embed.
-- One cookie, and only once you sign in: `aot_session`, HttpOnly, SameSite=Lax,
-  holding a signed token with an account id, a role and a display name. Nothing
-  else. Browsing signed out sets no cookie at all.
+- **No cookies at all until you sign in.** Signing in sets the Supabase Auth
+  session cookies, named `sb-…`, HttpOnly and SameSite=Lax. Strictly necessary:
+  they exist only because someone asked to sign in.
+- Third parties, each named on the privacy page and each contacted only when
+  someone chooses it: **Supabase** holds the accounts and the data, **Google /
+  GitHub / Facebook** only if a visitor presses that button, and **Razorpay**
+  only when a team presses pay, and only if the keys are set.
+- Card and UPI details never touch this site. Razorpay's own window collects
+  them; we store the order and payment identifiers so an organiser can find the
+  payment, and nothing else.
 - Three keys in `localStorage` and nothing else: `cesac.consent` (the notice's
   answer, stored there because setting a cookie in order to ask about cookies is
   absurd) and `cesac.music` / `cesac.music.volume` (whether the event page's
@@ -201,76 +208,74 @@ Audited, and the policy pages are written against what is actually deployed:
   becomes a real allow/decline gate with two equally weighted buttons, and
   nothing loads until one is pressed.
 
-## 🔑 Sign in
+## 🔑 Accounts and the consoles
 
-Two doors on one page, `/signin`, switched by a tab and reachable directly as
-`/signin?role=admin`. Participants land on `/dashboard`, organisers on `/admin`.
-Organisers need a six digit access code on top of the password; participants do
-not.
+One door, `/signin`, with a tab for signing in and a tab for making an account.
+Four ways in: Google, GitHub, Facebook, or an email and password. Everyone signs
+in the same way, and the role on the account decides where they land:
+participants on `/dashboard`, organisers on `/admin`.
 
 **How it holds together**
 
 | Piece | File | What it does |
 | --- | --- | --- |
-| Session | `src/lib/auth/session.ts` | Signs and verifies one HS256 cookie. Payload is an account id, a role and a display name, nothing more. |
-| Accounts | `src/lib/auth/accounts.ts` | The store. Reads `AOT_ACCOUNTS`, verifies scrypt digests in constant time. |
-| Guards | `src/lib/auth/guard.ts` | `requireParticipant()` / `requireAdmin()`. The authoritative check, run per page. |
-| Actions | `src/app/actions/auth.ts` | `signIn` and `signOut`, with the attempt throttle and the open-redirect check. |
-| Proxy | `src/proxy.ts` | The early bounce only. Optimistic, never trusted. |
+| Config | `src/lib/supabase/config.ts` | The project URL and publishable key. Public by design, checked in so a fresh deploy just works. |
+| Clients | `src/lib/supabase/{client,server,proxy}.ts` | Browser, per-request server, and the proxy's refreshing client. |
+| Types | `src/lib/supabase/database.types.ts` | Generated from the live schema. `npm run db:types` after every migration. |
+| Guards | `src/lib/auth/guard.ts` | `requireParticipant()` / `requireAdmin()`. The authoritative check, run per page, memoised per request. |
+| Actions | `src/app/actions/{auth,team,submissions,admin}.ts` | Every mutation, grouped by what it touches. |
+| Callback | `src/app/auth/callback/route.ts` | Where OAuth, email confirmation and password resets come back to. |
+| Proxy | `src/proxy.ts` | Refreshes the session, then bounces the obvious cases. Optimistic, never trusted. |
 
-A wrong ID and a wrong password take the same time to answer, because the
-password is hashed either way: the gate will not tell you which accounts exist.
-Eight failures on one ID pauses it for five minutes. Cross-role traffic is
-redirected to the console you do hold, not refused, so `/admin` never confirms
-itself to a participant.
+**The security model, in one paragraph**
 
-**Configuring accounts**
+There is no service role key in this codebase. Organiser powers ride on the
+signed-in user's own role, and every rule is enforced by Postgres rather than by
+the app: reads go through row level security, and the writes that carry real
+invariants go through `security definer` functions that re-check `is_admin()`
+themselves. A participant calling an organiser endpoint directly gets
+`Organisers only.` from the database, not from a route handler. Nobody can
+promote themselves: a trigger blocks any role change that an organiser did not
+make. Uploads land in a private bucket under `{team_id}/…`, and the storage
+policy checks that first path segment, so one team cannot write into another's
+folder or read out of it.
 
-There is no database yet, so the account list is one environment variable. Mint
-a digest, then write the JSON:
+**Becoming an organiser**
 
-```bash
-npm run hash-password -- "the password"
-# scrypt$16384$…$…
-```
+An email in `public.admin_emails` becomes an organiser the moment it signs in,
+through any provider. That is how the first one gets in, since there is nobody
+to promote them yet. After that, organisers add and remove each other from the
+console. `viral.1251070777@vit.edu` is seeded.
 
-```jsonc
-// AOT_ACCOUNTS, one line, in .env.local and in the Vercel project settings
-[
-  { "id": "team-01", "role": "participant", "identifier": "duo@vit.edu",
-    "name": "Team Vanguard", "partner": "A. Partner", "password": "scrypt$16384$…$…" },
-  { "id": "org-tech-01", "role": "admin", "identifier": "cesac.technical",
-    "name": "Technical Vertical", "code": "402193", "password": "scrypt$16384$…$…" }
-]
-```
+**What organisers control**
 
-Also set `AOT_SESSION_SECRET` to 32 characters or more. Changing it signs
-everyone out, which is how you revoke every session at once. See `.env.example`.
+Registration open or shut, the seat cap, the entry fee, the UPI ID, an
+announcement banner, whether the leaderboard is published, and whether the
+Razorpay button appears. Per chapter: open, close, mark graded, score each
+hand-in, and apply the cut. Every one of those writes a row to `audit_log` with
+who did it.
 
-**Demo accounts**
+**The entry fee**
 
-Leave `AOT_ACCOUNTS` unset and the site falls back to two public logins so the
-flow is testable on a fresh clone. It says so on the sign-in page and across the
-top of the organiser console, so this can never be mistaken for a live store.
+Two routes in, one way out. A team pays by UPI or at the desk and records the
+reference, or pays through Razorpay if the keys are set and the switch is on.
+Either way the payment lands on `submitted` and an **organiser** marks it
+verified. The site never verifies its own payment. A team is registered, and
+gets a seat, once it has two people and a verified payment.
 
-| Role | ID | Password | Code |
-| --- | --- | --- | --- |
-| Participant | `team@vit.edu` | `attackontoken` | |
-| Organiser | `cesac.organiser` | `survivethetoken` | `402193` |
+**Chapter II really locks**
 
-**Not built yet**
-
-Registration, submissions, grading and the leaderboard have no backend. Both
-consoles say so in the place the data will go, rather than showing a placeholder
-number. Nothing on this site invents a figure, and a console is the easiest
-place in a build to start.
+`chapters.allow_edit_after_submit` is false for Token Trials, so handing in sets
+the row to `locked` in the same statement. Closing a chapter locks every
+outstanding hand-in in it. Neither is undone by the app, because neither is the
+app's decision to make.
 
 ## 🛠 Stack
 
-Next.js 16 (App Router, Turbopack) · React 19 · TypeScript 5 · Tailwind CSS 4.
-No 3D runtime, no animation library, no audio library, no auth framework. The
-petals are one canvas, the parallax is one transform, and sign-in is `jose` plus
-Node's own scrypt.
+Next.js 16 (App Router, Turbopack) · React 19 · TypeScript 5 · Tailwind CSS 4 ·
+Supabase (Postgres, Auth, Storage). No 3D runtime, no animation library, no audio
+library, no ORM and no auth framework on top of Supabase. The petals are one
+canvas, the parallax is one transform, and the access rules are SQL.
 
 ## 🚀 Quick Start
 
@@ -289,13 +294,17 @@ src/app/
   about/ people/ events/    committee, roster, calendar
   events/attack-on-token/   the event, with its own OG image
   privacy/ terms/           policy pages
-  signin/                   the gate, both roles; signin/help for lockouts
-  dashboard/                participant console (signed in, guarded)
-  admin/                    organiser console (signed in, guarded)
-  actions/auth.ts           signIn / signOut server actions
-src/proxy.ts                early bounce for /signin, /dashboard, /admin
+  signin/ signup/           the gate; signin/help resets a password
+  auth/callback/            where OAuth and email links come back to
+  account/password/         set a new password after a reset
+  dashboard/                participant console (guarded)
+  admin/                    organiser console (guarded)
+    teams/                  every team, and the payment checks
+    grade/[chapterId]/      one chapter's hand-ins, with a score box each
+  actions/                  auth, team, submissions, admin
+src/proxy.ts                refreshes the session, then the early bounce
 src/components/
-  console/    the signed-in bar, panel, empty state and row
+  console/    the signed-in bar, panels, forms, team setup, hand-in, payment
   aot/        crest, wall mark, stickers, parallax rig, shared bits
   sections/
     home/     the CESAC community sections
@@ -303,10 +312,12 @@ src/components/
     ribbon    legal, page-head, roster (shared)
   site/       header, footer, cookie notice, petal cursor, music box
 src/lib/
-  auth/       session.ts (JWT), accounts.ts (store), guard.ts (page checks)
+  supabase/   config, browser/server/proxy clients, generated types
+  auth/       guard.ts (the page checks), session.ts (the viewer shape)
+  data/       console.ts (every read), hand-ins.ts (what each chapter collects),
+              cesac.ts, event.ts, committee.ts
   consent.ts  consent store, read through useSyncExternalStore
   audio.ts    track config and the music preference store
-  data/       cesac.ts, event.ts, committee.ts
 public/audio/ the event track (drop attack-on-token.mp3 here)
 ```
 
@@ -338,13 +349,17 @@ official wording.
 - [x] CESAC community site: home, about, people, events
 - [x] Attack on Token event page
 - [x] Privacy policy, terms, cookie notice
-- [x] Sign in, both roles: session cookie, guarded routes, sign out
-- [x] Participant console and organiser console
+- [x] Accounts: email and password, Google, GitHub, Facebook
+- [x] Registration: teams of two, join codes, seats against the cap
+- [x] Entry fee: offline references and Razorpay, both verified by an organiser
+- [x] Chapter hand-ins with uploads, and Chapter II's hard lock
+- [x] Grading, the weighted leaderboard, and the cut
+- [x] Organiser console: switches, payments, chapter control, roles, audit log
+- [ ] Turn off email confirmation or add SMTP before sign-ups open at scale
+- [ ] Register the OAuth apps and add the redirect URLs (see `HANDOVER.md`)
 - [ ] Clear the event soundtrack for public performance, or replace it
 - [ ] A published committee inbox for the contact card (`CONTACT.email`)
-- [ ] Registration flow, so accounts are created rather than configured
-- [ ] Move accounts from `AOT_ACCOUNTS` to a database, and the throttle with them
-- [ ] Submissions, grading pipeline and the live Chapter II leaderboard
+- [ ] The live Chapter II adversarial test runner, which is still a manual score
 - [ ] Legal review of `/privacy` and `/terms` by the department before launch
 
 ## 🤝 Contributing

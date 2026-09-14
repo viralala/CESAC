@@ -3,6 +3,7 @@ import Link from "next/link";
 import { Container, Label } from "@/components/aot/bits";
 import { Reveal } from "@/components/aot/reveal";
 import { Sticker } from "@/components/aot/stickers";
+import { getEventStats } from "@/lib/data/console";
 import { ENTRY, EVENT } from "@/lib/data/event";
 
 /**
@@ -10,7 +11,11 @@ import { ENTRY, EVENT } from "@/lib/data/event";
  * (date, venue) stated plainly instead of hidden — a duo deciding tonight
  * needs to know what is and is not locked.
  */
-export function EventEnlist() {
+export async function EventEnlist() {
+  const stats = await getEventStats();
+  const seatsLeft = Math.max(stats.seats_cap - stats.seats_taken, 0);
+  const full = stats.registration_open && seatsLeft === 0;
+
   return (
     <section id="enlist" className="scroll-mt-24 bg-cream py-10 sm:py-16">
       <Container>
@@ -25,9 +30,11 @@ export function EventEnlist() {
               className="absolute right-6 top-8 z-20 text-[clamp(0.66rem,1vw,0.8rem)] sm:right-12"
             >
               <span>
-                100
+                {stats.registration_open ? seatsLeft : stats.seats_cap * 2}
                 <br />
-                <span className="label-sm opacity-70">seats</span>
+                <span className="label-sm opacity-70">
+                  {stats.registration_open ? "seats left" : "seats"}
+                </span>
               </span>
             </Sticker>
 
@@ -59,14 +66,35 @@ export function EventEnlist() {
             </ol>
 
             <div className="relative mt-12 flex flex-wrap items-center gap-4">
-              <Link href="/signin" className="pill pill-lime px-8 py-4 text-[0.95rem]">
-                Enlist now
-              </Link>
+              {/*
+                Live, not decorative: the button reads what organisers have
+                actually switched on. Inviting a duo to register into a closed
+                form is how a site loses them.
+              */}
+              {full ? (
+                <span className="pill pointer-events-none px-8 py-4 text-[0.95rem] opacity-70">
+                  All {stats.seats_cap} teams are in
+                </span>
+              ) : (
+                <Link
+                  href={stats.registration_open ? "/signup" : "/signup?next=%2Fdashboard"}
+                  className="pill pill-lime px-8 py-4 text-[0.95rem]"
+                >
+                  {stats.registration_open ? "Enlist now" : "Make an account"}
+                </Link>
+              )}
               <a href="#chapters" className="pill pill-ghost-light">
                 Re-read the chapters
               </a>
               <p className="label-sm ml-auto text-cream/50">{EVENT.dateVenue}</p>
             </div>
+
+            {!stats.registration_open ? (
+              <p className="serif-it relative mt-6 max-w-[54ch] text-[1rem] leading-relaxed text-cream/60">
+                Registration has not opened yet. Make an account now and the console will let you
+                build your team the moment it does, ahead of everyone who waits.
+              </p>
+            ) : null}
           </div>
         </Reveal>
       </Container>

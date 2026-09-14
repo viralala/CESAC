@@ -1,50 +1,68 @@
 import { NextResponse, type NextRequest } from "next/server";
 
-import { homeFor, SESSION_COOKIE, verifySession } from "@/lib/auth/session";
+import { updateSession } from "@/lib/supabase/proxy";
 
 /**
- * The early bounce, and nothing more.
+ * Two jobs, in this order.
  *
- * Next's own guidance is that proxy is an optimistic check, not the
- * authorisation layer: it keeps a signed-out visitor from loading the console
- * shell at all, while `requireParticipant` / `requireAdmin` do the real check
- * on the server for every protected page. Deleting this file would cost a
- * flash of console chrome, not access control.
+ * First, refresh the session. Access tokens are short lived and a Server
+ * Component cannot write a cookie, so if this does not happen here nothing
+ * renews it and a signed-in visitor is quietly logged out mid-event.
+ *
+ * Second, an optimistic bounce. It only asks whether there is a valid session,
+ * never what role it carries, because a role check belongs where it can be
+ * trusted and be current: requireParticipant and requireAdmin on the page
+ * itself. This is here to save a render, not to be the lock.
  */
-const AREAS = [
-  { prefix: "/admin", role: "admin" as const },
-  { prefix: "/dashboard", role: "participant" as const },
-];
-
 export async function proxy(request: NextRequest) {
-  const { pathname } = request.nextUrl;
-  const session = await verifySession(request.cookies.get(SESSION_COOKIE)?.value);
+  const { response, user } = await updateSession(request);
+  const { pathname, search } = request.nextUrl;
 
-  // Already through the gate? The gate is not where you want to be.
-  if (pathname === "/signin") {
-    if (!session) return NextResponse.next();
-    return NextResponse.redirect(new URL(homeFor(session.role), request.url));
+  const isGate = pathname === "/signin" || pathname === "/signup";
+  const isConsole =
+    pathname === "/dashboard" ||
+    pathname.startsWith("/dashboard/") ||
+    pathname === "/admin" ||
+    pathname.startsWith("/admin/") ||
+    pathname.startsWith("/account");
+
+  if (!user && isConsole) {
+    const to = request.nextUrl.clone();
+    to.pathname = "/signin";
+    to.search = `?next=${encodeURIComponent(pathname + search)}`;
+    return keepCookies(NextResponse.redirect(to), response);
   }
 
-  const area = AREAS.find(
-    (a) => pathname === a.prefix || pathname.startsWith(`${a.prefix}/`),
-  );
-  if (!area) return NextResponse.next();
-
-  if (!session) {
-    const gate = new URL("/signin", request.url);
-    gate.searchParams.set("role", area.role);
-    gate.searchParams.set("next", pathname);
-    return NextResponse.redirect(gate);
+  // Signed in and standing at the gate. The consoles sort out which one.
+  if (user && isGate) {
+    const to = request.nextUrl.clone();
+    to.pathname = "/dashboard";
+    to.search = "";
+    return keepCookies(NextResponse.redirect(to), response);
   }
 
-  if (session.role !== area.role) {
-    return NextResponse.redirect(new URL(homeFor(session.role), request.url));
-  }
+  return response;
+}
 
-  return NextResponse.next();
+/**
+ * A redirect built here is a different response from the one updateSession
+ * refreshed, and the refreshed tokens are on that one. Without this the
+ * session is renewed and then thrown away on every bounce.
+ */
+function keepCookies(to: NextResponse, from: NextResponse): NextResponse {
+  for (const cookie of from.cookies.getAll()) {
+    to.cookies.set(cookie);
+  }
+  return to;
 }
 
 export const config = {
-  matcher: ["/signin", "/admin/:path*", "/dashboard/:path*"],
+  matcher: [
+    /*
+     * Everything except static assets, image optimisation and the auth
+     * callback. The callback sets the session cookies itself and must not be
+     * intercepted on the way in.
+     */
+    "/((?!_next/static|_next/image|auth/callback|favicon.ico|icon.svg|opengraph-image|.*\.(?:svg|png|jpg|jpeg|gif|webp|avif|mp3|ogg|wav|woff2?)$).*)",
+  ],
 };

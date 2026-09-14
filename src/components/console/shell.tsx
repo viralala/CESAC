@@ -4,7 +4,7 @@ import type { ReactNode } from "react";
 import { signOut } from "@/app/actions/auth";
 import { Emblem } from "@/components/aot/art";
 import { Container, Label } from "@/components/aot/bits";
-import type { Session } from "@/lib/auth/session";
+import type { Viewer } from "@/lib/auth/session";
 
 /**
  * The signed-in chrome.
@@ -18,15 +18,15 @@ import type { Session } from "@/lib/auth/session";
  * looking at is readable from across a room on event day.
  */
 export function ConsoleBar({
-  session,
+  viewer,
   area,
   nav,
 }: {
-  session: Session;
+  viewer: Viewer;
   area: string;
   nav: readonly { href: string; label: string }[];
 }) {
-  const isAdmin = session.role === "admin";
+  const isAdmin = viewer.isAdmin;
 
   return (
     <header
@@ -64,7 +64,7 @@ export function ConsoleBar({
 
         <div className="ml-auto flex items-center gap-3">
           <span className="hidden text-right sm:block">
-            <span className="label block text-cream">{session.name}</span>
+            <span className="label block text-cream">{viewer.name}</span>
             <span className="label-sm block text-cream/50">
               {isAdmin ? "Organiser" : "Participant"}
             </span>
@@ -93,7 +93,7 @@ export function Panel({
 }: {
   eyebrow?: string;
   title: string;
-  aside?: string;
+  aside?: ReactNode;
   children: ReactNode;
   className?: string;
 }) {
@@ -104,7 +104,7 @@ export function Panel({
           {eyebrow ? <Label tone="teal">{eyebrow}</Label> : null}
           <h2 className="d-tall mt-2.5 text-[1.75rem] text-ink">{title}</h2>
         </div>
-        {aside ? <p className="label text-muted">{aside}</p> : null}
+        {aside ? <div className="label text-muted">{aside}</div> : null}
       </header>
       <div className="mt-6">{children}</div>
     </section>
@@ -114,9 +114,9 @@ export function Panel({
 /**
  * The empty state.
  *
- * Every panel on both consoles that has no data yet uses this rather than a
- * placeholder number. Nothing on this site invents a figure to look finished,
- * and a console is the easiest place in a build to start.
+ * For a panel whose data does not exist yet. Says what has to happen first
+ * rather than showing a placeholder number, because a console that opens on
+ * invented figures teaches its users to distrust the real ones.
  */
 export function Empty({ children }: { children: ReactNode }) {
   return (
@@ -132,6 +132,63 @@ export function Row({ k, v }: { k: string; v: ReactNode }) {
     <div className="flex flex-wrap items-baseline justify-between gap-x-6 gap-y-1 border-b border-ink/10 py-3.5 last:border-0">
       <dt className="label text-muted">{k}</dt>
       <dd className="text-[1.02rem] text-ink">{v}</dd>
+    </div>
+  );
+}
+
+/**
+ * The outcome of an action, said once, above the form that caused it.
+ * Red carries the same weight here as everywhere else on the site: it is the
+ * spot colour for something that needs attention, never decoration.
+ */
+export function Notice({ tone, children }: { tone: "error" | "ok"; children: ReactNode }) {
+  const bad = tone === "error";
+  return (
+    <p
+      role={bad ? "alert" : "status"}
+      className={`flex items-start gap-3 rounded-[var(--r-md)] border-2 px-5 py-4 text-[0.98rem] leading-relaxed text-ink ${
+        bad ? "border-red/30 bg-red/[0.06]" : "border-teal/25 bg-teal/[0.06]"
+      }`}
+    >
+      <span
+        aria-hidden
+        className={`mt-[0.4rem] h-2.5 w-2.5 shrink-0 rounded-full ${bad ? "bg-red" : "bg-teal"}`}
+      />
+      <span>{children}</span>
+    </p>
+  );
+}
+
+export type ChipTone = "teal" | "lime" | "muted" | "red" | "ink";
+
+/** A state, worn as a pill. The console uses these instead of coloured text. */
+export function Chip({ tone = "muted", children }: { tone?: ChipTone; children: ReactNode }) {
+  const skin: Record<ChipTone, string> = {
+    teal: "bg-teal text-white",
+    lime: "bg-lime text-ink",
+    muted: "bg-cream-2 text-muted",
+    red: "bg-red/10 text-red-deep",
+    ink: "bg-ink text-cream",
+  };
+  return (
+    <span className={`label-sm whitespace-nowrap rounded-full px-3 py-1.5 ${skin[tone]}`}>
+      {children}
+    </span>
+  );
+}
+
+/**
+ * One counted thing.
+ *
+ * Only ever rendered from a number the build actually counted. Where there is
+ * nothing to count, the panel uses Empty instead.
+ */
+export function Stat({ value, label, note }: { value: ReactNode; label: string; note?: string }) {
+  return (
+    <div className="rounded-[var(--r-md)] bg-cream-2 px-5 py-5 text-center">
+      <p className="d-tall text-[2.2rem] leading-none text-ink">{value}</p>
+      <p className="label mt-2.5 text-teal">{label}</p>
+      {note ? <p className="mt-1.5 text-[0.85rem] leading-snug text-muted">{note}</p> : null}
     </div>
   );
 }
