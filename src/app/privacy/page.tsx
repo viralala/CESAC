@@ -13,9 +13,9 @@ export const metadata: Metadata = {
 
 /**
  * This describes what the site does TODAY, verified against the source: no
- * analytics package is installed, no cookie is set, no third-party script is
- * loaded, fonts are self-hosted at build time by next/font, and the sign-in
- * form has no backend behind it.
+ * analytics package is installed, no third-party script is loaded, fonts are
+ * self-hosted at build time by next/font, and the only cookie the site sets is
+ * the sign-in session cookie, which exists only once someone signs in.
  *
  * If any of that changes, this page changes in the same commit. A privacy
  * policy that describes an intention rather than the build is worthless.
@@ -24,7 +24,8 @@ const BLOCKS: readonly LegalBlock[] = [
   {
     heading: "The short version",
     body: [
-      "This website does not track you. It sets no cookies, runs no analytics, embeds no social widgets, and loads no third-party scripts. There is no advertising on it and nothing on it is sold or shared.",
+      "This website does not track you. It runs no analytics, embeds no social widgets, and loads no third-party scripts. There is no advertising on it and nothing on it is sold or shared.",
+      "It sets exactly one cookie, and only if you sign in. Browsing the site signed out sets none at all.",
       "You can read every page of this site without giving us anything at all.",
     ],
   },
@@ -32,6 +33,8 @@ const BLOCKS: readonly LegalBlock[] = [
     heading: "Cookies and local storage",
     body: [
       "The site sets no cookies for analytics, advertising or profiling.",
+      "Signing in sets one cookie, named aot_session. It holds a signed token carrying your account id, whether you are a participant or an organiser, and the name shown at the top of your console. It carries no password, no email address and no team data. It is marked HttpOnly, so no script on the page can read it, and SameSite=Lax, so it is not sent from other sites.",
+      "If you leave the box unticked it is a session cookie and your browser discards it when you close it. If you tick it, it lasts seven days. Signing out deletes it immediately.",
       "Three preferences are saved in your browser's local storage, and nothing else is: cesac.consent records your answer to the cookie notice so it does not reappear on every page, and cesac.music and cesac.music.volume remember whether you turned the music on the Attack on Token page on or off and how loud you set it.",
       "Local storage stays on your device. It is not a cookie, it is not sent to our server, it is not attached to requests, and it is not readable by anyone else. Nothing in it identifies you.",
       "You can clear it at any time through your browser's site-data settings. The notice will simply ask again and the music control will go back to its default.",
@@ -61,8 +64,11 @@ const BLOCKS: readonly LegalBlock[] = [
   {
     heading: "The sign-in form",
     body: [
-      "The sign-in page is a front-end shell. It is not yet connected to any server, database or authentication provider. Nothing you type into it is transmitted anywhere, stored, or logged, and submitting it only shows a message on screen.",
-      "When accounts and event registration go live, this page will be updated before that happens to describe exactly what is collected, why, how long it is kept and who can see it.",
+      "Submitting the sign-in form sends the ID and password you typed to this site's own server, over HTTPS, so they can be checked against the account list. Nothing is sent to a third party and there is no authentication provider in the chain.",
+      "Passwords are never stored in readable form. The account list holds a scrypt digest of each password, which cannot be turned back into the password. What you typed is checked against the digest and then discarded. It is not written to a log or a database.",
+      "There is no user database on this site yet, so the account list is configuration held by the site's hosting settings. It contains only what a sign-in needs: an ID, a display name, a password digest, and for organisers an access code.",
+      "Failed attempts are counted in memory for five minutes so one browser cannot try passwords endlessly. That counter holds the ID that was tried and nothing else, and it is not written to disk.",
+      "When event registration goes live this page will be updated before that happens to describe exactly what registration collects, why, how long it is kept and who can see it.",
     ],
   },
   {
@@ -80,7 +86,8 @@ const BLOCKS: readonly LegalBlock[] = [
   {
     heading: "Your rights",
     body: [
-      "Because the site holds no personal data about you, there is nothing for us to export, correct or erase. If that changes, this page will describe how to make such a request.",
+      "If you have never signed in, the site holds nothing about you and there is nothing for us to export, correct or erase.",
+      "If you hold an account, the only data attached to it is the ID, display name and password digest the committee entered for you. Ask the Technical vertical to correct or remove it and they can do so directly.",
       "If you believe something on this site is handling your data in a way this page does not describe, tell us and we will fix it.",
     ],
   },

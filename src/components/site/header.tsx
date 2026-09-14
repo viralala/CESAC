@@ -45,6 +45,10 @@ export function SiteHeader() {
 
   const isOn = (href: string) => pathname === href || pathname.startsWith(`${href}/`);
 
+  // Past the gate the console draws its own bar. Two stacked navs, one of them
+  // pointing back out of the thing you just signed into, is not a header.
+  if (isOn("/dashboard") || isOn("/admin")) return null;
+
   return (
     <header className="fixed inset-x-0 top-0 z-50 px-3 pt-3 sm:px-5 sm:pt-4">
       <div

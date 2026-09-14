@@ -1,8 +1,9 @@
 "use client";
 
 import Link from "next/link";
-import { useId, useState, type FormEvent } from "react";
+import { useActionState, useId, useState } from "react";
 
+import { signIn, type SignInState } from "@/app/actions/auth";
 import { Emblem, WallMark } from "@/components/aot/art";
 import { Container, Label, Ticks } from "@/components/aot/bits";
 import { EVENT } from "@/lib/data/event";
@@ -20,6 +21,7 @@ const ROLES: Record<
     idType: string;
     idHint: string;
     submit: string;
+    pending: string;
     aside: string;
   }
 > = {
@@ -32,6 +34,7 @@ const ROLES: Record<
     idType: "email",
     idHint: "Use the email your team registered with.",
     submit: "Enter the gate",
+    pending: "Opening the gate",
     aside:
       "Not registered yet? Entry is ₹200 per team of two. Registration opens with the date announcement.",
   },
@@ -44,6 +47,7 @@ const ROLES: Record<
     idType: "text",
     idHint: "Issued by the Technical vertical. Not the same as your team login.",
     submit: "Open command",
+    pending: "Checking credentials",
     aside: "Lost access? Ask the Technical vertical to reissue your organiser credentials.",
   },
 };
@@ -51,17 +55,34 @@ const ROLES: Record<
 /**
  * Crypko's shell again: one rounded frame holding a deep panel and a white
  * form, with Yonika's pill fields and buttons.
+ *
+ * The form posts to the `signIn` server action. On success the action
+ * redirects and this component never re-renders; on failure it hands back a
+ * message, which is why the only local state left is the role tab.
  */
-export function SignInPanel({ initialRole }: { initialRole: Role }) {
+export function SignInPanel({
+  initialRole,
+  next,
+  demo,
+}: {
+  initialRole: Role;
+  next?: string;
+  demo: boolean;
+}) {
   const [role, setRole] = useState<Role>(initialRole);
-  const [notice, setNotice] = useState(false);
+  const [state, formAction, pending] = useActionState<SignInState, FormData>(signIn, {});
   const uid = useId();
   const copy = ROLES[role];
   const isAdmin = role === "admin";
 
-  function onSubmit(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    setNotice(true);
+  // A message raised against the participant form must not sit under the
+  // organiser form after a tab switch.
+  const [shownFor, setShownFor] = useState<Role>(initialRole);
+  const error = shownFor === role ? state.error : undefined;
+  const badField = shownFor === role ? state.field : undefined;
+
+  function onSubmit() {
+    setShownFor(role);
   }
 
   return (
@@ -142,10 +163,7 @@ export function SignInPanel({ initialRole }: { initialRole: Role }) {
                         role="tab"
                         type="button"
                         aria-selected={active}
-                        onClick={() => {
-                          setRole(key);
-                          setNotice(false);
-                        }}
+                        onClick={() => setRole(key)}
                         className={`label rounded-full px-4 py-3 transition-colors ${
                           active
                             ? key === "admin"
@@ -160,7 +178,10 @@ export function SignInPanel({ initialRole }: { initialRole: Role }) {
                   })}
                 </div>
 
-                <form onSubmit={onSubmit} className="mt-8 grid gap-5">
+                <form action={formAction} onSubmit={onSubmit} className="mt-8 grid gap-5">
+                  <input type="hidden" name="role" value={role} />
+                  {next ? <input type="hidden" name="next" value={next} /> : null}
+
                   <div>
                     <label htmlFor={`${uid}-id`} className="label block text-ink">
                       {copy.idLabel}
@@ -172,8 +193,9 @@ export function SignInPanel({ initialRole }: { initialRole: Role }) {
                       type={copy.idType}
                       autoComplete={isAdmin ? "username" : "email"}
                       required
+                      aria-invalid={badField === "identifier" || undefined}
                       placeholder={copy.idPlaceholder}
-                      className="field mt-2.5"
+                      className={`field mt-2.5 ${badField === "identifier" ? "border-red" : ""}`}
                     />
                     <p className="serif-it mt-2 text-[0.85rem] text-muted">{copy.idHint}</p>
                   </div>
@@ -188,8 +210,9 @@ export function SignInPanel({ initialRole }: { initialRole: Role }) {
                       type="password"
                       autoComplete="current-password"
                       required
+                      aria-invalid={badField === "password" || undefined}
                       placeholder="••••••••"
-                      className="field mt-2.5"
+                      className={`field mt-2.5 ${badField === "password" ? "border-red" : ""}`}
                     />
                   </div>
 
@@ -204,8 +227,10 @@ export function SignInPanel({ initialRole }: { initialRole: Role }) {
                         type="text"
                         inputMode="numeric"
                         autoComplete="one-time-code"
+                        required
+                        aria-invalid={badField === "code" || undefined}
                         placeholder="6-digit code"
-                        className="field mt-2.5"
+                        className={`field mt-2.5 ${badField === "code" ? "border-red" : ""}`}
                       />
                     </div>
                   ) : null}
@@ -219,26 +244,44 @@ export function SignInPanel({ initialRole }: { initialRole: Role }) {
                       />
                       Keep me signed in
                     </label>
-                    <button type="button" className="label text-teal hover:underline">
+                    <Link href="/signin/help" className="label text-teal hover:underline">
                       Forgot password
-                    </button>
+                    </Link>
                   </div>
+
+                  {error ? (
+                    <p
+                      role="alert"
+                      className="flex items-start gap-3 rounded-[var(--r-md)] border-2 border-red/30 bg-red/[0.06] px-5 py-4 text-[0.95rem] leading-relaxed text-ink"
+                    >
+                      <span
+                        aria-hidden
+                        className="mt-[0.35rem] h-2.5 w-2.5 shrink-0 rounded-full bg-red"
+                      />
+                      {error}
+                    </p>
+                  ) : null}
 
                   <button
                     type="submit"
-                    className={`pill mt-1 w-full ${isAdmin ? "" : "pill-lime"}`}
+                    disabled={pending}
+                    className={`pill mt-1 w-full disabled:cursor-progress disabled:opacity-70 ${
+                      isAdmin ? "" : "pill-lime"
+                    }`}
                   >
-                    {copy.submit}
+                    {pending ? copy.pending : copy.submit}
                   </button>
 
-                  {notice ? (
-                    <p
-                      role="status"
-                      className="serif-it rounded-[var(--r-md)] bg-cream-2 px-5 py-4 text-[0.95rem] leading-relaxed text-ink/75"
-                    >
-                      Sign-in isn&apos;t wired up yet, so this is the front door only. Accounts go live
-                      with registration.
-                    </p>
+                  {demo ? (
+                    <div className="rounded-[var(--r-md)] bg-cream-2 px-5 py-4">
+                      <Label tone="muted">Demo accounts</Label>
+                      <p className="serif-it mt-2 text-[0.95rem] leading-relaxed text-ink/75">
+                        No account store is configured, so the site is running on the two public
+                        demo logins documented in the README. Set{" "}
+                        <code className="font-mono text-[0.85em]">AOT_ACCOUNTS</code> to replace
+                        them.
+                      </p>
+                    </div>
                   ) : null}
                 </form>
 

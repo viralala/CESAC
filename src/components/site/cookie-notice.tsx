@@ -15,10 +15,11 @@ import {
 /**
  * The cookie notice.
  *
- * It tells the truth about the build it ships with. Right now that build sets
- * no cookies and loads no trackers, so the notice is a statement with one
- * dismiss button, not a fake choice between Accept and Manage Preferences that
- * both do nothing.
+ * It tells the truth about the build it ships with. Right now that build loads
+ * no trackers, and its only cookie is the sign-in session, which is strictly
+ * necessary and needs no consent, so the notice is a statement with one dismiss
+ * button, not a fake choice between Accept and Manage Preferences that both do
+ * nothing.
  *
  * The moment NEXT_PUBLIC_ANALYTICS is set, the same component becomes a real
  * gate with two equally weighted buttons, and nothing loads until one is
