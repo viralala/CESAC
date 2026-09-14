@@ -188,9 +188,12 @@ export function SignInPanel({
                     </label>
                     <input
                       id={`${uid}-id`}
-                      key={`${role}-id`}
+                      // Remounting on a new default is what makes the value
+                      // survive React's post-action form reset.
+                      key={`${role}-id-${state.identifier ?? ""}`}
                       name="identifier"
                       type={copy.idType}
+                      defaultValue={shownFor === role ? state.identifier : undefined}
                       autoComplete={isAdmin ? "username" : "email"}
                       required
                       aria-invalid={badField === "identifier" || undefined}

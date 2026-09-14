@@ -187,10 +187,13 @@ Audited, and the policy pages are written against what is actually deployed:
 
 - No analytics package, no tag manager, no third-party scripts, no embeds. The
   audio file is served from this origin, not from a player embed.
-- No cookies. Three keys in `localStorage` and nothing else: `cesac.consent`
-  (the notice's answer, stored there because setting a cookie in order to ask
-  about cookies is absurd) and `cesac.music` / `cesac.music.volume` (whether
-  the event page's track is on, and how loud). None of them is sent anywhere.
+- One cookie, and only once you sign in: `aot_session`, HttpOnly, SameSite=Lax,
+  holding a signed token with an account id, a role and a display name. Nothing
+  else. Browsing signed out sets no cookie at all.
+- Three keys in `localStorage` and nothing else: `cesac.consent` (the notice's
+  answer, stored there because setting a cookie in order to ask about cookies is
+  absurd) and `cesac.music` / `cesac.music.volume` (whether the event page's
+  track is on, and how loud). None of them is sent anywhere.
 - Fonts are downloaded at build time by `next/font` and served from this origin,
   so a page load makes **no** request to Google. Do not swap them for `<link>`
   tags; the privacy page makes that claim.
@@ -198,11 +201,76 @@ Audited, and the policy pages are written against what is actually deployed:
   becomes a real allow/decline gate with two equally weighted buttons, and
   nothing loads until one is pressed.
 
+## 🔑 Sign in
+
+Two doors on one page, `/signin`, switched by a tab and reachable directly as
+`/signin?role=admin`. Participants land on `/dashboard`, organisers on `/admin`.
+Organisers need a six digit access code on top of the password; participants do
+not.
+
+**How it holds together**
+
+| Piece | File | What it does |
+| --- | --- | --- |
+| Session | `src/lib/auth/session.ts` | Signs and verifies one HS256 cookie. Payload is an account id, a role and a display name, nothing more. |
+| Accounts | `src/lib/auth/accounts.ts` | The store. Reads `AOT_ACCOUNTS`, verifies scrypt digests in constant time. |
+| Guards | `src/lib/auth/guard.ts` | `requireParticipant()` / `requireAdmin()`. The authoritative check, run per page. |
+| Actions | `src/app/actions/auth.ts` | `signIn` and `signOut`, with the attempt throttle and the open-redirect check. |
+| Proxy | `src/proxy.ts` | The early bounce only. Optimistic, never trusted. |
+
+A wrong ID and a wrong password take the same time to answer, because the
+password is hashed either way: the gate will not tell you which accounts exist.
+Eight failures on one ID pauses it for five minutes. Cross-role traffic is
+redirected to the console you do hold, not refused, so `/admin` never confirms
+itself to a participant.
+
+**Configuring accounts**
+
+There is no database yet, so the account list is one environment variable. Mint
+a digest, then write the JSON:
+
+```bash
+npm run hash-password -- "the password"
+# scrypt$16384$…$…
+```
+
+```jsonc
+// AOT_ACCOUNTS, one line, in .env.local and in the Vercel project settings
+[
+  { "id": "team-01", "role": "participant", "identifier": "duo@vit.edu",
+    "name": "Team Vanguard", "partner": "A. Partner", "password": "scrypt$16384$…$…" },
+  { "id": "org-tech-01", "role": "admin", "identifier": "cesac.technical",
+    "name": "Technical Vertical", "code": "402193", "password": "scrypt$16384$…$…" }
+]
+```
+
+Also set `AOT_SESSION_SECRET` to 32 characters or more. Changing it signs
+everyone out, which is how you revoke every session at once. See `.env.example`.
+
+**Demo accounts**
+
+Leave `AOT_ACCOUNTS` unset and the site falls back to two public logins so the
+flow is testable on a fresh clone. It says so on the sign-in page and across the
+top of the organiser console, so this can never be mistaken for a live store.
+
+| Role | ID | Password | Code |
+| --- | --- | --- | --- |
+| Participant | `team@vit.edu` | `attackontoken` | |
+| Organiser | `cesac.organiser` | `survivethetoken` | `402193` |
+
+**Not built yet**
+
+Registration, submissions, grading and the leaderboard have no backend. Both
+consoles say so in the place the data will go, rather than showing a placeholder
+number. Nothing on this site invents a figure, and a console is the easiest
+place in a build to start.
+
 ## 🛠 Stack
 
 Next.js 16 (App Router, Turbopack) · React 19 · TypeScript 5 · Tailwind CSS 4.
-No 3D runtime, no animation library, no audio library. The petals are one
-canvas and the parallax is one transform.
+No 3D runtime, no animation library, no audio library, no auth framework. The
+petals are one canvas, the parallax is one transform, and sign-in is `jose` plus
+Node's own scrypt.
 
 ## 🚀 Quick Start
 
@@ -221,8 +289,13 @@ src/app/
   about/ people/ events/    committee, roster, calendar
   events/attack-on-token/   the event, with its own OG image
   privacy/ terms/           policy pages
-  signin/                   sign-in front door (UI only)
+  signin/                   the gate, both roles; signin/help for lockouts
+  dashboard/                participant console (signed in, guarded)
+  admin/                    organiser console (signed in, guarded)
+  actions/auth.ts           signIn / signOut server actions
+src/proxy.ts                early bounce for /signin, /dashboard, /admin
 src/components/
+  console/    the signed-in bar, panel, empty state and row
   aot/        crest, wall mark, stickers, parallax rig, shared bits
   sections/
     home/     the CESAC community sections
@@ -230,6 +303,7 @@ src/components/
     ribbon    legal, page-head, roster (shared)
   site/       header, footer, cookie notice, petal cursor, music box
 src/lib/
+  auth/       session.ts (JWT), accounts.ts (store), guard.ts (page checks)
   consent.ts  consent store, read through useSyncExternalStore
   audio.ts    track config and the music preference store
   data/       cesac.ts, event.ts, committee.ts
@@ -264,11 +338,13 @@ official wording.
 - [x] CESAC community site: home, about, people, events
 - [x] Attack on Token event page
 - [x] Privacy policy, terms, cookie notice
-- [x] Sign-in front door (UI only)
+- [x] Sign in, both roles: session cookie, guarded routes, sign out
+- [x] Participant console and organiser console
 - [ ] Clear the event soundtrack for public performance, or replace it
 - [ ] A published committee inbox for the contact card (`CONTACT.email`)
-- [ ] Registration flow: the sign-in form does not submit anywhere yet
-- [ ] Participant dashboard and admin pages
+- [ ] Registration flow, so accounts are created rather than configured
+- [ ] Move accounts from `AOT_ACCOUNTS` to a database, and the throttle with them
+- [ ] Submissions, grading pipeline and the live Chapter II leaderboard
 - [ ] Legal review of `/privacy` and `/terms` by the department before launch
 
 ## 🤝 Contributing

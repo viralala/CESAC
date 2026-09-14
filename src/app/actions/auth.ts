@@ -17,6 +17,14 @@ export type SignInState = {
   error?: string;
   /** Which field to point the message at, so the form can mark it invalid. */
   field?: "identifier" | "password" | "code";
+  /**
+   * React resets an uncontrolled form once its action settles, so a rejected
+   * attempt would otherwise blank the ID the person just typed and make them
+   * type it again to find out the password was the problem. Handing it back
+   * lets the field re-fill from its default. The password is not returned:
+   * that one should be retyped.
+   */
+  identifier?: string;
 };
 
 /**
@@ -78,7 +86,7 @@ export async function signIn(_state: SignInState, formData: FormData): Promise<S
     return { error: "Enter your sign-in ID.", field: "identifier" };
   }
   if (!password) {
-    return { error: "Enter your password.", field: "password" };
+    return { error: "Enter your password.", field: "password", identifier };
   }
 
   const key = `${role}:${identifier.toLowerCase()}`;
@@ -86,6 +94,7 @@ export async function signIn(_state: SignInState, formData: FormData): Promise<S
     return {
       error: "Too many attempts. Wait five minutes, then try again.",
       field: "password",
+      identifier,
     };
   }
 
@@ -99,16 +108,16 @@ export async function signIn(_state: SignInState, formData: FormData): Promise<S
 
   if (!account || !ok) {
     recordFailure(key);
-    return { error: "That ID and password do not match.", field: "password" };
+    return { error: "That ID and password do not match.", field: "password", identifier };
   }
 
   if (role === "admin") {
     if (!account.code) {
-      return { error: "This organiser account has no access code set.", field: "code" };
+      return { error: "This organiser account has no access code set.", field: "code", identifier };
     }
     if (!verifyCode(code, account.code)) {
       recordFailure(key);
-      return { error: "That access code is not right.", field: "code" };
+      return { error: "That access code is not right.", field: "code", identifier };
     }
   }
 
