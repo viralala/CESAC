@@ -77,13 +77,12 @@ export async function handIn(_state: HandInState, formData: FormData): Promise<H
 }
 
 /**
- * Records a file the browser has already put in storage.
+ * Records a file that has landed in storage, so it becomes part of the
+ * hand-in. Until this runs, the object is just bytes nothing points at.
  *
- * The upload itself goes straight from the browser to Supabase, because
- * pushing a 100 MB video through a server action would hit the body limit and
- * time out. The storage policies check the path's first segment against the
- * uploader's team, so a browser cannot write into another team's folder, and
- * this call cannot attach a file to a submission that is not its own.
+ * The path is re-checked against the caller's own team here as well as when
+ * the upload ticket was minted, because this is a separate request and should
+ * not assume the first one is what actually happened.
  */
 export async function recordUpload(input: {
   chapterId: string;
@@ -127,6 +126,41 @@ export async function recordUpload(input: {
 
   revalidatePath("/dashboard");
   return { notice: "Uploaded." };
+}
+
+/**
+ * Mints a one-file upload URL.
+ *
+ * The browser has no session of its own, by design: the auth cookies are
+ * HttpOnly so no script can read them. So it cannot upload directly. Instead
+ * the server, which does have the session, asks Storage for a signed URL for
+ * one specific path and hands back the token.
+ *
+ * Creating that URL is itself subject to the storage policy, so this refuses
+ * for a path outside the caller's own team folder before a byte is sent. The
+ * token is good for that one path and nothing else.
+ */
+export async function createUploadTicket(
+  chapterId: string,
+  fileName: string,
+): Promise<{ path?: string; token?: string; error?: string }> {
+  const supabase = await createClient();
+
+  const { data: teamId } = await supabase.rpc("my_team_id");
+  if (!teamId) return { error: "Create or join a team first." };
+
+  const safe = fileName.replace(/[^a-zA-Z0-9._-]+/g, "-").slice(-80);
+  const path = `${teamId}/${chapterId}/${crypto.randomUUID()}-${safe}`;
+
+  const { data, error } = await supabase.storage
+    .from(SUBMISSIONS_BUCKET)
+    .createSignedUploadUrl(path);
+
+  if (error || !data) {
+    return { error: "That upload was refused. Check the chapter is still open." };
+  }
+
+  return { path: data.path, token: data.token };
 }
 
 export async function removeUpload(fileId: string): Promise<HandInState> {

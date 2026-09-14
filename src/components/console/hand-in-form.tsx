@@ -3,6 +3,7 @@
 import { useActionState, useId, useRef, useState, useTransition } from "react";
 
 import {
+  createUploadTicket,
   handIn as handInAction,
   recordUpload,
   removeUpload,
@@ -21,11 +22,6 @@ function human(bytes: number): string {
   return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
 }
 
-/** Keeps a storage path predictable and free of anything that needs escaping. */
-function safeName(name: string): string {
-  return name.replace(/[^a-zA-Z0-9._-]+/g, "-").slice(-80);
-}
-
 /**
  * One chapter's hand-in.
  *
@@ -34,21 +30,21 @@ function safeName(name: string): string {
  * II it is irreversible because the deck calls that a hard lock. The button
  * says which of the two it is doing.
  *
- * Uploads go straight from this browser to storage rather than through a
- * server action, because a 15 second video would not survive the body limit.
- * The storage policy checks the first path segment against the uploader's
- * team, so a rewritten path cannot land in anyone else's folder.
+ * The file itself goes straight from this browser to Storage rather than
+ * through a server action, because a 15 second video would not survive the
+ * body limit. It does not carry a session to do it: the server mints a signed
+ * URL for one path, and this pushes the bytes at that. The path is chosen
+ * server side and checked against the storage policy before the token exists,
+ * so a rewritten path cannot land in anyone else's folder.
  */
 export function HandInForm({
   chapter,
   handIn,
   submission,
-  teamId,
 }: {
   chapter: Chapter;
   handIn: HandIn;
   submission: SubmissionWithFiles | null;
-  teamId: string;
 }) {
   const [saveState, saveAction, saving] = useActionState<HandInState, FormData>(saveHandIn, {});
   const [sendState, sendAction, sending] = useActionState<HandInState, FormData>(handInAction, {});
@@ -76,11 +72,18 @@ export function HandInForm({
         continue;
       }
 
-      const path = `${teamId}/${chapter.id}/${crypto.randomUUID()}-${safeName(file.name)}`;
-      const { error } = await supabase.storage.from(SUBMISSIONS_BUCKET).upload(path, file, {
-        contentType: file.type || "application/octet-stream",
-        upsert: false,
-      });
+      const ticket = await createUploadTicket(chapter.id, file.name);
+      if (ticket.error || !ticket.path || !ticket.token) {
+        setUpload({ error: ticket.error ?? `${file.name} could not be uploaded.` });
+        continue;
+      }
+
+      const path = ticket.path;
+      const { error } = await supabase.storage
+        .from(SUBMISSIONS_BUCKET)
+        .uploadToSignedUrl(path, ticket.token, file, {
+          contentType: file.type || "application/octet-stream",
+        });
 
       if (error) {
         setUpload({ error: `${file.name} did not upload. ${error.message}` });

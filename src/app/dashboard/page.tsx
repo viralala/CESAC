@@ -268,7 +268,6 @@ export default async function DashboardPage() {
                         chapter={chapter}
                         handIn={spec}
                         submission={submissions.find((s) => s.chapter_id === chapter.id) ?? null}
-                        teamId={team.id}
                       />
                     );
                   })}

@@ -16,6 +16,13 @@ import type { Database } from "./database.types";
  * Writing cookies from a Server Component is not allowed, so setAll throws
  * there and is swallowed. That is safe because the proxy refreshes the
  * session on every matched request and writes the refreshed cookies itself.
+ *
+ * httpOnly is forced on. The library leaves it off so that its own browser
+ * client can read the session, which means a single cross-site script could
+ * walk off with a working access and refresh token. Nothing in this app needs
+ * to read the session from JavaScript: every read and write goes through the
+ * server, and uploads use a signed URL minted per file. So the tokens stay out
+ * of reach of any script on the page.
  */
 export async function createClient() {
   const jar = await cookies();
@@ -28,7 +35,7 @@ export async function createClient() {
       setAll(cookiesToSet) {
         try {
           for (const { name, value, options } of cookiesToSet) {
-            jar.set(name, value, options);
+            jar.set(name, value, { ...options, httpOnly: true });
           }
         } catch {
           // Called from a Server Component. The proxy already refreshed it.

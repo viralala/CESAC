@@ -30,7 +30,9 @@ export async function updateSession(request: NextRequest) {
         }
         response = NextResponse.next({ request });
         for (const { name, value, options } of cookiesToSet) {
-          response.cookies.set(name, value, options);
+          // Same reasoning as the server client: no script needs these, so no
+          // script gets them.
+          response.cookies.set(name, value, { ...options, httpOnly: true });
         }
         for (const [key, value] of Object.entries(headers ?? {})) {
           response.headers.set(key, value);
