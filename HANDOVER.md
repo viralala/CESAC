@@ -156,8 +156,8 @@ student projects without a business entity.
    sign in.
 
 **If the review stalls, leave the Facebook provider switched off in Supabase.**
-The button then returns "That sign-in method is not switched on yet" instead of
-a dead end, and Google, GitHub and email still cover everyone.
+The button then simply does not appear, nobody sees a dead end, and Google,
+GitHub and email still cover everyone.
 
 ---
 
