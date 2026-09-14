@@ -2,6 +2,13 @@
   "name": "cesac-web",
   "version": "0.1.0",
   "private": true,
+  "description": "Event site for Attack on Token, CESAC's prompt engineering hackathon at VIT Pune.",
+  "author": "Viral Dhoka <viral.1251070777@vit.edu> (https://github.com/viralala)",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/viralala/CESAC.git"
+  },
   "scripts": {
     "dev": "next dev",
     "build": "next build",
