@@ -18,7 +18,13 @@ const STATUS: Record<string, { label: string; bg: string; fg: string }> = {
  *
  * The first entry gets the full panel, because an event-first homepage should
  * show the thing that is actually happening rather than list it. Anything
- * after the first is a plain card.
+ * after the first is a full-width card in the same teal family as the
+ * feature panel, but carrying its own background design — a diagonal line
+ * weave plus a dot-grid corner — instead of the feature panel's washi swirl,
+ * so the two read as siblings in the same palette rather than duplicates.
+ *
+ * Cards stack full-width (one per row) with a tall min-height, so a single
+ * additional event still carries visual weight on the page.
  *
  * One event is listed because one event exists. If this ever renders a thin
  * list, that is the honest state of the calendar, not a bug to pad.
@@ -44,7 +50,7 @@ export function HomeEvents() {
                 <div className="relative z-20 px-7 py-12 sm:px-11 sm:py-16">
                   <div className="flex flex-wrap items-center gap-3">
                     <span
-                      className="label-sm rounded-full px-4 py-2"
+                      className="label-sm w-fit rounded-full px-4 py-2"
                       style={{
                         background: STATUS[feature.status].bg,
                         color: STATUS[feature.status].fg,
@@ -123,22 +129,102 @@ export function HomeEvents() {
         ) : null}
 
         {rest.length ? (
-          <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+          <div className="mt-6 flex flex-col gap-6">
             {rest.map((e, i) => (
               <Reveal key={e.slug} delay={i * 70}>
                 <Link
                   href={e.href}
-                  className="card group flex h-full flex-col p-7 transition-transform duration-300 hover:-translate-y-1"
+                  className="group relative isolate flex min-h-[380px] w-full cursor-pointer flex-col overflow-hidden rounded-[var(--r-xl)] p-9 text-cream transition-transform duration-300 hover:-translate-y-1 sm:min-h-[440px] sm:p-14"
+                  style={{
+                    background:
+                      "linear-gradient(155deg, var(--ink) 0%, #0f3a3a 50%, var(--teal) 140%)",
+                  }}
                 >
-                  <span
-                    className="label-sm w-fit rounded-full px-3.5 py-1.5"
-                    style={{ background: STATUS[e.status].bg, color: STATUS[e.status].fg }}
+                  {/* Own background design, same teal family as the feature
+                      panel: a diagonal line weave across the whole card plus
+                      a dot-grid mass in the corner, instead of the feature
+                      panel's washi swirl + single glow. */}
+                  <svg
+                    aria-hidden
+                    className="pointer-events-none absolute inset-0 h-full w-full opacity-[0.14]"
                   >
-                    {STATUS[e.status].label}
-                  </span>
-                  <h3 className="d-tall mt-5 text-[1.9rem] text-ink">{e.name}</h3>
-                  <p className="mt-2 text-[0.9375rem] leading-relaxed text-ink/70">{e.blurb}</p>
-                  <p className="label-sm mt-auto pt-6 text-muted">{e.when}</p>
+                    <defs>
+                      <pattern
+                        id={`diagonal-${e.slug}`}
+                        width="26"
+                        height="26"
+                        patternUnits="userSpaceOnUse"
+                        patternTransform="rotate(35)"
+                      >
+                        <line x1="0" y1="0" x2="0" y2="26" stroke="var(--cream)" strokeWidth="1" />
+                      </pattern>
+                    </defs>
+                    <rect width="100%" height="100%" fill={`url(#diagonal-${e.slug})`} />
+                  </svg>
+
+                  <svg
+                    aria-hidden
+                    className="pointer-events-none absolute -right-6 -top-6 h-[60%] w-[46%] opacity-[0.22] sm:h-[70%] sm:w-[40%]"
+                  >
+                    <defs>
+                      <pattern
+                        id={`dots-${e.slug}`}
+                        width="16"
+                        height="16"
+                        patternUnits="userSpaceOnUse"
+                      >
+                        <circle cx="2" cy="2" r="1.6" fill="var(--lime)" />
+                      </pattern>
+                    </defs>
+                    <rect width="100%" height="100%" fill={`url(#dots-${e.slug})`} />
+                  </svg>
+
+                  <ParallaxScene className="pointer-events-none absolute inset-0">
+                    <ParallaxLayer depth={26} drift={-20} className="absolute inset-0">
+                      <span
+                        aria-hidden
+                        className="absolute left-[10%] bottom-[-10%] aspect-square h-[42%] rounded-full bg-teal-2 opacity-25 blur-3xl transition-opacity duration-300 group-hover:opacity-35"
+                      />
+                    </ParallaxLayer>
+                  </ParallaxScene>
+
+                  {e.jp ? (
+                    <span
+                      aria-hidden
+                      className="jp pointer-events-none absolute right-8 top-9 select-none text-[clamp(2rem,3.4vw,3rem)] leading-[1.05] text-cream/[0.14] [writing-mode:vertical-rl]"
+                    >
+                      {e.jp}
+                    </span>
+                  ) : null}
+
+                  <div className="relative z-20 flex h-full max-w-[62ch] flex-col">
+                    <span
+                      className="label-sm w-fit rounded-full px-4 py-2"
+                      style={{
+                        background: STATUS[e.status].bg,
+                        color: STATUS[e.status].fg,
+                      }}
+                    >
+                      {STATUS[e.status].label}
+                    </span>
+
+                    <h3 className="d-tall mt-7 text-[clamp(2.4rem,5.5vw,4rem)] text-cream">
+                      {e.name}
+                    </h3>
+                    <p className="mt-4 max-w-[48ch] text-[1.05rem] leading-relaxed text-cream/70">
+                      {e.blurb}
+                    </p>
+
+                    <div className="mt-auto flex flex-wrap items-end justify-between gap-4 pt-10">
+                      <p className="label text-cream/45">{e.when}</p>
+                      <span
+                        aria-hidden
+                        className="grid h-12 w-12 shrink-0 place-items-center rounded-full bg-cream/10 text-cream transition-all duration-300 group-hover:translate-x-0.5 group-hover:bg-lime group-hover:text-ink"
+                      >
+                        <Arrow />
+                      </span>
+                    </div>
+                  </div>
                 </Link>
               </Reveal>
             ))}
