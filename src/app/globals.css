@@ -52,6 +52,21 @@
   --line: rgba(12, 20, 24, 0.12);
   --line-dark: rgba(245, 241, 231, 0.18);
 
+  /* ---------- HR Final Boss — its own palette, scoped to that one route ----------
+     Blue and white only, on purpose: no teal, no sticker pops. Azure carries
+     structure, Maya is the light accent, the two whites separate ground from
+     surface the way cream/cream-2 do for the rest of the site. */
+  --hb-ink: #071a33;
+  --hb-ink-2: #0d2c52;
+  --hb-azure: #007fff;
+  --hb-azure-deep: #0057b3;
+  --hb-maya: #73c2fb;
+  --hb-sky: #e3f1ff;
+  --hb-ghost: #f8f8ff;
+  --hb-deutzia: #fffdf6;
+  --hb-line: rgba(7, 26, 51, 0.12);
+  --hb-line-dark: rgba(248, 248, 255, 0.1);
+
   /* rounded geometry — every reference is soft-cornered */
   --r-sm: 14px;
   --r-md: 22px;
@@ -106,10 +121,26 @@
   --font-sans: var(--font-archivo), ui-sans-serif, system-ui, sans-serif;
   --font-serif: var(--font-playfair), Georgia, serif;
 
+  /* HR Final Boss's own voices: a rounder cartoon display and a cursive that
+     also carries Devanagari, so the occasional Hindi word renders in the same
+     handwritten hand as the English copy around it. */
+  --font-baloo: var(--font-baloo2), "Comic Sans MS", sans-serif;
+  --font-kalam: var(--font-kalam), cursive;
+
+  --color-hb-ink: var(--hb-ink);
+  --color-hb-ink-2: var(--hb-ink-2);
+  --color-hb-azure: var(--hb-azure);
+  --color-hb-azure-deep: var(--hb-azure-deep);
+  --color-hb-maya: var(--hb-maya);
+  --color-hb-sky: var(--hb-sky);
+  --color-hb-ghost: var(--hb-ghost);
+  --color-hb-deutzia: var(--hb-deutzia);
+
   --animate-seal: seal-spin 26s linear infinite;
   --animate-drift: drift 34s linear infinite;
   --animate-float: float 6s ease-in-out infinite;
   --animate-shaft: shaft 7s ease-in-out infinite;
+  --animate-hb-sweep: hb-sweep 3.4s ease-in-out infinite;
 }
 
 /* ---------- base ---------- */
@@ -216,6 +247,64 @@ body {
     background-color: var(--teal-2);
     background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='60' height='30'%3E%3Cg fill='none' stroke='%230f5059' stroke-width='1.2'%3E%3Cpath d='M-30 30a30 30 0 0 1 60 0M-22 30a22 22 0 0 1 44 0M-14 30a14 14 0 0 1 28 0M-6 30a6 6 0 0 1 12 0'/%3E%3Cpath d='M30 30a30 30 0 0 1 60 0M38 30a22 22 0 0 1 44 0M46 30a14 14 0 0 1 28 0M54 30a6 6 0 0 1 12 0'/%3E%3Cpath d='M0 0a30 30 0 0 1 60 0M8 0a22 22 0 0 1 44 0M16 0a14 14 0 0 1 28 0M24 0a6 6 0 0 1 12 0'/%3E%3C/g%3E%3C/svg%3E");
     background-size: 60px 30px;
+  }
+
+  /* ---------- HR Final Boss — grid-box ground ----------
+     Stands in for the seigaiha washi on that one route: a technical, squared
+     grid instead of clouds, in the page's own blue rather than teal. Two
+     tones, the same way washi/washi-teal split light and dark panels. */
+  .grid-box {
+    background-color: var(--hb-ghost);
+    background-image:
+      linear-gradient(var(--hb-line) 1px, transparent 1px),
+      linear-gradient(90deg, var(--hb-line) 1px, transparent 1px);
+    background-size: 42px 42px;
+  }
+
+  .grid-box-deep {
+    background-color: var(--hb-ink);
+    background-image:
+      linear-gradient(var(--hb-line-dark) 1px, transparent 1px),
+      linear-gradient(90deg, var(--hb-line-dark) 1px, transparent 1px);
+    background-size: 42px 42px;
+  }
+
+  /* Display set here, not as a Tailwind `inline-flex` utility, so a
+     consumer's `hidden lg:inline-flex` override always wins. Two utilities
+     that both set `display` fight on source order rather than markup order;
+     a components-layer class never outranks a utilities-layer one. */
+  .hb-chip {
+    display: inline-flex;
+    align-items: center;
+  }
+
+  /* Rounder cartoon display voice and the cursive/Devanagari hand, kept off
+     the shared .d-tall / .serif-it classes so no other page is touched. */
+  .hb-display {
+    font-family: var(--font-baloo);
+    font-weight: 700;
+    line-height: 0.98;
+    letter-spacing: -0.01em;
+  }
+
+  .hb-cursive {
+    font-family: var(--font-kalam);
+    font-weight: 400;
+  }
+
+  /* The redacted nameplate on the boss file: a row of solid bars standing in
+     for letterforms, so it reads as "censored" rather than as a blank. */
+  .hb-redact {
+    display: inline-flex;
+    gap: 0.32em;
+  }
+
+  .hb-redact span {
+    display: inline-block;
+    height: 0.62em;
+    border-radius: 3px;
+    background: currentColor;
+    opacity: 0.85;
   }
 
   /* Paper grain, kept low so text stays crisp. */
@@ -610,6 +699,22 @@ body {
   }
 }
 
+/* Diagonal sweep across the boss file's redacted portrait plate. */
+@keyframes hb-sweep {
+  0%,
+  100% {
+    transform: translateX(-60%) rotate(8deg);
+    opacity: 0;
+  }
+  40% {
+    opacity: 0.45;
+  }
+  50% {
+    transform: translateX(60%) rotate(8deg);
+    opacity: 0;
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .reveal {
     opacity: 1 !important;
@@ -620,7 +725,8 @@ body {
   .animate-seal,
   .animate-drift,
   .animate-float,
-  .animate-shaft {
+  .animate-shaft,
+  .animate-hb-sweep {
     animation: none !important;
   }
 }

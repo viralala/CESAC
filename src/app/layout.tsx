@@ -1,5 +1,5 @@
 import type { Metadata, Viewport } from "next";
-import { Anton, Archivo, Playfair_Display } from "next/font/google";
+import { Anton, Archivo, Baloo_2, Kalam, Playfair_Display } from "next/font/google";
 
 import "./globals.css";
 import { CookieNotice } from "@/components/site/cookie-notice";
@@ -27,6 +27,20 @@ const playfair = Playfair_Display({
   subsets: ["latin"],
   style: ["italic", "normal"],
   weight: ["400", "500", "600"],
+});
+
+// The HR Final Boss route's own voices: a round cartoon display, and a
+// cursive that also carries Devanagari for the occasional Hindi word.
+const baloo2 = Baloo_2({
+  variable: "--font-baloo2",
+  subsets: ["latin"],
+  weight: ["500", "600", "700", "800"],
+});
+
+const kalam = Kalam({
+  variable: "--font-kalam",
+  subsets: ["latin", "devanagari"],
+  weight: ["300", "400", "700"],
 });
 
 // next/font downloads these at build time and serves them from this origin, so
@@ -73,7 +87,7 @@ export default async function RootLayout({ children }: LayoutProps<"/">) {
     <html
       lang="en"
       data-scroll-behavior="smooth"
-      className={`${anton.variable} ${archivo.variable} ${playfair.variable} h-full`}
+      className={`${anton.variable} ${archivo.variable} ${playfair.variable} ${baloo2.variable} ${kalam.variable} h-full`}
     >
       <body className="flex min-h-full flex-col antialiased">
         <a

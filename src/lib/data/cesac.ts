@@ -78,9 +78,9 @@ export type CesacEvent = {
 /**
  * The events index.
  *
- * One entry, because one event has been supplied. An empty-looking list is the
- * correct output here: padding it with invented past events would be exactly
- * the fabrication the brief rules out.
+ * Two entries, because two events have been supplied. An empty-looking list
+ * is the correct output here: padding it with invented past events would be
+ * exactly the fabrication the brief rules out.
  */
 export const EVENTS: readonly CesacEvent[] = [
   {
@@ -93,6 +93,17 @@ export const EVENTS: readonly CesacEvent[] = [
     when: "Date and venue to be announced",
     status: "announced",
     href: "/events/attack-on-token",
+  },
+  {
+    slug: "hr-final-boss",
+    name: "HR Final Boss",
+    jp: "साक्षात्कार",
+    kicker: "Speaker session",
+    blurb:
+      "Free entry, open to 100 to 200 people. A speaker with 30+ years in HR, based in Africa, takes HR and technical interview questions live. Name withheld until announced.",
+    when: "Date and venue to be announced",
+    status: "announced",
+    href: "/events/hr-final-boss",
   },
 ];
 

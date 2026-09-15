@@ -1,5 +1,6 @@
 "use client";
 
+import { usePathname } from "next/navigation";
 import { useEffect, useRef } from "react";
 
 /**
@@ -92,8 +93,13 @@ function petalPath(ctx: CanvasRenderingContext2D, s: number) {
 
 export function PetalCursor() {
   const ref = useRef<HTMLCanvasElement>(null);
+  // HR Final Boss has its own cursor (a small light trail, not petals). That
+  // route's layout mounts LightCursor instead; this one has to know to stand
+  // down rather than run both at once.
+  const onHrFinalBoss = usePathname().startsWith("/events/hr-final-boss");
 
   useEffect(() => {
+    if (onHrFinalBoss) return;
     const canvas = ref.current;
     if (!canvas) return;
 
@@ -290,7 +296,9 @@ export function PetalCursor() {
       window.removeEventListener("resize", resize);
       document.removeEventListener("visibilitychange", onHidden);
     };
-  }, []);
+  }, [onHrFinalBoss]);
+
+  if (onHrFinalBoss) return null;
 
   return (
     <canvas

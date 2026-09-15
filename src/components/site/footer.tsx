@@ -19,6 +19,7 @@ const COLUMNS: { title: string; links: [string, string][] }[] = [
     links: [
       ["/events", "All events"],
       ["/events/attack-on-token", "Attack on Token"],
+      ["/events/hr-final-boss", "HR Final Boss"],
       ["/signin", "Sign in"],
     ],
   },
