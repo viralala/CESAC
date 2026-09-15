@@ -196,7 +196,7 @@ export function PetalCursor() {
         ctx.globalAlpha = Math.max(0, alpha) * 0.5;
         ctx.fillStyle = "#FFF6D8";
         ctx.beginPath();
-        ctx.arc(0, 0, s * 0.3, 0, Math.PI * 2);
+        ctx.arc(0, 0, Math.max(0, s * 0.3), 0, Math.PI * 2);
         ctx.fill();
       } else {
         petalPath(ctx, s);
