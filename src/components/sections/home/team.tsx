@@ -2,7 +2,13 @@ import Link from "next/link";
 
 import { Arrow, Container, Label, SectionHead } from "@/components/aot/bits";
 import { Reveal } from "@/components/aot/reveal";
-import { BOARD, FACULTY, TEAM_TOTAL, VERTICALS } from "@/lib/data/committee";
+import {
+  BOARD,
+  FACULTY,
+  STUDENT_LEADERSHIP,
+  TEAM_TOTAL,
+  VERTICALS,
+} from "@/lib/data/committee";
 
 const POPS = ["var(--azure)", "var(--violet)", "var(--lime)", "var(--pink)"];
 
@@ -21,7 +27,7 @@ export function HomeTeam() {
           <SectionHead
             eyebrow="Who runs it"
             title="The committee"
-            aside="Faculty leadership, a board of executives and four verticals of student members."
+            aside="Faculty and student leadership, a board of executives and four verticals of student members."
           />
         </Reveal>
 
@@ -40,6 +46,21 @@ export function HomeTeam() {
                   </li>
                 ))}
               </ul>
+
+              <div className="mt-8 border-t border-ink/10 pt-7">
+                <Label>Student leadership</Label>
+                <ul className="mt-5 grid gap-3">
+                  {STUDENT_LEADERSHIP.map((p) => (
+                    <li
+                      key={p.name}
+                      className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1 rounded-[var(--r-md)] bg-cream px-5 py-4"
+                    >
+                      <span className="d-tall text-[1.2rem] leading-tight text-ink">{p.name}</span>
+                      <span className="label-sm text-muted">{p.role}</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
             </div>
           </Reveal>
 

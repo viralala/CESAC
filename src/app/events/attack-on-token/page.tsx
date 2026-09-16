@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 
 import { SiteFooter } from "@/components/site/footer";
 import { EventChapters } from "@/components/sections/event/chapters";
@@ -14,6 +14,12 @@ export const metadata: Metadata = {
   description:
     "Three chapters. One battlefield. Attack on Token is CESAC's prompt engineering hackathon at VIT Pune: Vision Forge, the Token Trials and Fusion Awakening.",
   alternates: { canonical: "/events/attack-on-token" },
+};
+
+// The site-wide theme colour is teal (see the root layout); this route runs
+// the sponsorship deck's own system, so the browser chrome matches that.
+export const viewport: Viewport = {
+  themeColor: "#141110",
 };
 
 const WORDS = [

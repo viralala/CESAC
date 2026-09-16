@@ -1,6 +1,12 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useSyncExternalStore } from "react";
+
+import {
+  getCursorServerSnapshot,
+  getCursorSnapshot,
+  subscribeCursor,
+} from "@/lib/cursor";
 
 /**
  * The HR Final Boss cursor: a little light, and only a little.
@@ -41,8 +47,15 @@ type Mote = {
 
 export function LightCursor() {
   const ref = useRef<HTMLCanvasElement>(null);
+  // The same switch that governs the blossom trail on every other route.
+  const enabled = useSyncExternalStore(
+    subscribeCursor,
+    getCursorSnapshot,
+    getCursorServerSnapshot,
+  );
 
   useEffect(() => {
+    if (!enabled) return;
     const canvas = ref.current;
     if (!canvas) return;
 
@@ -121,7 +134,10 @@ export function LightCursor() {
     };
 
     const tick = (now: number) => {
-      const dt = Math.min((now - last) / 1000, 0.05);
+      // Floored as well as capped, for the same reason the blossom trail is:
+      // rAF's frame timestamp can predate the performance.now() that `start`
+      // took, and a negative step runs the whole simulation backwards.
+      const dt = Math.max(0, Math.min((now - last) / 1000, 0.05));
       last = now;
 
       ctx.clearRect(0, 0, w, h);
@@ -204,7 +220,9 @@ export function LightCursor() {
       window.removeEventListener("resize", resize);
       document.removeEventListener("visibilitychange", onHidden);
     };
-  }, []);
+  }, [enabled]);
+
+  if (!enabled) return null;
 
   return (
     <canvas

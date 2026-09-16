@@ -1,9 +1,11 @@
 import type { Metadata, Viewport } from "next";
-import { Anton, Archivo, Baloo_2, Kalam, Playfair_Display } from "next/font/google";
+import { Anton, Archivo, Baloo_2, Kalam, Oswald, Playfair_Display } from "next/font/google";
 
 import "./globals.css";
 import { CookieNotice } from "@/components/site/cookie-notice";
+import { CursorToggle } from "@/components/site/cursor-toggle";
 import { SiteHeader } from "@/components/site/header";
+import { ThemeTransition } from "@/components/site/theme-transition";
 import { getViewer } from "@/lib/auth/guard";
 import { PetalCursor } from "@/components/site/petal-cursor";
 
@@ -41,6 +43,14 @@ const kalam = Kalam({
   variable: "--font-kalam",
   subsets: ["latin", "devanagari"],
   weight: ["300", "400", "700"],
+});
+
+// The Attack on Token route's voice, and the one the sponsorship deck is set
+// in. Scoped to that route by .theme-aot in globals.css.
+const oswald = Oswald({
+  variable: "--font-oswald-src",
+  subsets: ["latin"],
+  weight: ["400", "500", "600", "700"],
 });
 
 // next/font downloads these at build time and serves them from this origin, so
@@ -87,7 +97,7 @@ export default async function RootLayout({ children }: LayoutProps<"/">) {
     <html
       lang="en"
       data-scroll-behavior="smooth"
-      className={`${anton.variable} ${archivo.variable} ${playfair.variable} ${baloo2.variable} ${kalam.variable} h-full`}
+      className={`${anton.variable} ${archivo.variable} ${playfair.variable} ${baloo2.variable} ${kalam.variable} ${oswald.variable} h-full`}
     >
       <body className="flex min-h-full flex-col antialiased">
         <a
@@ -102,6 +112,8 @@ export default async function RootLayout({ children }: LayoutProps<"/">) {
         </main>
         <CookieNotice />
         <PetalCursor />
+        <CursorToggle />
+        <ThemeTransition />
       </body>
     </html>
   );

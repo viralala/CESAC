@@ -8,7 +8,7 @@ import { TEAM_TOTAL } from "@/lib/data/committee";
 export const metadata: Metadata = {
   title: "People",
   description:
-    "Everyone on the CESAC committee: faculty leadership, the board of executives, associate executives and the four verticals.",
+    "Everyone on the CESAC committee: faculty leadership, student leadership, the board of executives, associate executives and the four verticals.",
   alternates: { canonical: "/people" },
 };
 
@@ -18,7 +18,7 @@ export default function PeoplePage() {
       <PageHead
         kicker="People"
         title="The roster"
-        lede={`All ${TEAM_TOTAL} of us: faculty leadership, the board of executives, associate executives and the four verticals that carry the work.`}
+        lede={`All ${TEAM_TOTAL} of us: faculty leadership, student leadership, the board of executives, associate executives and the four verticals that carry the work.`}
       />
       <Roster />
       <SiteFooter />

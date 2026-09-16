@@ -1,7 +1,7 @@
 import Image from "next/image";
 import Link from "next/link";
 
-import { Emblem, GradientStrip } from "@/components/aot/art";
+import { GradientStrip } from "@/components/aot/art";
 import { Container } from "@/components/aot/bits";
 import { CESAC } from "@/lib/data/cesac";
 
@@ -54,7 +54,17 @@ export function SiteFooter() {
           <div className="mt-16 grid gap-10 border-t border-cream/12 pt-10 md:grid-cols-[1.3fr_repeat(3,1fr)]">
             <div>
               <div className="flex items-center gap-3">
-                <Emblem className="h-7 w-12 text-cream" />
+                {/* The real committee mark, not the invented crest. Knocked out
+                    to solid white because the footer ground is near-black and
+                    the mark's own blues disappear into it. */}
+                <Image
+                  src="/cesac-mark.png"
+                  alt=""
+                  width={407}
+                  height={433}
+                  className="h-8 w-auto shrink-0 brightness-0 invert"
+                  sizes="32px"
+                />
                 <span className="d-wide text-lg">
                   CE<span className="text-lime">SAC</span>
                 </span>

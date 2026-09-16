@@ -186,8 +186,8 @@ export async function updateSettings(_state: AdminState, formData: FormData): Pr
   const viewer = await requireAdmin();
   const supabase = await createClient();
 
-  const seats = Number(String(formData.get("seats_cap") ?? "50"));
-  const fee = Number(String(formData.get("entry_fee_inr") ?? "200"));
+  const seats = Number(String(formData.get("seats_cap") ?? "80"));
+  const fee = Number(String(formData.get("entry_fee_inr") ?? "125"));
 
   if (Number.isNaN(seats) || seats < 1) return { error: "Seats has to be a number above zero." };
   if (Number.isNaN(fee) || fee < 0) return { error: "The entry fee has to be a number." };

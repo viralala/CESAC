@@ -81,14 +81,17 @@ export function HomeHero() {
             </Link>
           </div>
 
-          {/* real counts only: both are derived from the committee roster */}
+          {/* real counts only: both are derived from the committee roster.
+              Hidden below xl: the word fills nearly the whole line at every
+              narrower width, so this badge has nowhere to sit without
+              overlapping a letter. */}
           <Sticker
             shape="burst"
             pop="pink"
             rotate={-8}
             float={0.2}
             size="clamp(5.6rem,8.5vw,6.8rem)"
-            className="absolute right-[1%] top-[14%] z-40 text-[0.78rem] sm:right-[2%] sm:text-[clamp(0.78rem,1vw,0.9rem)]"
+            className="absolute right-[1%] top-[14%] z-40 hidden text-[0.78rem] xl:grid xl:right-[2%] xl:text-[clamp(0.78rem,1vw,0.9rem)]"
           >
             <span>
               {TEAM_TOTAL}

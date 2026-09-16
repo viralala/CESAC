@@ -111,7 +111,7 @@ export function HomeEvents() {
                     className="absolute left-[6%] top-[12%] z-30 hidden text-[0.66rem] sm:grid"
                   >
                     <span>
-                      50
+                      80
                       <br />
                       <span className="opacity-80">teams</span>
                     </span>

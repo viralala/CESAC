@@ -54,7 +54,7 @@ const BLOCKS: readonly LegalBlock[] = [
       "The site sets no cookies for analytics, advertising or profiling, and none at all until you sign in.",
       "Signing in sets session cookies whose names begin with sb-, placed by Supabase Auth. They hold the tokens that keep you signed in and identify your account to the server. They are HttpOnly, so no script on the page can read them, and SameSite=Lax, so they are not sent from other sites. Signing out clears them.",
       "These cookies are strictly necessary: they exist only because you asked to sign in, they do nothing else, and there is no version of a sign-in that works without them.",
-      "Three preferences are saved in your browser's local storage and nothing else is: cesac.consent records your answer to the cookie notice so it does not reappear on every page, and cesac.music and cesac.music.volume remember whether you turned the music on the Attack on Token page on or off and how loud you set it.",
+      "Four preferences are saved in your browser's local storage and nothing else is: cesac.consent records your answer to the cookie notice so it does not reappear on every page, cesac.music and cesac.music.volume remember whether you turned the music on the Attack on Token page on or off and how loud you set it, and cesac.cursor remembers whether you switched the cursor animation off.",
       "Local storage stays on your device. It is not sent to our server, not attached to requests, and nothing in it identifies you. You can clear it at any time through your browser's site-data settings.",
     ],
   },

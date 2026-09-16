@@ -1,10 +1,10 @@
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
 
-import { Emblem } from "@/components/aot/art";
 import { CESAC } from "@/lib/data/cesac";
 
 /**
@@ -57,8 +57,34 @@ export function SiteHeader({ signedIn = false, consoleHref = "/dashboard" }: {
   // pointing back out of the thing you just signed into, is not a header.
   if (isOn("/dashboard") || isOn("/admin")) return null;
 
+  // Attack on Token runs the sponsorship deck's palette, which this bar sits
+  // outside of. Two adjustments: on that route the accent is the deck's
+  // crimson rather than site lime/teal, and while the bar is still transparent
+  // over the deck's dark title slide it has to invert or it is near-black ink
+  // on near-black ground.
+  const onAot = pathname === "/events/attack-on-token";
+  const onDark = onAot && !lifted && !open;
+
+  const accent = onDark
+    ? "text-[var(--deck-gold)]"
+    : onAot
+      ? "text-[var(--deck-crimson)]"
+      : "text-teal";
+
+  const cta = onDark
+    ? "border-[var(--deck-gold)] bg-[var(--deck-gold)] text-[var(--deck-ink)]"
+    : onAot
+      ? "border-[var(--deck-crimson)] bg-[var(--deck-crimson)] text-[var(--deck-parchment)]"
+      : "pill-lime";
+
   return (
-    <header className="fixed inset-x-0 top-0 z-50 px-3 pt-3 sm:px-5 sm:pt-4">
+    <header
+      className="fixed inset-x-0 top-0 z-50 px-3 pt-3 sm:px-5 sm:pt-4"
+      /* The crest paints its second wing with var(--lime), and this bar sits
+         outside .theme-aot, so on that route it has to be handed the deck's
+         brass here or the wing stays site-lime on a deck-dark hero. */
+      style={onAot ? ({ "--lime": "var(--deck-gold)" } as React.CSSProperties) : undefined}
+    >
       <div
         className={`mx-auto flex w-full max-w-[1280px] items-center gap-5 rounded-full transition-all duration-300 ${
           lifted || open
@@ -72,9 +98,24 @@ export function SiteHeader({ signedIn = false, consoleHref = "/dashboard" }: {
           onClick={() => setOpen(false)}
           aria-label={`${CESAC.abbr} home`}
         >
-          <Emblem className="h-6 w-10 shrink-0 text-ink" />
-          <span className="d-wide whitespace-nowrap text-[1.05rem] leading-none text-ink">
-            CE<span className="text-teal">SAC</span>
+          {/* The committee's own mark, cropped out of the full logo lockup so
+              the wordmark below it does not have to render at 24px. Inverted
+              to parchment on the deck's dark hero, where navy would vanish. */}
+          <Image
+            src="/cesac-mark.png"
+            alt=""
+            width={407}
+            height={433}
+            priority
+            className={`h-7 w-auto shrink-0 ${onDark ? "brightness-0 invert" : ""}`}
+            sizes="28px"
+          />
+          <span
+            className={`d-wide whitespace-nowrap text-[1.05rem] leading-none ${
+              onDark ? "text-cream" : "text-ink"
+            }`}
+          >
+            CE<span className={accent}>SAC</span>
           </span>
         </Link>
 
@@ -84,8 +125,8 @@ export function SiteHeader({ signedIn = false, consoleHref = "/dashboard" }: {
               key={item.href}
               href={item.href}
               aria-current={isOn(item.href) ? "page" : undefined}
-              className={`label px-3.5 py-2 transition-colors hover:text-teal ${
-                isOn(item.href) ? "text-teal" : "text-muted"
+              className={`label px-3.5 py-2 transition-colors ${
+                isOn(item.href) ? accent : onDark ? "text-cream/70" : "text-muted"
               }`}
             >
               {item.label}
@@ -95,7 +136,7 @@ export function SiteHeader({ signedIn = false, consoleHref = "/dashboard" }: {
 
         <Link
           href={signedIn ? consoleHref : "/signin"}
-          className="pill pill-lime ml-auto hidden px-6 py-2.5 text-[0.8rem] lg:ml-2 lg:inline-flex"
+          className={`pill ml-auto hidden px-6 py-2.5 text-[0.8rem] lg:ml-2 lg:inline-flex ${cta}`}
         >
           {signedIn ? "Your console" : "Sign in"}
         </Link>
@@ -105,7 +146,9 @@ export function SiteHeader({ signedIn = false, consoleHref = "/dashboard" }: {
           onClick={() => setOpen((v) => !v)}
           aria-expanded={open}
           aria-label={open ? "Close menu" : "Open menu"}
-          className="ml-auto grid h-11 w-11 shrink-0 place-items-center rounded-full border-2 border-ink text-ink lg:hidden"
+          className={`ml-auto grid h-11 w-11 shrink-0 place-items-center rounded-full border-2 lg:hidden ${
+            onDark ? "border-cream text-cream" : "border-ink text-ink"
+          }`}
         >
           <span className="sr-only">Menu</span>
           <span aria-hidden className="grid gap-[5px]">
@@ -139,7 +182,7 @@ export function SiteHeader({ signedIn = false, consoleHref = "/dashboard" }: {
           <Link
             href={signedIn ? consoleHref : "/signin"}
             onClick={() => setOpen(false)}
-            className="pill pill-lime mt-2"
+            className={`pill mt-2 ${cta}`}
           >
             {signedIn ? "Your console" : "Sign in"}
           </Link>

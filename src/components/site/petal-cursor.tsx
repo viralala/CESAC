@@ -1,7 +1,13 @@
 "use client";
 
 import { usePathname } from "next/navigation";
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useSyncExternalStore } from "react";
+
+import {
+  getCursorServerSnapshot,
+  getCursorSnapshot,
+  subscribeCursor,
+} from "@/lib/cursor";
 
 /**
  * Cherry blossom on the cursor.
@@ -97,9 +103,16 @@ export function PetalCursor() {
   // route's layout mounts LightCursor instead; this one has to know to stand
   // down rather than run both at once.
   const onHrFinalBoss = usePathname().startsWith("/events/hr-final-boss");
+  // The switch in the corner. Off unmounts the canvas rather than just pausing
+  // the loop, so no half-fallen petal is left frozen on the page.
+  const enabled = useSyncExternalStore(
+    subscribeCursor,
+    getCursorSnapshot,
+    getCursorServerSnapshot,
+  );
 
   useEffect(() => {
-    if (onHrFinalBoss) return;
+    if (onHrFinalBoss || !enabled) return;
     const canvas = ref.current;
     if (!canvas) return;
 
@@ -169,7 +182,12 @@ export function PetalCursor() {
       const alpha = t < 0.12 ? t / 0.12 : t > 0.66 ? 1 - (t - 0.66) / 0.34 : 1;
 
       // Blossoms pop: past full size, then settle. Single petals just appear.
-      const pop = p.bloom ? Math.min(1, 1.35 * (1 - Math.pow(1 - Math.min(t / 0.18, 1), 3))) : 1;
+      // Clamped at both ends: the curve overshoots above 1 by design, and the
+      // floor is there because a negative scale would be a negative radius
+      // below, which canvas throws on rather than ignoring.
+      const pop = p.bloom
+        ? Math.max(0, Math.min(1, 1.35 * (1 - Math.pow(1 - Math.min(t / 0.18, 1), 3))))
+        : 1;
 
       ctx.save();
       ctx.translate(p.x, p.y);
@@ -207,7 +225,13 @@ export function PetalCursor() {
     };
 
     const tick = (now: number) => {
-      const dt = Math.min((now - last) / 1000, 0.05);
+      // Floored at zero as well as capped. requestAnimationFrame hands back the
+      // timestamp from the start of the frame, which can be *earlier* than the
+      // performance.now() `start` recorded a moment before it, so the first
+      // frame of a restart could run time backwards: a petal's age went
+      // slightly negative, the bloom curve went with it, and the highlight
+      // circle asked canvas for a negative radius. That throws.
+      const dt = Math.max(0, Math.min((now - last) / 1000, 0.05));
       last = now;
 
       ctx.clearRect(0, 0, w, h);
@@ -296,9 +320,9 @@ export function PetalCursor() {
       window.removeEventListener("resize", resize);
       document.removeEventListener("visibilitychange", onHidden);
     };
-  }, [onHrFinalBoss]);
+  }, [onHrFinalBoss, enabled]);
 
-  if (onHrFinalBoss) return null;
+  if (onHrFinalBoss || !enabled) return null;
 
   return (
     <canvas

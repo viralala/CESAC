@@ -21,18 +21,56 @@ import { EVENT } from "@/lib/data/event";
  * Depth is still parallax, applied to colour and masonry: the wall barely
  * moves, the discs behind the word travel further, the seigaiha ground stays
  * put. Nothing here is a sentence the reader has to finish.
+ *
+ * The light comes off the event's own key art rather than off the sponsorship
+ * deck. The deck's title slide is flat warm black, and as a whole first screen
+ * it read as an unlit page; the poster is a sunset, so this is a sunset. Sun
+ * low and right, wall in front of it, warm haze on the horizon, and the word
+ * set in parchment with a crimson slash through it rather than in crimson on
+ * black, which is the one pairing that was costing all the contrast.
  */
+
+/** Three brush strokes across the display word, the way the key art cuts it. */
+function Slash({ className = "" }: { className?: string }) {
+  return (
+    <svg
+      viewBox="0 0 1000 280"
+      preserveAspectRatio="none"
+      className={className}
+      aria-hidden="true"
+    >
+      <g fill="var(--deck-crimson)">
+        <path d="M34 214 L744 48 L752 88 L42 246 Z" opacity="0.92" />
+        <path d="M402 258 L986 122 L990 146 L406 278 Z" opacity="0.6" />
+        <path d="M96 84 L352 26 L356 44 L100 102 Z" opacity="0.75" />
+      </g>
+    </svg>
+  );
+}
 
 export function EventHero() {
   return (
-    <section className="washi grain relative isolate flex min-h-[100svh] flex-col overflow-hidden pt-24 sm:pt-28">
+    <section className="deck-sky grain grain-dark relative isolate flex min-h-[100svh] flex-col overflow-hidden pt-24 sm:pt-28">
       <ParallaxScene className="pointer-events-none absolute inset-0">
-        <Squiggle className="absolute inset-0 h-full w-full opacity-90" />
+        {/* the sun. Furthest back and moving least, because the thing the eye
+            reads as distance is the thing that barely travels. */}
+        <ParallaxLayer depth={4} drift={-6} className="absolute inset-0">
+          <span
+            aria-hidden
+            className="absolute left-[64%] top-[66%] h-[52vmin] w-[52vmin] -translate-x-1/2 -translate-y-1/2 rounded-full"
+            style={{
+              background:
+                "radial-gradient(circle, var(--poster-sun) 0%, rgba(255,199,92,0.50) 15%, rgba(240,161,50,0.26) 33%, rgba(216,92,24,0.10) 58%, transparent 75%)",
+            }}
+          />
+        </ParallaxLayer>
+
+        <Squiggle className="absolute inset-0 h-full w-full opacity-[0.35]" />
 
         {/* the wall: the mass the word is cut out of, seated on the base line */}
         <ParallaxLayer depth={7} drift={-12} className="absolute inset-0">
           <WallMark
-            className="absolute bottom-0 left-1/2 h-[58vh] w-auto -translate-x-1/2 text-teal-2 opacity-[0.13] sm:h-[68vh]"
+            className="absolute bottom-0 left-1/2 h-[58vh] w-auto -translate-x-1/2 text-cream opacity-[0.1] sm:h-[68vh]"
             style={{ maskImage: "linear-gradient(to bottom, #000 78%, transparent 99%)" }}
           />
         </ParallaxLayer>
@@ -42,30 +80,47 @@ export function EventHero() {
         <ParallaxLayer depth={20} drift={-22} className="absolute inset-0">
           <span
             aria-hidden
-            className="absolute left-[12%] top-[26%] h-[30vmin] w-[30vmin] rounded-full bg-lime opacity-[0.55] blur-[2px]"
+            className="absolute left-[10%] top-[24%] h-[32vmin] w-[32vmin] rounded-full bg-[var(--poster-ember)] opacity-[0.22] blur-[70px]"
           />
         </ParallaxLayer>
         <ParallaxLayer depth={32} drift={-30} className="absolute inset-0">
           <span
             aria-hidden
-            className="absolute right-[10%] top-[18%] h-[22vmin] w-[22vmin] rounded-full bg-azure opacity-30 blur-xl"
+            className="absolute right-[8%] top-[14%] h-[24vmin] w-[24vmin] rounded-full bg-[var(--deck-crimson)] opacity-[0.3] blur-[50px]"
           />
         </ParallaxLayer>
       </ParallaxScene>
+
+      {/* The horizon. It keeps the sun from washing into the closing bar and
+          gives the bottom of the frame something to sit on, which is the job
+          the ground does on the poster. Static, not parallaxed: a horizon that
+          slides is just a band. */}
+      <span
+        aria-hidden
+        className="pointer-events-none absolute inset-x-0 bottom-0 z-0 h-[34vh]"
+        style={{
+          background:
+            "linear-gradient(to top, var(--poster-night) 0%, rgba(7,11,22,0.72) 34%, rgba(7,11,22,0.28) 66%, transparent 100%)",
+        }}
+      />
 
       {/* the event name set vertically down the right edge, the way a board
           carries its own title in the margin */}
       <span
         aria-hidden
-        className="jp pointer-events-none absolute right-3 top-[26%] z-0 hidden select-none text-[3.4rem] leading-[1.05] text-teal/[0.13] [writing-mode:vertical-rl] xl:block"
+        className="jp pointer-events-none absolute right-3 top-[26%] z-0 hidden select-none text-[3.4rem] leading-[1.05] text-cream/[0.12] [writing-mode:vertical-rl] xl:block"
       >
         {EVENT.jp}
       </span>
 
-      <Container className="relative flex flex-1 flex-col">
+      {/* the deck's registration marks. On the Container rather than the
+          section because `grain` already owns the section's ::after. */}
+      <Container className="deck-marks relative flex flex-1 flex-col pb-4">
         <div className="relative z-30 flex items-start justify-between gap-6">
-          <p className="label text-teal">{EVENT.host}</p>
-          <p className="label hidden text-right text-teal sm:block">{EVENT.kicker}</p>
+          <p className="label text-[var(--poster-amber)]">{EVENT.host}</p>
+          <p className="label hidden text-right text-[var(--poster-amber)] sm:block">
+            {EVENT.kicker}
+          </p>
         </div>
 
         {/* my-auto, not mt-auto: with nothing standing in the frame the word
@@ -74,23 +129,28 @@ export function EventHero() {
           {/* brush-set Japanese, overlapping the display word */}
           <span
             aria-hidden
-            className="jp pointer-events-none absolute -top-1 left-0 z-30 select-none text-[clamp(1.8rem,6vw,4.6rem)] leading-none text-teal-2 sm:-top-6"
+            className="jp pointer-events-none absolute -top-1 left-0 z-30 select-none text-[clamp(1.8rem,6vw,4.6rem)] leading-none text-[#f0a13280] sm:-top-6"
           >
             進撃の
           </span>
 
-          <p className="d-wide relative z-30 mt-8 pl-[clamp(2rem,8vw,6.5rem)] text-[clamp(1.5rem,4.2vw,3.2rem)] text-ink sm:mt-14">
+          <p className="d-wide relative z-30 mt-8 pl-[clamp(2rem,8vw,6.5rem)] text-[clamp(1.5rem,4.2vw,3.2rem)] text-cream sm:mt-14">
             Attack on
           </p>
 
-          {/* the statement word, now the subject of the frame */}
-          <h1 className="d-wide relative z-20 text-left text-[clamp(4.4rem,22vw,17.5rem)] leading-[0.82] text-teal sm:text-center">
-            <span className="sr-only">Attack on Token</span>
-            <span aria-hidden>Token</span>
-          </h1>
+          {/* The statement word, the subject of the frame. Parchment with the
+              crimson behind it rather than in it: crimson type on a dark sky
+              was the darkest thing on the darkest screen of the site. */}
+          <div className="relative">
+            <Slash className="pointer-events-none absolute inset-x-0 top-[6%] z-10 h-[86%] w-full" />
+            <h1 className="d-wide relative z-20 text-left text-[clamp(4.4rem,22vw,17.5rem)] leading-[0.82] text-cream sm:text-center">
+              <span className="sr-only">Attack on Token</span>
+              <span aria-hidden>Token</span>
+            </h1>
+          </div>
 
           {/* the tagline, hung off the right of the word so the block closes */}
-          <p className="serif-it relative z-30 mt-5 max-w-[30ch] text-[clamp(1rem,1.6vw,1.25rem)] leading-snug text-ink/70 sm:ml-auto sm:mt-6 sm:text-right">
+          <p className="serif-it relative z-30 mt-5 max-w-[30ch] text-[clamp(1rem,1.6vw,1.25rem)] leading-snug text-cream/70 sm:ml-auto sm:mt-6 sm:text-right">
             {EVENT.tagline}
           </p>
 
@@ -107,7 +167,7 @@ export function EventHero() {
             className="absolute -top-8 right-[1%] z-40 text-[0.72rem] sm:right-[2%] sm:top-[2%] sm:text-[clamp(0.72rem,1.1vw,0.9rem)]"
           >
             <span>
-              50
+              80
               <br />
               <span className="label-sm opacity-80">teams</span>
             </span>
@@ -131,7 +191,7 @@ export function EventHero() {
             className="absolute left-[0%] top-[6%] z-40 hidden text-[0.78rem] md:grid"
           >
             <span>
-              &#8377;200
+              &#8377;125
               <br />
               <span className="opacity-75">per team</span>
             </span>

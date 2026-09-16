@@ -1,8 +1,8 @@
+import Image from "next/image";
 import Link from "next/link";
 import type { ReactNode } from "react";
 
 import { signOut } from "@/app/actions/auth";
-import { Emblem } from "@/components/aot/art";
 import { Container, Label } from "@/components/aot/bits";
 import type { Viewer } from "@/lib/auth/session";
 
@@ -36,7 +36,14 @@ export function ConsoleBar({
     >
       <Container className="flex flex-wrap items-center gap-x-5 gap-y-3 py-3.5">
         <Link href="/" className="flex shrink-0 items-center gap-2.5 text-cream">
-          <Emblem className="h-6 w-10" />
+          <Image
+            src="/cesac-mark.png"
+            alt=""
+            width={407}
+            height={433}
+            className="h-6 w-auto shrink-0 brightness-0 invert"
+            sizes="24px"
+          />
           <span className="d-wide whitespace-nowrap text-[1rem] leading-none">
             CE<span className="text-lime">SAC</span>
           </span>
@@ -188,7 +195,9 @@ export function Stat({ value, label, note }: { value: ReactNode; label: string; 
     <div className="rounded-[var(--r-md)] bg-cream-2 px-5 py-5 text-center">
       <p className="d-tall text-[2.2rem] leading-none text-ink">{value}</p>
       <p className="label mt-2.5 text-teal">{label}</p>
-      {note ? <p className="mt-1.5 text-[0.85rem] leading-snug text-muted">{note}</p> : null}
+      {note ? (
+        <p className="mt-1.5 text-center text-[0.85rem] leading-snug text-muted">{note}</p>
+      ) : null}
     </div>
   );
 }

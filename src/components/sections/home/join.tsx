@@ -52,7 +52,7 @@ export function HomeJoin() {
                 <p className="label text-lime">Right now</p>
                 <p className="d-tall mt-4 text-[1.9rem] text-cream">Attack on Token</p>
                 <p className="mt-2 text-[0.95rem] leading-relaxed text-cream/65">
-                  A prompt engineering hackathon for teams of two. Fifty teams, three chapters, one
+                  A prompt engineering hackathon for teams of two. Eighty teams, three chapters, one
                   champion.
                 </p>
                 <Link

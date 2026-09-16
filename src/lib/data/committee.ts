@@ -7,6 +7,12 @@
  * readings of the title and nothing more, so keep them descriptive and replace
  * them the moment the committee supplies its own wording. Do not add
  * achievements, headcounts or history here that nobody has provided.
+ *
+ * Each vertical has three leads, transcribed into its `leads` list below; the
+ * rest of its members are heads, and the roster labels them as such. The
+ * Department Representative sits in `STUDENT_LEADERSHIP`, not `FACULTY`: on
+ * the sheet the DR is a student representative to the department, boxed
+ * separately from the HOD/Assistant HOD pairing, and the roster keeps that.
  */
 
 export const DEPARTMENT = {
@@ -23,6 +29,11 @@ export type Person = { name: string; role: string };
 export const FACULTY: readonly Person[] = [
   { name: "Dr. Sandeep Shinde", role: "HOD, Computer Engineering" },
   { name: "Dr. Aarti Agarkar", role: "Assistant HOD, Computer Engineering" },
+  { name: "Dr. Geeta Navale", role: "Student Activity Co-Ordinator" },
+];
+
+/** Student representation to the department, kept apart from faculty. */
+export const STUDENT_LEADERSHIP: readonly Person[] = [
   { name: "Yeshwant Kendre", role: "Department Representative" },
 ];
 
@@ -47,6 +58,8 @@ export type Vertical = {
   jp: string;
   remit: string;
   members: readonly string[];
+  /** This vertical's leads. Every other name in `members` is a head. */
+  leads: readonly string[];
 };
 
 export const VERTICALS: readonly Vertical[] = [
@@ -65,6 +78,7 @@ export const VERTICALS: readonly Vertical[] = [
       "Shreya Kiran Kothawade",
       "Aditya Krushna Chavan",
     ],
+    leads: ["Harsh Manjramkar", "Vedant Gaidhani", "Jasleen Kaur Multani"],
   },
   {
     id: "media",
@@ -75,11 +89,12 @@ export const VERTICALS: readonly Vertical[] = [
     members: [
       "Pranav Sable",
       "Harshada Bhapkar",
-      "Kadambari Harishchandra Dhaygude",
+      "Kadambari Dhaygude",
       "Rajvardhan Patil",
-      "Vishwajeet Gaikwad (Resources)",
+      "Vishwajeet Gaikwad",
       "Rutuja Hadke",
     ],
+    leads: ["Pranav Sable", "Harshada Bhapkar", "Kadambari Dhaygude"],
   },
   {
     id: "events",
@@ -96,6 +111,7 @@ export const VERTICALS: readonly Vertical[] = [
       "Shruti Vishwanath Chandolkar",
       "Ansh Singh Gurdatta",
     ],
+    leads: ["Anvay Bahadur", "Suhani Avinash Gawade", "Om Chavhan"],
   },
   {
     id: "outreach",
@@ -111,11 +127,13 @@ export const VERTICALS: readonly Vertical[] = [
       "Prathmesh Mante",
       "Jayesh Vishwakarma",
     ],
+    leads: ["Aarhan Goswami", "Shraddha Khetmalis", "Nandita Kharade"],
   },
 ];
 
 export const TEAM_TOTAL =
   FACULTY.length +
+  STUDENT_LEADERSHIP.length +
   BOARD.length +
   ASSOCIATES.length +
   VERTICALS.reduce((n, v) => n + v.members.length, 0);

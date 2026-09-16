@@ -20,7 +20,7 @@ export async function EventEnlist() {
     <section id="enlist" className="scroll-mt-24 bg-cream py-10 sm:py-16">
       <Container>
         <Reveal>
-          <div className="washi-deep grain grain-dark relative overflow-hidden rounded-[var(--r-xl)] px-6 py-16 text-cream sm:px-10 sm:py-20 lg:px-14">
+          <div className="washi-red-deep deck-frame grain grain-dark relative overflow-hidden rounded-[var(--r-xl)] px-6 py-16 text-cream sm:px-10 sm:py-20 lg:px-14">
             <Sticker
               shape="scallop"
               pop="lime"

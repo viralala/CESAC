@@ -6,12 +6,12 @@ import { Reveal } from "@/components/aot/reveal";
 import { PageHead } from "@/components/sections/page-head";
 import { SiteFooter } from "@/components/site/footer";
 import { CESAC, DOES } from "@/lib/data/cesac";
-import { FACULTY, TEAM_TOTAL, VERTICALS } from "@/lib/data/committee";
+import { FACULTY, STUDENT_LEADERSHIP, TEAM_TOTAL, VERTICALS } from "@/lib/data/committee";
 
 export const metadata: Metadata = {
   title: "About",
   description:
-    "CESAC is the Computer Engineering Student Activities Committee at VIT Pune: faculty leadership, a board of executives and four student verticals.",
+    "CESAC is the Computer Engineering Student Activities Committee at VIT Pune: faculty and student leadership, a board of executives and four student verticals.",
   alternates: { canonical: "/about" },
 };
 
@@ -99,16 +99,30 @@ export default function AboutPage() {
           </div>
 
           <Reveal className="mt-14">
-            <div className="card p-7 sm:p-9">
-              <Label>Faculty leadership</Label>
-              <ul className="mt-5 grid gap-3 sm:grid-cols-3">
-                {FACULTY.map((p) => (
-                  <li key={p.name} className="rounded-[var(--r-md)] bg-cream px-5 py-4">
-                    <p className="d-tall text-[1.2rem] leading-tight text-ink">{p.name}</p>
-                    <p className="label-sm mt-2 text-muted">{p.role}</p>
-                  </li>
-                ))}
-              </ul>
+            <div className="grid gap-3 lg:grid-cols-2">
+              <div className="card h-full p-7 sm:p-9">
+                <Label>Faculty leadership</Label>
+                <ul className="mt-5 grid gap-3">
+                  {FACULTY.map((p) => (
+                    <li key={p.name} className="rounded-[var(--r-md)] bg-cream px-5 py-4">
+                      <p className="d-tall text-[1.2rem] leading-tight text-ink">{p.name}</p>
+                      <p className="label-sm mt-2 text-muted">{p.role}</p>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+
+              <div className="card h-full p-7 sm:p-9">
+                <Label>Student leadership</Label>
+                <ul className="mt-5 grid gap-3">
+                  {STUDENT_LEADERSHIP.map((p) => (
+                    <li key={p.name} className="rounded-[var(--r-md)] bg-cream px-5 py-4">
+                      <p className="d-tall text-[1.2rem] leading-tight text-ink">{p.name}</p>
+                      <p className="label-sm mt-2 text-muted">{p.role}</p>
+                    </li>
+                  ))}
+                </ul>
+              </div>
             </div>
           </Reveal>
 

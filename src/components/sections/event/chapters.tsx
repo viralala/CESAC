@@ -28,14 +28,14 @@ const ON_POP: Record<Pop, string> = {
  */
 function Funnel() {
   const stages = [
-    { n: "50", label: "Enter", h: 100, fill: "rgba(245,241,231,0.22)", fg: "var(--cream)" },
+    { n: "80", label: "Enter", h: 100, fill: "rgba(245,241,231,0.22)", fg: "var(--cream)" },
     { n: "20", label: "After I", h: 54, fill: POP.azure, fg: ON_POP.azure },
     { n: "8", label: "After II", h: 30, fill: POP.violet, fg: ON_POP.violet },
     { n: "1", label: "Champion", h: 14, fill: POP.lime, fg: ON_POP.lime },
   ];
 
   return (
-    <div className="flex items-end gap-2 sm:gap-4" role="img" aria-label="Fifty teams enter, twenty advance after Chapter I, eight after Chapter II, one champion.">
+    <div className="flex items-end gap-2 sm:gap-4" role="img" aria-label="Eighty teams enter, twenty advance after Chapter I, eight after Chapter II, one champion.">
       {stages.map((s, i) => (
         <div key={s.label} className="flex flex-1 items-end gap-2 sm:gap-4">
           <div className="flex-1">
@@ -123,7 +123,7 @@ export function EventChapters() {
               </span>
             </Sticker>
 
-            <div className="shell-inner washi-teal grain grain-dark relative px-6 py-14 text-cream sm:px-10 sm:py-16 lg:px-14">
+            <div className="shell-inner washi-red-deep grain grain-dark relative px-6 py-14 text-cream sm:px-10 sm:py-16 lg:px-14">
               {/* the notched tab */}
               <span className="label absolute left-6 top-0 rounded-b-[var(--r-md)] bg-cream-2 px-5 py-2.5 text-teal sm:left-10">
                 Progression funnel
@@ -131,7 +131,7 @@ export function EventChapters() {
 
               <div className="grid gap-10 lg:grid-cols-[1fr_auto] lg:items-start">
                 <div className="mt-6">
-                  <Label tone="lime">Fifty teams enter</Label>
+                  <Label tone="lime">Eighty teams enter</Label>
                   <h2 className="d-tall mt-4 text-[clamp(2.6rem,7vw,5.25rem)] text-cream">
                     Three walls.
                     <br />
@@ -143,7 +143,7 @@ export function EventChapters() {
                   text="VISION FORGE · TOKEN TRIALS · FUSION AWAKENING · "
                   center={
                     <>
-                      50
+                      80
                       <br />
                       Teams
                     </>

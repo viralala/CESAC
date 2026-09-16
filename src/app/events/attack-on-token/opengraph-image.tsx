@@ -3,6 +3,10 @@ import { ImageResponse } from "next/og";
 export const size = { width: 1200, height: 630 };
 export const contentType = "image/png";
 
+/**
+ * The sponsorship deck's title slide, at share size: warm black ground, a
+ * brass frame, parchment display type and the one crimson word.
+ */
 export default function Image() {
   return new ImageResponse(
     (
@@ -13,9 +17,9 @@ export default function Image() {
           display: "flex",
           flexDirection: "column",
           justifyContent: "space-between",
-          padding: 72,
-          backgroundColor: "#f5f1e7",
-          color: "#0c1418",
+          padding: 64,
+          backgroundColor: "#141110",
+          color: "#f2ead9",
           fontFamily: "sans-serif",
           position: "relative",
         }}
@@ -23,14 +27,11 @@ export default function Image() {
         <div
           style={{
             position: "absolute",
-            right: -110,
-            top: 90,
-            width: 470,
-            height: 470,
-            borderRadius: 999,
-            backgroundColor: "#12656f",
+            inset: 28,
+            border: "2px solid #c99a3e",
           }}
         />
+
         <div
           style={{
             display: "flex",
@@ -38,7 +39,7 @@ export default function Image() {
             fontSize: 19,
             letterSpacing: 5,
             textTransform: "uppercase",
-            color: "rgba(12,20,24,0.55)",
+            color: "#c99a3e",
           }}
         >
           <span>CESAC / VIT Pune</span>
@@ -46,36 +47,36 @@ export default function Image() {
         </div>
 
         <div style={{ display: "flex", flexDirection: "column" }}>
+          <span style={{ fontSize: 124, fontWeight: 800, lineHeight: 0.86, letterSpacing: -2 }}>
+            ATTACK
+          </span>
+          <span style={{ fontSize: 124, fontWeight: 800, lineHeight: 0.86, letterSpacing: -2 }}>
+            ON <span style={{ color: "#b8202c" }}>TOKEN</span>
+          </span>
           <span
             style={{
               fontSize: 24,
               letterSpacing: 6,
               textTransform: "uppercase",
-              color: "#12656f",
-              marginBottom: 22,
+              color: "#c99a3e",
+              marginTop: 24,
             }}
           >
             Three chapters. One battlefield.
           </span>
-          <span style={{ fontSize: 132, fontWeight: 800, lineHeight: 0.86, letterSpacing: -2 }}>
-            ATTACK
-          </span>
-          <span style={{ fontSize: 132, fontWeight: 800, lineHeight: 0.86, letterSpacing: -2 }}>
-            ON <span style={{ color: "#12656f" }}>TOKEN</span>
-          </span>
         </div>
 
-        <div style={{ display: "flex", gap: 12 }}>
+        <div style={{ display: "flex", gap: 10 }}>
           {["Vision Forge", "Token Trials", "Fusion Awakening"].map((c, i) => (
             <span
               key={c}
               style={{
-                fontSize: 21,
+                fontSize: 20,
                 letterSpacing: 3,
                 textTransform: "uppercase",
                 padding: "10px 20px",
-                backgroundColor: ["#2fc4dd", "#6a2ff0", "#c6f733"][i],
-                color: i === 1 ? "#f5f1e7" : "#0c1418",
+                backgroundColor: i === 1 ? "#b8202c" : "#f2ead9",
+                color: i === 1 ? "#f2ead9" : "#141110",
               }}
             >
               {c}

@@ -1,8 +1,15 @@
 import { Container, Label } from "@/components/aot/bits";
 import { Reveal } from "@/components/aot/reveal";
-import { ASSOCIATES, BOARD, FACULTY, VERTICALS } from "@/lib/data/committee";
+import {
+  ASSOCIATES,
+  BOARD,
+  FACULTY,
+  STUDENT_LEADERSHIP,
+  VERTICALS,
+} from "@/lib/data/committee";
 
 const POPS = ["var(--azure)", "var(--violet)", "var(--lime)", "var(--pink)"];
+const POPS_FG = ["var(--ink)", "var(--white)", "var(--ink)", "var(--white)"];
 
 /**
  * The full roster.
@@ -11,6 +18,10 @@ const POPS = ["var(--azure)", "var(--violet)", "var(--lime)", "var(--pink)"];
  * groups them. No photographs, bios or titles are invented to fill the cards
  * out: names and verticals are what was supplied, so names and verticals are
  * what this renders.
+ *
+ * Inside a vertical everyone carries a rank: the three names in `leads` are
+ * leads and the rest are heads. Both are labelled, because a tag on only half
+ * a list reads as "these people matter and these do not".
  */
 export function Roster() {
   return (
@@ -22,6 +33,20 @@ export function Roster() {
               <Label>Faculty leadership</Label>
               <ul className="mt-5 grid gap-3 sm:grid-cols-3">
                 {FACULTY.map((p) => (
+                  <li key={p.name} className="rounded-[var(--r-md)] bg-cream px-5 py-4">
+                    <p className="d-tall text-[1.25rem] leading-tight text-ink">{p.name}</p>
+                    <p className="label-sm mt-2 text-muted">{p.role}</p>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          </Reveal>
+
+          <Reveal delay={40}>
+            <div className="card p-7 sm:p-9">
+              <Label>Student leadership</Label>
+              <ul className="mt-5 grid gap-3 sm:grid-cols-3">
+                {STUDENT_LEADERSHIP.map((p) => (
                   <li key={p.name} className="rounded-[var(--r-md)] bg-cream px-5 py-4">
                     <p className="d-tall text-[1.25rem] leading-tight text-ink">{p.name}</p>
                     <p className="label-sm mt-2 text-muted">{p.role}</p>
@@ -79,11 +104,35 @@ export function Roster() {
                     className="mt-6 grid gap-2 border-t-2 pt-6 sm:grid-cols-2"
                     style={{ borderColor: POPS[i] }}
                   >
-                    {v.members.map((m) => (
-                      <li key={m} className="text-[0.9rem] leading-snug text-ink/80">
-                        {m}
-                      </li>
-                    ))}
+                    {v.members.map((m) => {
+                      const isLead = v.leads.includes(m);
+                      return (
+                        <li
+                          key={m}
+                          className={`flex items-center gap-2 text-[0.9rem] leading-snug ${
+                            isLead ? "font-bold text-ink" : "text-ink/80"
+                          }`}
+                        >
+                          <span>{m}</span>
+                          {/* Both roles are named. The lead tag is filled in the
+                              vertical's own colour and the head tag is only an
+                              outline, so the two read as a rank rather than as
+                              two unrelated badges. */}
+                          {isLead ? (
+                            <span
+                              className="label-sm shrink-0 rounded-full px-2 py-0.5 text-[0.55rem]"
+                              style={{ background: POPS[i], color: POPS_FG[i] }}
+                            >
+                              Lead
+                            </span>
+                          ) : (
+                            <span className="label-sm shrink-0 rounded-full border border-ink/20 px-2 py-0.5 text-[0.55rem] text-muted">
+                              Head
+                            </span>
+                          )}
+                        </li>
+                      );
+                    })}
                   </ul>
                 </div>
               </Reveal>

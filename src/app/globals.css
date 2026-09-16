@@ -46,6 +46,36 @@
   --red-deep: #b3141f;
   --red-soft: #ff8a7a;
 
+  /* ---------- Attack on Token — the sponsorship deck's own palette ----------
+     Sampled straight out of Attack_on_Token_Sponsorship_Pitch.pdf: parchment
+     ground, warm near-black ink, crimson brand, brass rules and frames. These
+     live here as tokens and are wired up by .theme-aot further down. */
+  --deck-parchment: #f2ead9;
+  --deck-parchment-2: #e9dfc9;
+  --deck-parchment-3: #d9cdb2;
+  --deck-paper: #f6e9c9;
+  --deck-ink: #141110;
+  --deck-ink-2: #2a2523;
+  --deck-ink-3: #4a4038;
+  --deck-crimson: #b8202c;
+  --deck-brick: #9c3b3b;
+  --deck-gold: #c99a3e;
+  --deck-taupe: #8a7a5a;
+  --deck-khaki: #cfc4ab;
+  --deck-muted: #6a5f52;
+  --deck-muted-dark: #a99e8c;
+
+  /* ---------- Attack on Token — the key-art poster's sunset ----------
+     The deck above is the interior system. The poster is the hero: midnight
+     blue sky, a hot horizon, a gold sun, silhouettes cut out of it. Only the
+     hero reads these, and it reads them through .deck-sky below. */
+  --poster-night: #070b16;
+  --poster-night-2: #0e1628;
+  --poster-dusk: #2a1c22;
+  --poster-ember: #d85c18;
+  --poster-amber: #f0a132;
+  --poster-sun: #ffc75c;
+
   --muted: #5c6b70;
   --muted-dark: #9db4ba;
 
@@ -127,6 +157,9 @@
   --font-baloo: var(--font-baloo2), "Comic Sans MS", sans-serif;
   --font-kalam: var(--font-kalam), cursive;
 
+  /* Attack on Token's voice, straight off the sponsorship deck. */
+  --font-oswald: var(--font-oswald-src), "Arial Narrow", sans-serif;
+
   --color-hb-ink: var(--hb-ink);
   --color-hb-ink-2: var(--hb-ink-2);
   --color-hb-azure: var(--hb-azure);
@@ -161,6 +194,17 @@ body {
   font-family: var(--font-sans), ui-sans-serif, system-ui, sans-serif;
   font-synthesis-weight: none;
   overflow-x: hidden;
+}
+
+/* Justified body copy, site-wide.
+   In @layer base on purpose: Tailwind's own text-center / text-right / text-left
+   utilities sit in a later layer, so anything aligned explicitly in the markup
+   still wins. The exclusions carry no declaration at all rather than a reset,
+   so a label inside a centred sticker keeps inheriting that centring. */
+@layer base {
+  p:not(.d-tall, .d-wide, .label, .label-sm, .jp) {
+    text-align: justify;
+  }
 }
 
 ::selection {
@@ -247,6 +291,212 @@ body {
     background-color: var(--teal-2);
     background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='60' height='30'%3E%3Cg fill='none' stroke='%230f5059' stroke-width='1.2'%3E%3Cpath d='M-30 30a30 30 0 0 1 60 0M-22 30a22 22 0 0 1 44 0M-14 30a14 14 0 0 1 28 0M-6 30a6 6 0 0 1 12 0'/%3E%3Cpath d='M30 30a30 30 0 0 1 60 0M38 30a22 22 0 0 1 44 0M46 30a14 14 0 0 1 28 0M54 30a6 6 0 0 1 12 0'/%3E%3Cpath d='M0 0a30 30 0 0 1 60 0M8 0a22 22 0 0 1 44 0M16 0a14 14 0 0 1 28 0M24 0a6 6 0 0 1 12 0'/%3E%3C/g%3E%3C/svg%3E");
     background-size: 60px 30px;
+  }
+
+  /* The black seigaiha ground for the big panels on the Attack on Token page.
+     The background colour could follow a custom property, but the pattern
+     stroke is a literal hex baked into the data URI, so this needs to exist as
+     its own class.
+
+     There is deliberately no crimson twin. Crimson is chapter II's code as
+     well as the brand, so a crimson field swallowed that chapter's bar, its
+     numeral and its slice of the weight bar. The deck agrees: it accents in
+     crimson and never fills with it. */
+  .washi-red-deep {
+    background-color: var(--deck-ink);
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='60' height='30'%3E%3Cg fill='none' stroke='%232d2620' stroke-width='1.2'%3E%3Cpath d='M-30 30a30 30 0 0 1 60 0M-22 30a22 22 0 0 1 44 0M-14 30a14 14 0 0 1 28 0M-6 30a6 6 0 0 1 12 0'/%3E%3Cpath d='M30 30a30 30 0 0 1 60 0M38 30a22 22 0 0 1 44 0M46 30a14 14 0 0 1 28 0M54 30a6 6 0 0 1 12 0'/%3E%3Cpath d='M0 0a30 30 0 0 1 60 0M8 0a22 22 0 0 1 44 0M16 0a14 14 0 0 1 28 0M24 0a6 6 0 0 1 12 0'/%3E%3C/g%3E%3C/svg%3E");
+    background-size: 60px 30px;
+  }
+
+  /* ==========================================================================
+     ATTACK ON TOKEN — the sponsorship deck's theme
+
+     The route's layout wraps itself in .theme-aot, so everything below is
+     scoped to that one page: the community pages keep the teal brand, the
+     rounded geometry and the sticker pops untouched.
+
+     The deck (Attack_on_Token_Sponsorship_Pitch.pdf) is a warm, flat,
+     editorial system: parchment ground, warm near-black, one crimson accent
+     and brass rules, set in Oswald, with hard 2px boxes, corner registration
+     marks and no rounding or soft shadow anywhere. Re-pointing the shared
+     tokens is what carries most of that across without touching components.
+     ========================================================================== */
+  .theme-aot {
+    /* grounds: parchment, not the site's cooler cream */
+    --cream: var(--deck-parchment);
+    --cream-2: var(--deck-parchment-2);
+    --cream-3: var(--deck-parchment-3);
+    --white: var(--deck-paper);
+
+    /* ink: warm near-black off the deck, not the site's teal-black */
+    --ink: var(--deck-ink);
+    --ink-2: var(--deck-ink-2);
+    --ink-3: var(--deck-ink-3);
+
+    /* the brand slot the whole page reads through: crimson, with black for
+       the deep panels and brass where teal used to go light */
+    --teal: var(--deck-crimson);
+    --teal-2: var(--deck-ink);
+    --teal-3: var(--deck-gold);
+    --teal-4: var(--deck-gold);
+
+    /* The deck has no lime/violet/azure/pink. The four "pops" that colour-code
+       chapters, vitals and awards are remapped onto its own accents, so the
+       coding still works and nothing lands outside the palette.
+
+       Which slot gets which tone is not free: the components pair azure and
+       lime with ink text and violet and pink with cream, so the first two have
+       to stay light and the last two dark, or the labels stop reading. */
+    --azure: var(--deck-khaki);
+    --violet: var(--deck-crimson);
+    --lime: var(--deck-gold);
+    --pink: var(--deck-brick);
+    --blue: var(--deck-ink-3);
+
+    --red: var(--deck-crimson);
+    --red-deep: var(--deck-ink);
+    --red-soft: var(--deck-gold);
+
+    --muted: var(--deck-muted);
+    --muted-dark: var(--deck-muted-dark);
+
+    --line: rgba(20, 17, 16, 0.16);
+    --line-dark: rgba(242, 234, 217, 0.18);
+
+    /* Rounded, like the rest of the site. The deck itself draws hard boxes and
+       the first pass followed it all the way down to 2px, but square corners
+       were asked to go, so the geometry tokens are left alone and this route
+       rounds exactly the way the community pages do. What still makes it read
+       as the deck is the rules, frames and registration marks below, which do
+       that job without fighting the corners. */
+
+    /* no soft teal glow; the deck separates with rules, not depth */
+    --sh-1: none;
+    --sh-2: none;
+    --sh-3: none;
+  }
+
+  /* Oswald is the deck's voice. Mapped onto the existing display classes so
+     every heading on this route changes without a markup edit. */
+  .theme-aot .d-tall {
+    font-family: var(--font-oswald);
+    font-weight: 600;
+    letter-spacing: 0.005em;
+  }
+
+  .theme-aot .d-wide {
+    font-family: var(--font-oswald);
+    font-weight: 700;
+    letter-spacing: -0.015em;
+  }
+
+  .theme-aot .label,
+  .theme-aot .label-sm {
+    font-family: var(--font-oswald);
+    font-weight: 600;
+  }
+
+  /* The deck's boxes: a hard rule and nothing underneath it. */
+  .theme-aot .card {
+    border: 2px solid var(--ink);
+    box-shadow: none;
+  }
+
+  /* The toolbar is near-black on a near-black hero, so it needs an edge. */
+  .theme-aot .toolbar {
+    border: 1px solid var(--deck-gold);
+  }
+
+  /* A crimson rule around the dark panel, the way the deck frames its
+     featured boxes. Crimson on the frame rather than the field, so nothing
+     painted inside collides with it. */
+  .theme-aot .shell {
+    background: var(--deck-crimson);
+    padding: 6px;
+  }
+
+  /* The shell is rounded at --r-xl and padded 6px, so the inner panel has to
+     round 6px tighter or the crimson band bulges at the corners. */
+  .theme-aot .shell-inner {
+    border-radius: calc(var(--r-xl) - 6px);
+    outline: 1px solid var(--deck-gold);
+    outline-offset: -5px;
+  }
+
+  /* The hero sky, taken off the event's key art rather than the deck's title
+     slide.
+
+     The title slide is flat warm black, and as a whole first screen it just
+     read as "the lights are off". The poster the event is actually advertised
+     with is a sunset: midnight blue overhead, a hot amber band low down, and
+     everything else silhouetted against it. This is that, in four layers.
+
+     The seigaiha sits on top, at double its usual scale so the arcs read as
+     cloud banks rather than as fabric. It is the one motif that carries
+     through every version of this page and it is not to be dropped again. */
+  .deck-sky {
+    background-color: var(--poster-night);
+    background-image:
+      url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='60' height='30'%3E%3Cg fill='none' stroke='%23f0a132' stroke-opacity='.15' stroke-width='1.1'%3E%3Cpath d='M-30 30a30 30 0 0 1 60 0M-22 30a22 22 0 0 1 44 0M-14 30a14 14 0 0 1 28 0M-6 30a6 6 0 0 1 12 0'/%3E%3Cpath d='M30 30a30 30 0 0 1 60 0M38 30a22 22 0 0 1 44 0M46 30a14 14 0 0 1 28 0M54 30a6 6 0 0 1 12 0'/%3E%3Cpath d='M0 0a30 30 0 0 1 60 0M8 0a22 22 0 0 1 44 0M16 0a14 14 0 0 1 28 0M24 0a6 6 0 0 1 12 0'/%3E%3C/g%3E%3C/svg%3E"),
+      radial-gradient(
+        42% 30% at 66% 70%,
+        rgba(255, 199, 92, 0.42) 0%,
+        rgba(240, 161, 50, 0.26) 38%,
+        rgba(216, 92, 24, 0.12) 64%,
+        transparent 80%
+      ),
+      linear-gradient(
+        to top,
+        rgba(216, 92, 24, 0.26) 0%,
+        rgba(184, 62, 30, 0.14) 20%,
+        rgba(120, 44, 40, 0.06) 38%,
+        transparent 56%
+      ),
+      linear-gradient(
+        to bottom,
+        #070b16 0%,
+        #0e1628 32%,
+        #1a1c2e 58%,
+        #2a1c22 84%,
+        #1c1218 100%
+      );
+    background-size:
+      120px 60px,
+      cover,
+      cover,
+      cover;
+    background-repeat: repeat, no-repeat, no-repeat, no-repeat;
+  }
+  /* Brass frame plus registration marks in the corners — the device that
+     opens the deck and closes every one of its pages. */
+  .deck-frame {
+    position: relative;
+    outline: 1px solid var(--deck-gold);
+    outline-offset: -14px;
+  }
+
+  .deck-marks::before,
+  .deck-marks::after {
+    content: "";
+    position: absolute;
+    width: 26px;
+    height: 26px;
+    pointer-events: none;
+    z-index: 30;
+    border-color: var(--deck-gold);
+    border-style: solid;
+  }
+
+  .deck-marks::before {
+    top: 0;
+    left: 0;
+    border-width: 2px 0 0 2px;
+  }
+
+  .deck-marks::after {
+    right: 0;
+    bottom: 0;
+    border-width: 0 2px 2px 0;
   }
 
   /* ---------- HR Final Boss — grid-box ground ----------

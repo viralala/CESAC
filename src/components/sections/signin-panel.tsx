@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
 import { useActionState, useId, useState } from "react";
 
@@ -9,7 +10,7 @@ import {
   signInWithProvider,
   type AuthState,
 } from "@/app/actions/auth";
-import { Emblem, WallMark } from "@/components/aot/art";
+import { WallMark } from "@/components/aot/art";
 import { Container, Label, Ticks } from "@/components/aot/bits";
 import { Notice } from "@/components/console/shell";
 import { PROVIDER_LABEL, type Provider } from "@/lib/auth/providers";
@@ -114,7 +115,14 @@ export function SignInPanel({
               </span>
 
               <Link href="/" className="relative flex items-center gap-3">
-                <Emblem className="h-7 w-12 text-cream" />
+                <Image
+                  src="/cesac-mark.png"
+                  alt=""
+                  width={407}
+                  height={433}
+                  className="h-7 w-auto shrink-0 brightness-0 invert"
+                  sizes="28px"
+                />
                 <span className="d-wide text-lg">
                   Attack on <span className="text-lime">Token</span>
                 </span>

@@ -16,7 +16,7 @@ export const CESAC = {
   short: "VIT Pune",
   /** The hero has to answer "what is this" in one read. This is that sentence. */
   what:
-    "The student activities committee of the Computer Engineering department at VIT Pune. We run the department's events, and students from across the department run us.",
+    "Not a club. A community built by the Computer Engineering department at VIT Pune, for the department. We run the department's events, and students from across the department run us.",
   /** Used under the identity plate. Structural facts only. */
   structure:
     "CESAC sits under the department's faculty leadership. A board of executives steers it, and four verticals carry the work.",
@@ -89,8 +89,8 @@ export const EVENTS: readonly CesacEvent[] = [
     jp: "進撃のトークン",
     kicker: "Prompt engineering hackathon",
     blurb:
-      "Fifty teams of two, three chapters, one champion. Prompt an anime still into a film, survive a locked-prompt leaderboard, then build something out of three drawn chits.",
-    when: "Date and venue to be announced",
+      "Eighty teams of two, three chapters, one champion. Prompt an anime still into a film, survive a locked-prompt leaderboard, then build something out of three drawn chits.",
+    when: "3–4 October 2026 · Venue: TBA",
     status: "announced",
     href: "/events/attack-on-token",
   },

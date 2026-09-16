@@ -33,8 +33,8 @@ export const getSettings = cache(async (): Promise<Settings> => {
     data ?? {
       id: 1,
       registration_open: false,
-      seats_cap: 50,
-      entry_fee_inr: 200,
+      seats_cap: 80,
+      entry_fee_inr: 125,
       leaderboard_public: false,
       online_payment: false,
       upi_id: null,
@@ -238,8 +238,8 @@ export const getEventStats = cache(async (): Promise<EventStats> => {
   return (
     (data as EventStats | null) ?? {
       registration_open: false,
-      seats_cap: 50,
-      entry_fee_inr: 200,
+      seats_cap: 80,
+      entry_fee_inr: 125,
       teams_registered: 0,
       seats_taken: 0,
     }

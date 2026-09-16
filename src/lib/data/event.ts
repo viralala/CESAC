@@ -15,14 +15,14 @@ export const EVENT = {
   tagline: "Three chapters. One battlefield.",
   jp: "進撃のトークン",
   creed: "Forge the prompt. Survive the token.",
-  dateVenue: "Date and venue: TBA",
+  dateVenue: "3–4 October 2026 · Venue: TBA",
 } as const;
 
 /** The four numbers a team needs before they can decide to enter. */
 export const VITALS = [
-  { value: "50", label: "Teams", note: "100 students, capped" },
+  { value: "80", label: "Teams", note: "160 students, capped" },
   { value: "2", label: "Per team", note: "Duos only" },
-  { value: "₹200", label: "Entry", note: "₹100 a head" },
+  { value: "₹125", label: "Entry", note: "₹62.50 a head" },
   { value: "2", label: "Days", note: "Chapters I–III" },
 ] as const;
 
@@ -55,7 +55,7 @@ export const CHAPTERS: readonly Chapter[] = [
     task: "Prompt an anime-style still, then extend it into a 10 to 15 second video, in as few prompts as you can.",
     deliver: "Image + video + prompt log",
     tools: "Gemini · Google Flow (Veo)",
-    from: "50",
+    from: "80",
     to: "20",
     weight: 20,
     pop: "azure",
@@ -93,8 +93,8 @@ export const CHAPTERS: readonly Chapter[] = [
 /** How a team gets in. Three steps, no prose. */
 export const ENTRY = [
   { step: "01", title: "Find a partner", note: "Teams are exactly two." },
-  { step: "02", title: "Register the duo", note: "₹200 per team, ₹100 a head." },
-  { step: "03", title: "Show up on Day 1", note: "All 50 teams start at Chapter I." },
+  { step: "02", title: "Register the duo", note: "₹125 per team, ₹62.50 a head." },
+  { step: "03", title: "Show up on Day 1", note: "All 80 teams start at Chapter I." },
 ] as const;
 
 export const AWARDS = [

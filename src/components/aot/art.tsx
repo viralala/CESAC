@@ -6,32 +6,6 @@
  * asset. Marks here are crests, masonry and colour. Keep it that way.
  */
 
-/** "Wings of Prompt" — an original two-tone fanned-blade crest. */
-export function Emblem({ className = "" }: { className?: string }) {
-  const blades = [
-    "M59,46 L17,13 L13,22 L52,51 Z",
-    "M59,46 L21,26 L19,35 L54,54 Z",
-    "M59,46 L27,38 L27,46 L56,56 Z",
-    "M59,46 L33,50 L35,57 L57,59 Z",
-  ];
-
-  return (
-    <svg viewBox="0 0 120 72" className={className} aria-hidden="true">
-      <g fill="currentColor">
-        {blades.map((d) => (
-          <path key={d} d={d} />
-        ))}
-      </g>
-      <g fill="var(--lime)" transform="translate(120,0) scale(-1,1)">
-        {blades.map((d) => (
-          <path key={d} d={d} />
-        ))}
-      </g>
-      <path d="M60,24 L67,45 L60,66 L53,45 Z" fill="currentColor" />
-    </svg>
-  );
-}
-
 /**
  * The Wall — an original geometric mark, and there is no figure in it.
  *
