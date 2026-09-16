@@ -94,7 +94,7 @@ export function SiteFooter() {
             <div className="flex items-center gap-4">
               <span className="grid h-12 w-12 place-items-center rounded-full bg-white">
                 <Image
-                  src="/cesac-logo.png"
+                  src="/cesac-mark.png"
                   alt=""
                   width={64}
                   height={64}

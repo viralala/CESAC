@@ -51,7 +51,7 @@ export function HomeWhat() {
             <div className="card flex h-full flex-col justify-between p-8">
               <div className="flex items-start gap-5">
                 <Image
-                  src="/cesac-logo.png"
+                  src="/cesac-mark.png"
                   alt={`${CESAC.abbr}, the ${CESAC.name}`}
                   width={320}
                   height={344}
