@@ -2,12 +2,14 @@ import type { Metadata } from "next";
 import Link from "next/link";
 
 import { Container, Label } from "@/components/aot/bits";
+import { Certificates } from "@/components/console/certificates";
 import { HandInForm } from "@/components/console/hand-in-form";
 import { InviteCode } from "@/components/console/invite-code";
 import { PaymentPanel } from "@/components/console/payment-panel";
 import { Chip, ConsoleBar, Empty, Notice, Panel, Row } from "@/components/console/shell";
 import { TeamSetup } from "@/components/console/team-setup";
 import { requireParticipant } from "@/lib/auth/guard";
+import { getMyCertificates } from "@/lib/data/certificates";
 import {
   getChapters,
   getLeaderboard,
@@ -15,6 +17,7 @@ import {
   getMyTeam,
   getSettings,
 } from "@/lib/data/console";
+import { driveConfigured } from "@/lib/drive/client";
 import { handInFor } from "@/lib/data/hand-ins";
 import { EVENT } from "@/lib/data/event";
 import { razorpayConfigured } from "@/app/actions/team";
@@ -42,14 +45,18 @@ const NAV = [
 export default async function DashboardPage() {
   const viewer = await requireParticipant();
 
-  const [team, settings, chapters, submissions, board, onlinePayments] = await Promise.all([
-    getMyTeam(),
-    getSettings(),
-    getChapters(),
-    getMySubmissions(),
-    getLeaderboard(),
-    razorpayConfigured(),
-  ]);
+  const [team, settings, chapters, submissions, board, onlinePayments, certificates] =
+    await Promise.all([
+      getMyTeam(),
+      getSettings(),
+      getChapters(),
+      getMySubmissions(),
+      getLeaderboard(),
+      razorpayConfigured(),
+      getMyCertificates(),
+    ]);
+
+  const driveReady = driveConfigured();
 
   const standing = team ? board.rows.find((row) => row.team_id === team.id) : undefined;
   const isCaptain = team?.captain_id === viewer.id;
@@ -275,6 +282,22 @@ export default async function DashboardPage() {
               </section>
             </>
           )}
+
+          {/*
+            Outside the team branch on purpose. Certificates belong to the
+            student and to the department, not to Attack on Token, so this
+            panel is here for every signed-in student whether or not they have
+            a team, an entry fee or any interest in the event at all.
+          */}
+          <div className="mt-6">
+            <Panel
+              eyebrow="Your record"
+              title="Certificates"
+              aside={certificates.length ? `${certificates.length} on file` : undefined}
+            >
+              <Certificates certificates={certificates} configured={driveReady} />
+            </Panel>
+          </div>
         </Container>
       </div>
     </>

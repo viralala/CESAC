@@ -73,6 +73,30 @@ function readable(message: string): string {
   return message;
 }
 
+/**
+ * Who is knocking, as far as the throttle is concerned.
+ *
+ * The left-most entry in x-forwarded-for is the client as the first proxy saw
+ * it. It is spoofable in general, which is why it only ever widens the net
+ * here: the per-address counter does the real work and does not depend on it.
+ */
+async function clientIp(): Promise<string> {
+  const h = await headers();
+  const forwarded = h.get("x-forwarded-for");
+  if (forwarded) return forwarded.split(",")[0]!.trim();
+  return h.get("x-real-ip")?.trim() ?? "";
+}
+
+/**
+ * One answer for every way a credential can be wrong.
+ *
+ * Saying which half did not match turns the form into a way to find out who
+ * holds an account, and right now that matters more than usual: until the last
+ * imported student has changed their password, knowing an address is on the
+ * roster is knowing a password that works.
+ */
+const GENERIC_SIGN_IN_ERROR = "Invalid email or password.";
+
 export async function signInWithPassword(
   _state: AuthState,
   formData: FormData,
@@ -85,11 +109,47 @@ export async function signInWithPassword(
   if (!password) return { error: "Enter your password.", field: "password", email };
 
   const supabase = await createClient();
+  const ip = await clientIp();
+
+  // Ask before trying, so a run of guesses costs the attacker the wait rather
+  // than the auth endpoint the attempts.
+  const { data: waitFor } = await supabase.rpc("login_throttle_check", {
+    p_email: email,
+    p_ip: ip,
+  });
+
+  if (typeof waitFor === "number" && waitFor > 0) {
+    const minutes = Math.ceil(waitFor / 60);
+    return {
+      error: `Too many sign-in attempts. Try again in ${
+        minutes <= 1 ? "a minute" : `${minutes} minutes`
+      }.`,
+      field: "password",
+      email,
+    };
+  }
+
   const { error } = await supabase.auth.signInWithPassword({ email, password });
 
-  if (error) return { error: readable(error.message), field: "password", email };
+  // The outcome only. The password itself is never passed on, written down or
+  // logged anywhere in this function.
+  await supabase.rpc("login_attempt_record", { p_email: email, p_ip: ip, p_ok: !error });
+
+  if (error) {
+    // An unconfirmed account is a different problem with a different fix, and
+    // the sign-up form already says as much when the address is taken, so
+    // there is nothing left to conceal by hiding it here.
+    const unconfirmed = error.message.toLowerCase().includes("email not confirmed");
+    return {
+      error: unconfirmed ? readable(error.message) : GENERIC_SIGN_IN_ERROR,
+      field: "password",
+      email,
+    };
+  }
 
   const viewer = await getViewer();
+  if (viewer?.mustChangePassword) redirect("/account/password?first=1");
+
   redirect(next ?? homeFor(viewer?.role ?? "participant"));
 }
 
@@ -189,10 +249,33 @@ export async function updatePassword(_state: AuthState, formData: FormData): Pro
   if (password !== confirm) return { error: "The two passwords do not match.", field: "password" };
 
   const supabase = await createClient();
+  const viewer = await getViewer();
+
+  // An imported student setting their first real password must not be allowed
+  // to set it back to the address they signed in with, which is the one thing
+  // the whole forced-change screen exists to get rid of.
+  if (viewer?.mustChangePassword && password.trim().toLowerCase() === viewer.email) {
+    return {
+      error: "Choose something other than your email address.",
+      field: "password",
+    };
+  }
+
   const { error } = await supabase.auth.updateUser({ password });
   if (error) return { error: readable(error.message), field: "password" };
 
-  const viewer = await getViewer();
+  // Only now, and only through this function: the flag is guarded in the
+  // database so that clearing it cannot be faked from the browser, and it is
+  // cleared as the last step of the change so it can never outlive the
+  // password it describes.
+  const { error: flagError } = await supabase.rpc("complete_password_change");
+  if (flagError) {
+    return {
+      error: "Your password was changed, but the account did not unlock. Sign in again.",
+      field: "password",
+    };
+  }
+
   redirect(homeFor((viewer?.role ?? "participant") as Role));
 }
 

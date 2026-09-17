@@ -18,6 +18,12 @@ export type Viewer = {
   avatarUrl: string | null;
   /** True for both 'admin' and 'owner'. The console does not distinguish. */
   isAdmin: boolean;
+  /**
+   * True while the account still holds the password it was imported with,
+   * which is the student's own email address. Every guarded page refuses to
+   * render until this is false.
+   */
+  mustChangePassword: boolean;
 };
 
 export function viewerFrom(profile: Profile): Viewer {
@@ -28,6 +34,7 @@ export function viewerFrom(profile: Profile): Viewer {
     role: profile.role,
     avatarUrl: profile.avatar_url,
     isAdmin: profile.role === "admin" || profile.role === "owner",
+    mustChangePassword: profile.must_change_password,
   };
 }
 

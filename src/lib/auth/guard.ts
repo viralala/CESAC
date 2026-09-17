@@ -40,9 +40,25 @@ function toGate(role: Role, next: string): never {
   redirect(`/signin?next=${encodeURIComponent(next)}${role === "admin" ? "&role=admin" : ""}`);
 }
 
+/**
+ * The one place a still-imported account is turned away.
+ *
+ * A bulk-imported student's first password is their own email address, which
+ * every classmate knows. The window where that is true has to be as close to
+ * zero as the app can make it, so the check sits in the same function every
+ * protected page already calls rather than in a layout or the proxy, where a
+ * page added later could quietly miss it. The change-password screen itself
+ * calls getViewer directly and never this, so there is no loop.
+ */
+function gateUnsetPassword(viewer: Viewer): void {
+  if (viewer.mustChangePassword) redirect("/account/password?first=1");
+}
+
 async function requireRole(role: Role, next: string): Promise<Viewer> {
   const viewer = await getViewer();
   if (!viewer) toGate(role, next);
+
+  gateUnsetPassword(viewer);
 
   const wantsAdmin = role === "admin" || role === "owner";
   if (wantsAdmin && !viewer.isAdmin) redirect("/dashboard");

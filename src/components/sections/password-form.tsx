@@ -5,7 +5,7 @@ import { useActionState, useId } from "react";
 import { updatePassword, type AuthState } from "@/app/actions/auth";
 import { Notice } from "@/components/console/shell";
 
-export function PasswordForm() {
+export function PasswordForm({ forced = false }: { forced?: boolean }) {
   const [state, action, pending] = useActionState<AuthState, FormData>(updatePassword, {});
   const uid = useId();
 
@@ -25,7 +25,11 @@ export function PasswordForm() {
           placeholder="••••••••"
           className="field mt-2.5"
         />
-        <p className="serif-it mt-2 text-[0.85rem] text-muted">At least 8 characters.</p>
+        <p className="serif-it mt-2 text-[0.85rem] text-muted">
+          {forced
+            ? "At least 8 characters, and not your email address."
+            : "At least 8 characters."}
+        </p>
       </div>
 
       <div>
@@ -51,7 +55,7 @@ export function PasswordForm() {
         disabled={pending}
         className="pill pill-lime w-full disabled:cursor-progress disabled:opacity-70"
       >
-        {pending ? "Saving" : "Save the password"}
+        {pending ? "Saving" : forced ? "Save it and continue" : "Save the password"}
       </button>
     </form>
   );

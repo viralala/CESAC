@@ -229,11 +229,14 @@ participants on `/dashboard`, organisers on `/admin`.
 
 **The security model, in one paragraph**
 
-There is no service role key in this codebase. Organiser powers ride on the
+The deployed site holds no service role key. Organiser powers ride on the
 signed-in user's own role, and every rule is enforced by Postgres rather than by
 the app: reads go through row level security, and the writes that carry real
 invariants go through `security definer` functions that re-check `is_admin()`
-themselves. A participant calling an organiser endpoint directly gets
+themselves. The one thing that genuinely needs the service role key, creating
+accounts in bulk, is a local script run by hand rather than a route, precisely
+so the key never has to live in the deployment. See
+[Importing the roster](#-importing-the-roster). A participant calling an organiser endpoint directly gets
 `Organisers only.` from the database, not from a route handler. Nobody can
 promote themselves: a trigger blocks any role change that an organiser did not
 make. Uploads land in a private bucket under `{team_id}/…`, and the storage
@@ -269,6 +272,156 @@ gets a seat, once it has two people and a verified payment.
 the row to `locked` in the same statement. Closing a chapter locks every
 outstanding hand-in in it. Neither is undone by the app, because neither is the
 app's decision to make.
+
+## 🎓 Importing the roster
+
+The department's students do not sign themselves up. Their accounts are made
+ahead of time from the spreadsheets the office keeps, so that on day one every
+student already exists and only has to sign in.
+
+**The script**
+
+```bash
+npx tsx scripts/import-students.ts            # parse and report, writes nothing
+npx tsx scripts/import-students.ts --commit   # create the accounts
+```
+
+It reads `../Data/SY-Student Info.xlsx` and `../Data/TY-Student Info.xlsx`,
+alongside the repo. Dry run is the default on purpose: a run that creates
+nearly two thousand accounts should be something you asked for twice.
+
+**What it does with the spreadsheets**
+
+Neither file is a clean table. Header rows sit at different offsets from sheet
+to sheet, one sheet has a title banner above the header and another an empty
+spacer column, so columns are found by their heading text rather than by index.
+From the SY workbook it reads all twelve division sheets. From the TY workbook
+it reads only `COMP`: `Sheet1` is the whole institute across every branch, and
+the sheets named `A` to `N` are the same Computer Engineering students as
+`COMP` split by division, so reading either alongside `COMP` would import the
+same people twice.
+
+Addresses are lowercased, trimmed and validated. Damage that is unambiguous is
+repaired: whitespace inside an address, a missing `@` in front of an otherwise
+intact domain, a bare `vit` that lost its `.edu`, a stray digit welded to the
+end of one. Damage that needs a guess is not. An address that is merely
+suspicious, a one-letter-off domain say, is imported untouched and listed under
+**worth a look**, because inventing a correction to somebody's identity is
+worse than handing the row back. That matters more than usual here: the address
+is also the first password, so a wrong repair locks a student out of an account
+whose credentials they cannot guess.
+
+Two kinds of repeat are treated differently. The same person listed twice is
+harmless and the first listing wins. One address against two different students
+is a fault in the roster, and neither is imported, because whoever came second
+would silently be handed an account under the first one's name.
+
+Everything rejected is printed with its sheet, row and reason, and written to
+`import-report.csv`. Fix the spreadsheet, run it again, and only the missing
+accounts are created. The script is safe to re-run: an address that already has
+an account is skipped, so a run that dies halfway just needs running again.
+
+**The first password**
+
+Each account's password is the student's own email address, bcrypt hashed by
+Supabase Auth on the way in. The script never stores, logs or prints a
+plaintext password.
+
+An address is not a secret, so that password is only acceptable for as long as
+it takes to change it. Every imported account is created with
+`must_change_password` set, and `requireParticipant()` / `requireAdmin()` bounce
+the account to `/account/password` until it is cleared. Nothing else in the app
+opens first. The flag is protected in the database by a trigger, so a student
+cannot clear it with a `PATCH` from the browser and walk past the screen; the
+only thing that clears it is `complete_password_change()`, called after
+Supabase has actually accepted a new password. Setting the new password back to
+the email address is refused.
+
+**Running it**
+
+The import needs the service role key, which overrides every row level security
+policy in the project. It is used on a laptop for a few minutes and never
+deployed:
+
+1. Supabase dashboard, **Project Settings → API → service_role**, copy it.
+2. Put it in `.env.local`, which is gitignored:
+   `SUPABASE_SERVICE_ROLE_KEY="eyJ..."`
+3. Run the dry run, read the report, fix the spreadsheet if you want the
+   rejected rows in.
+4. Run it again with `--commit`.
+5. Delete the key from `.env.local` afterwards. It is not needed again until
+   the next intake.
+
+Worth switching on at the same time: **Authentication → Policies → leaked
+password protection**, which checks new passwords against HaveIBeenPwned. It is
+off by default, and about to matter for a lot of people at once.
+
+## 📜 Certificates and Google Drive
+
+Students upload their own certificates from the dashboard. The files go to
+Google Drive, not to this app's storage, so the department keeps one copy
+rather than two that drift apart. Postgres holds the index: who it belongs to,
+what it is called, and the Drive file id and link.
+
+Uploads are validated by their **contents**, not their filename. The type a
+browser reports comes from the extension and is trivial to change, so
+`src/app/actions/certificates.ts` reads the leading bytes and accepts only a
+real PDF, PNG or JPEG, up to 10MB. Each student gets a subfolder named after
+their email, made on their first upload and remembered on their profile.
+`certificates_read_own` means a student sees their own and nobody else's.
+
+**Uploads must go to a shared drive**
+
+This is the part that catches people out. A service account has **no storage
+quota of its own and cannot own files**. Share a folder from a personal My
+Drive with it and every upload fails with `storageQuotaExceeded`, however much
+space that account has left. The parent folder has to live in a **shared
+drive**, where the drive owns the file instead. `vit.edu` is Google Workspace,
+so shared drives are available. The client detects this failure and says so
+rather than letting you go and buy storage that will not fix it.
+
+**Setting it up**
+
+1. **A Google Cloud project.** <https://console.cloud.google.com> → new project,
+   call it something like `cesac-certificates`.
+2. **Enable the Drive API.** APIs & Services → Library → search **Google Drive
+   API** → Enable.
+3. **Make a service account.** APIs & Services → Credentials → Create
+   credentials → Service account. Name it `cesac-certificates`. No project role
+   is needed: its access comes from the folder being shared with it, not from
+   IAM.
+4. **Make a key.** Open the service account → Keys → Add key → Create new key →
+   **JSON**. It downloads once. Treat it like a password.
+5. **Copy its email.** It looks like
+   `cesac-certificates@your-project.iam.gserviceaccount.com`.
+6. **Make a shared drive.** Google Drive → Shared drives → new, for example
+   *CESAC Department*. Inside it, create the folder **Department Certificates**.
+7. **Share it with the service account.** Right-click the shared drive → Manage
+   members → paste the service account email → **Content manager**. Editor is
+   enough to upload; content manager also lets it tidy up.
+8. **Get the folder id.** Open *Department Certificates* and take it from the
+   address bar: `…/folders/THIS_PART_HERE`.
+9. **Set the variables** in `.env.local` for development and in the Vercel
+   project settings for the deployment:
+
+   ```
+   GOOGLE_SERVICE_ACCOUNT_JSON='{"type":"service_account", ...}'
+   GOOGLE_DRIVE_PARENT_FOLDER_ID="1AbC..."
+   ```
+
+   Paste the JSON key file whole. If a single long value is awkward, the split
+   form works too:
+
+   ```
+   GOOGLE_SERVICE_ACCOUNT_EMAIL="cesac-certificates@your-project.iam.gserviceaccount.com"
+   GOOGLE_PRIVATE_KEY="-----BEGIN PRIVATE KEY-----\nMIIE...\n-----END PRIVATE KEY-----\n"
+   ```
+
+   The `\n` escapes are handled, and so are stray wrapping quotes.
+
+Leave these unset and the dashboard says uploads are not switched on yet
+instead of breaking. Nothing here reaches the browser: the key is server only
+and every Drive call is made from the server.
 
 ## 🛠 Stack
 

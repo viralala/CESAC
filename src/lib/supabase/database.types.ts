@@ -64,6 +64,50 @@ export type Database = {
           },
         ];
       };
+      certificates: {
+        Row: {
+          created_at: string;
+          drive_file_id: string;
+          drive_link: string;
+          file_name: string;
+          id: string;
+          mime_type: string;
+          owner_id: string;
+          size_bytes: number;
+          title: string;
+        };
+        Insert: {
+          created_at?: string;
+          drive_file_id: string;
+          drive_link: string;
+          file_name: string;
+          id?: string;
+          mime_type: string;
+          owner_id: string;
+          size_bytes: number;
+          title: string;
+        };
+        Update: {
+          created_at?: string;
+          drive_file_id?: string;
+          drive_link?: string;
+          file_name?: string;
+          id?: string;
+          mime_type?: string;
+          owner_id?: string;
+          size_bytes?: number;
+          title?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "certificates_owner_id_fkey";
+            columns: ["owner_id"];
+            isOneToOne: false;
+            referencedRelation: "profiles";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
       chapters: {
         Row: {
           allow_edit_after_submit: boolean;
@@ -130,6 +174,30 @@ export type Database = {
           tools?: string | null;
           updated_at?: string;
           weight?: number;
+        };
+        Relationships: [];
+      };
+      login_attempts: {
+        Row: {
+          attempted_at: string;
+          email: string;
+          id: number;
+          ip: string | null;
+          succeeded: boolean;
+        };
+        Insert: {
+          attempted_at?: string;
+          email: string;
+          id?: never;
+          ip?: string | null;
+          succeeded: boolean;
+        };
+        Update: {
+          attempted_at?: string;
+          email?: string;
+          id?: never;
+          ip?: string | null;
+          succeeded?: boolean;
         };
         Relationships: [];
       };
@@ -207,9 +275,11 @@ export type Database = {
           avatar_url: string | null;
           college: string | null;
           created_at: string;
+          drive_folder_id: string | null;
           email: string;
           full_name: string | null;
           id: string;
+          must_change_password: boolean;
           phone: string | null;
           role: Database["public"]["Enums"]["app_role"];
           updated_at: string;
@@ -219,9 +289,11 @@ export type Database = {
           avatar_url?: string | null;
           college?: string | null;
           created_at?: string;
+          drive_folder_id?: string | null;
           email: string;
           full_name?: string | null;
           id: string;
+          must_change_password?: boolean;
           phone?: string | null;
           role?: Database["public"]["Enums"]["app_role"];
           updated_at?: string;
@@ -231,9 +303,11 @@ export type Database = {
           avatar_url?: string | null;
           college?: string | null;
           created_at?: string;
+          drive_folder_id?: string | null;
           email?: string;
           full_name?: string | null;
           id?: string;
+          must_change_password?: boolean;
           phone?: string | null;
           role?: Database["public"]["Enums"]["app_role"];
           updated_at?: string;
@@ -590,7 +664,13 @@ export type Database = {
         Args: { p_name: string; p_partner_email?: string; p_partner_name?: string };
         Returns: string;
       };
+      complete_password_change: { Args: never; Returns: undefined };
       is_admin: { Args: never; Returns: boolean };
+      login_attempt_record: {
+        Args: { p_email: string; p_ip: string; p_ok: boolean };
+        Returns: undefined;
+      };
+      login_throttle_check: { Args: { p_email: string; p_ip: string }; Returns: number };
       join_team: { Args: { p_code: string }; Returns: string };
       leaderboard_is_public: { Args: never; Returns: boolean };
       leave_team: { Args: never; Returns: undefined };
