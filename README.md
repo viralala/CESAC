@@ -273,6 +273,62 @@ the row to `locked` in the same statement. Closing a chapter locks every
 outstanding hand-in in it. Neither is undone by the app, because neither is the
 app's decision to make.
 
+## 🎯 The student console
+
+`/dashboard` belongs to the student, not to an event. It opens on who they are
+and what they have done, and it is the same six tabs for everybody:
+
+| Tab | Route | What is there |
+| --- | --- | --- |
+| Overview | `/dashboard` | Name, class, PRN, standing, and a count of everything else. Says what is blank rather than hiding it. |
+| Certificates | `/dashboard/certificates` | The record, and the form that adds to it. |
+| Ranking | `/dashboard/ranking` | Where the student stands, the top ten, and what each place is worth. |
+| Events | `/dashboard/events` | Every event, its state, and the one decision: whether to enter. |
+| Questions | `/dashboard/queries` | Ask the committee something; the answer arrives in the same place. |
+| My details | `/dashboard/profile` | Name, class, PRN and mobile. The address is shown, not offered. |
+
+**What is deliberately not there**
+
+No rounds, no schedule, no rules, no run of the show. All of that lives on the
+event's own public page, written for somebody deciding whether to enter.
+Repeating it in a portal beside a PRN makes a second copy that disagrees with
+the first within a fortnight. Attack on Token's team, entry fee and three
+chapters moved to `/dashboard/attack-on-token`, behind that event's own lock.
+
+**Events are locked, and nothing in the app unlocks them**
+
+`dept_events.state` is `locked`, `open` or `closed`, and only an organiser
+writes it. `register_for_event()` refuses an entry to anything not `open`,
+whatever the page happens to be showing. There is no screen for flipping it
+yet, so today it is set in the Supabase dashboard; see
+[ADMIN-CONSOLE.md](ADMIN-CONSOLE.md).
+
+**Entering in pairs**
+
+For an event with `team_size = 2` the student names a partner by email, and the
+database checks all of it: a `vit.edu` address, an account that actually
+exists, not themselves, and not somebody already entered on either side. The
+fee only appears once the entry does, and it lands on `submitted` for an
+organiser to verify. The partner sees the entry and who made it, and no payment
+box: the fee is not theirs.
+
+**The address is the account's, not the student's**
+
+A student can edit their name, class, PRN and mobile. They cannot edit their
+email, because that is what the roster was imported on and what the account
+signs in with. `guard_profile_email` reverts any change that does not agree
+with `auth.users`, so the rule holds whatever writes the row.
+
+**Ranking**
+
+Points come from `certificate_points()` in the database, one rule in one place:
+100 for a first, 75 for a second, 50 for a third, 10 for taking part. A student
+can only read their own profile, so the board is a `security definer` function
+that returns a name, a year and two counts and nothing else. Anybody who has
+uploaded nothing has no position, and the page says so rather than inventing
+one. Certificates count whether or not an organiser has verified them yet,
+which the ranking page states out loud.
+
 ## 🎓 Importing the roster
 
 The department's students do not sign themselves up. Their accounts are made
@@ -358,10 +414,18 @@ off by default, and about to matter for a lot of people at once.
 
 ## 📜 Certificates and Google Drive
 
-Students upload their own certificates from the dashboard. The files go to
+Students upload their own certificates from the console. The files go to
 Google Drive, not to this app's storage, so the department keeps one copy
-rather than two that drift apart. Postgres holds the index: who it belongs to,
-what it is called, and the Drive file id and link.
+rather than two that drift apart. Postgres holds the claim: whose it is, which
+event it was for, what they came away with, what they won if anything, and the
+Drive file id and link.
+
+That last part is what makes the ranking possible. A row here is not a file
+with a name; it is participation, or a third, second or first, with a prize
+amount where there was one. A prize against "participation" is refused by a
+check constraint, because a board built on contradictions is worth nothing.
+Uploads start unverified, and an organiser marking them checked is still to
+build.
 
 Uploads are validated by their **contents**, not their filename. The type a
 browser reports comes from the extension and is trivial to change, so
@@ -450,11 +514,18 @@ src/app/
   signin/ signup/           the gate; signin/help resets a password
   auth/callback/            where OAuth and email links come back to
   account/password/         set a new password after a reset
-  dashboard/                participant console (guarded)
+  dashboard/                student console (guarded); layout.tsx holds the tabs
+    certificates/           the record, and the form that adds to it
+    ranking/                standing, the top ten, what each place is worth
+    events/                 every event, entering one, and the fee
+    queries/                ask the committee, and read the answer
+    profile/                name, class, PRN, mobile
+    attack-on-token/        the event console, behind that event's own lock
   admin/                    organiser console (guarded)
     teams/                  every team, and the payment checks
     grade/[chapterId]/      one chapter's hand-ins, with a score box each
-  actions/                  auth, team, submissions, admin
+  actions/                  auth, team, submissions, admin, certificates,
+                            student, queries, events
 src/proxy.ts                refreshes the session, then the early bounce
 src/components/
   console/    the signed-in bar, panels, forms, team setup, hand-in, payment
@@ -467,8 +538,11 @@ src/components/
 src/lib/
   supabase/   config, browser/server/proxy clients, generated types
   auth/       guard.ts (the page checks), session.ts (the viewer shape)
-  data/       console.ts (every read), hand-ins.ts (what each chapter collects),
+  console/    options.ts (the fixed lists both sides of the wire need)
+  data/       console.ts (every read), student.ts, certificates.ts, queries.ts,
+              dept-events.ts, hand-ins.ts (what each chapter collects),
               cesac.ts, event.ts, committee.ts
+  drive/      client.ts (service account JWT, folders, uploads)
   consent.ts  consent store, read through useSyncExternalStore
   audio.ts    track config and the music preference store
 public/audio/ the event track (drop attack-on-token.mp3 here)

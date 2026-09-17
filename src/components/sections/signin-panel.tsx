@@ -13,6 +13,7 @@ import {
 import { WallMark } from "@/components/aot/art";
 import { Container, Label, Ticks } from "@/components/aot/bits";
 import { Notice } from "@/components/console/shell";
+import { PasswordField } from "@/components/sections/password-field";
 import { PROVIDER_LABEL, type Provider } from "@/lib/auth/providers";
 import { EVENT } from "@/lib/data/event";
 
@@ -256,27 +257,20 @@ export function SignInPanel({
                     />
                   </div>
 
-                  <div>
-                    <label htmlFor={`${uid}-pw`} className="label block text-ink">
-                      Password
-                    </label>
-                    <input
-                      id={`${uid}-pw`}
-                      name="password"
-                      type="password"
-                      autoComplete={isSignUp ? "new-password" : "current-password"}
-                      required
-                      minLength={isSignUp ? 8 : undefined}
-                      aria-invalid={state.field === "password" || undefined}
-                      placeholder="••••••••"
-                      className={`field mt-2.5 ${state.field === "password" ? "border-red" : ""}`}
-                    />
-                    {isSignUp ? (
-                      <p className="serif-it mt-2 text-[0.85rem] text-muted">
-                        At least 8 characters.
-                      </p>
-                    ) : null}
-                  </div>
+                  <PasswordField
+                    id={`${uid}-pw`}
+                    name="password"
+                    label="Password"
+                    autoComplete={isSignUp ? "new-password" : "current-password"}
+                    required
+                    minLength={isSignUp ? 8 : undefined}
+                    invalid={state.field === "password"}
+                    hint={
+                      isSignUp
+                        ? "At least 8 characters."
+                        : "If the department made your account, it is your own email address."
+                    }
+                  />
 
                   {!isSignUp ? (
                     <div className="flex justify-end">
