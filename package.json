@@ -14,7 +14,8 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
-    "db:types": "supabase gen types typescript --project-id lgshgaltulbnjqfxjsme > src/lib/supabase/database.types.ts"
+    "db:types": "supabase gen types typescript --project-id lgshgaltulbnjqfxjsme > src/lib/supabase/database.types.ts",
+    "db:types:ems": "supabase gen types typescript --project-id lgshgaltulbnjqfxjsme --schema ems > src/lib/supabase/ems.types.generated.ts"
   },
   "dependencies": {
     "@supabase/ssr": "^0.12.7",

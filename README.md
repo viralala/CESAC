@@ -448,58 +448,119 @@ over **4.5MB** whatever Next is told to allow. Accepting larger certificates
 means uploading them to Drive from the browser instead, which is a different
 piece of work.
 
-**Uploads must go to a shared drive**
+**Uploads authenticate as a person, not as a robot**
 
 This is the part that catches people out. A service account has **no storage
 quota of its own and cannot own files**. Share a folder from a personal My
-Drive with it and every upload fails with `storageQuotaExceeded`, however much
-space that account has left. The parent folder has to live in a **shared
-drive**, where the drive owns the file instead. `vit.edu` is Google Workspace,
-so shared drives are available. The client detects this failure and says so
-rather than letting you go and buy storage that will not fix it.
+Drive with one and every upload fails with `storageQuotaExceeded`, however much
+space that account has left, because the file it is creating has nobody to
+belong to.
+
+So the app does not use a service account. It holds an **OAuth2 refresh token
+for a real Google account**, and every file it creates is owned by, and billed
+to, that account's own Drive. An organiser grants that once, at a consent
+screen, on a laptop. Nobody has to be signed in to anything afterwards: the
+refresh token is traded for a one hour access token on the server whenever a
+certificate goes up.
+
+Whoever clicks Allow is the account that ends up holding every certificate, so
+it should be a department account rather than whoever happened to be running
+the script. A shared drive still works if you would rather have one, and the
+client keeps asking for shared drive support on every call, but it is no longer
+required.
 
 **Setting it up**
 
 1. **A Google Cloud project.** <https://console.cloud.google.com> → new project,
    call it something like `cesac-certificates`.
 2. **Enable the Drive API.** APIs & Services → Library → search **Google Drive
-   API** → Enable.
-3. **Make a service account.** APIs & Services → Credentials → Create
-   credentials → Service account. Name it `cesac-certificates`. No project role
-   is needed: its access comes from the folder being shared with it, not from
-   IAM.
-4. **Make a key.** Open the service account → Keys → Add key → Create new key →
-   **JSON**. It downloads once. Treat it like a password.
-5. **Copy its email.** It looks like
-   `cesac-certificates@your-project.iam.gserviceaccount.com`.
-6. **Make a shared drive.** Google Drive → Shared drives → new, for example
-   *CESAC Department*. Inside it, create the folder **Department Certificates**.
-7. **Share it with the service account.** Right-click the shared drive → Manage
-   members → paste the service account email → **Content manager**. Editor is
-   enough to upload; content manager also lets it tidy up.
-8. **Get the folder id.** Open *Department Certificates* and take it from the
-   address bar: `…/folders/THIS_PART_HERE`.
-9. **Set the variables** in `.env.local` for development and in the Vercel
-   project settings for the deployment:
+   API** → Enable. Consenting to the app does not do this, and until it is
+   thrown every call comes back 403 `SERVICE_DISABLED`.
+3. **Configure the consent screen.** APIs & Services → OAuth consent screen. If
+   the project sits under the `vit.edu` Workspace, choose **Internal**: it needs
+   no verification and its tokens do not expire on a timer. If it does not,
+   choose External, add the organiser's address under **Test users**, and read
+   the warning below.
+4. **Make an OAuth client.** APIs & Services → Credentials → Create credentials
+   → **OAuth client ID** → application type **Desktop app**. Name it
+   `cesac-certificates`. Download the JSON if you like pasting files; the id and
+   secret on screen are the same thing.
+
+   Choosing **Web application** instead works too, but then add
+   `http://localhost:53682` under **Authorised redirect URIs**, exactly, or the
+   consent step is refused.
+5. **Make the folder.** In the Drive of the account that should hold the
+   certificates, create **Department Certificates**. My Drive is fine now.
+6. **Get the folder id.** Open it and take the id from the address bar:
+   `…/folders/THIS_PART_HERE`.
+7. **Set the client and the folder** in `.env.local`:
 
    ```
-   GOOGLE_SERVICE_ACCOUNT_JSON='{"type":"service_account", ...}'
+   GOOGLE_OAUTH_CLIENT_ID="1234...apps.googleusercontent.com"
+   GOOGLE_OAUTH_CLIENT_SECRET="GOCSPX-..."
    GOOGLE_DRIVE_PARENT_FOLDER_ID="1AbC..."
    ```
 
-   Paste the JSON key file whole. If a single long value is awkward, the split
-   form works too:
+8. **Grant consent, once.**
 
    ```
-   GOOGLE_SERVICE_ACCOUNT_EMAIL="cesac-certificates@your-project.iam.gserviceaccount.com"
-   GOOGLE_PRIVATE_KEY="-----BEGIN PRIVATE KEY-----\nMIIE...\n-----END PRIVATE KEY-----\n"
+   npx tsx scripts/google-oauth.ts
    ```
 
-   The `\n` escapes are handled, and so are stray wrapping quotes.
+   It opens the consent screen, catches Google's answer on `localhost:53682`,
+   and prints a refresh token. **Sign in as the account whose Drive the
+   certificates should live in**, which is not always the one the browser is
+   already signed in to. The script reads the account back and prints the
+   address it authorised, along with the name of the parent folder, so the
+   wrong one is obvious before anything is pasted anywhere.
+
+   It also writes `token.json`, which is gitignored. If the downloaded
+   credentials file is easier than copying two fields, point at it instead:
+   `npx tsx scripts/google-oauth.ts --credentials ./credentials.json`.
+
+9. **Set the refresh token** in `.env.local`, and set all four variables in the
+   Vercel project settings:
+
+   ```
+   GOOGLE_OAUTH_REFRESH_TOKEN="1//0g..."
+   ```
+
+   `token.json` on disk is for your records. The deployment reads the
+   environment, because a Vercel function has no filesystem to keep a token on
+   between requests.
+
+   Pasting whole files works too, if one long value is easier to manage than
+   several short ones: `GOOGLE_OAUTH_CREDENTIALS_JSON` takes the console's
+   credentials.json and `GOOGLE_OAUTH_TOKEN_JSON` takes the script's token.json.
+   The split variables are read first.
+
+**If the consent screen is left in Testing, the token dies in seven days**
+
+Worth knowing before it happens on the morning of an event. While an External
+consent screen is in **Testing**, Google expires every refresh token it issues
+after **seven days**, and uploads then fail with `invalid_grant` although
+nothing was touched. The client says exactly that when it happens, and the fix
+is to run the consent script again. To stop it recurring, either set the
+consent screen to **Internal** if the Workspace allows it, or **Publish** the
+app. Publishing an app that asks for full Drive access normally means Google's
+verification review; Internal avoids it entirely, which is the reason to prefer
+it.
+
+A refresh token also stops working if the account's password changes, if
+someone removes the app at <https://myaccount.google.com/permissions>, or after
+six months completely unused. All three land on the same message and the same
+one-command fix.
+
+**The refresh token is a password**
+
+It opens that account's entire Drive, not just the certificates folder, because
+the folder lookup needs the full `drive` scope to see a folder a human made.
+Keep it to `.env.local` and the Vercel settings. Both `token.json` and
+`credentials.json` are gitignored.
 
 Leave these unset and the dashboard says uploads are not switched on yet
-instead of breaking. Nothing here reaches the browser: the key is server only
-and every Drive call is made from the server.
+instead of breaking. Nothing here reaches the browser: the client secret and
+the refresh token are server only and every Drive call is made from the server.
 
 ## 🛠 Stack
 
@@ -556,7 +617,7 @@ src/lib/
   data/       console.ts (every read), student.ts, certificates.ts, queries.ts,
               dept-events.ts, hand-ins.ts (what each chapter collects),
               cesac.ts, event.ts, committee.ts
-  drive/      client.ts (service account JWT, folders, uploads)
+  drive/      client.ts (OAuth2 refresh token, folders, uploads), scope.ts
   consent.ts  consent store, read through useSyncExternalStore
   audio.ts    track config and the music preference store
 public/audio/ the event track (drop attack-on-token.mp3 here)
