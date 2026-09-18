@@ -125,30 +125,52 @@ the case it says so.
 
 Operational, and worth doing before any of the above.
 
-- [x] **Google Drive credentials.** Done on 18 September. `GOOGLE_SERVICE_ACCOUNT_JSON`
-      and `GOOGLE_DRIVE_PARENT_FOLDER_ID` are set in `.env.local` and in Vercel,
-      and the service account authenticates: Google's token endpoint accepts it.
+- [x] **Google Drive authenticates as a person now.** Changed on 18 September.
+      The service account was the wrong tool: it owns no storage and cannot put
+      a file in anybody's My Drive, so every upload into the department folder
+      failed with `storageQuotaExceeded`. `src/lib/drive/client.ts` holds an
+      OAuth2 refresh token for a real Google account instead, and the files are
+      owned by and billed to that account. Nothing else about the upload path
+      changed, and the parent folder is still `GOOGLE_DRIVE_PARENT_FOLDER_ID`.
 
-- [ ] **Turn the Google Drive API on.** Creating the service account and
-      downloading its key does not enable the API for the Cloud project it
-      belongs to, and that is a separate switch. Until it is thrown, the token
-      works and every Drive call comes back 403 `SERVICE_DISABLED`, so no
-      certificate can be uploaded. Enable **Google Drive API** for project
-      `cesac-508912` in the Cloud console, wait a minute for it to propagate,
-      then upload one certificate end to end.
+- [x] **OAuth client made, consent granted, upload proved.** Tested end to end
+      on 18 September: the refresh token in `.env.local` was accepted, a folder
+      was created inside **Department Certificates** and a file uploaded into
+      it. The file came back `ownedByMe: true`, owned by
+      **dhoka.viral12@gmail.com** and billed to that account's own quota, which
+      is the whole point of the change: the parent folder is in a **My Drive**,
+      exactly the arrangement that failed with `storageQuotaExceeded` before.
+      Test folder and file were moved to the Drive trash afterwards. The Drive
+      API is evidently on, since every call succeeded.
 
-- [ ] **Rotate the service account key.** The private key was printed into a
-      Claude Code transcript on 18 September while diagnosing the upload
-      failure. Nothing was published and the file itself is gitignored, so this
-      is caution rather than a known compromise: delete key `6b5f20b3` on the
-      `cesac-761@cesac-508912` service account, create a new one, and update
-      `.env.local` and the Vercel variable together.
+      That account has 10.6GB of 5TB used, so storage is not a concern.
 
-- [ ] **Confirm the parent folder is in a shared drive.** Not yet provable,
-      because every call fails at the API switch above first. A service account
-      has **no storage quota of its own**, so a folder in somebody's My Drive
-      fails with `storageQuotaExceeded` however much space that account has.
-      The client says so in as many words when it happens.
+- [ ] **Publish the OAuth consent screen. This one has a deadline.** While the
+      consent screen is in **Testing**, Google expires the refresh token
+      **seven days** after it was issued, and uploads then start failing with
+      `invalid_grant` although nobody touched anything. The client says exactly
+      that when it happens and the fix is to re-run the consent script, but it
+      should not be happening during an event.
+
+      **Internal is not an option here.** The authorised account is a personal
+      Gmail, not a `vit.edu` Workspace account, and Internal needs Workspace.
+      So set the consent screen to **In production** in the Cloud console.
+
+      Publishing unverified is fine for this: Google's verification review
+      matters for apps with many users, and exactly one person ever consents to
+      this one. The consent screen will show an "unverified app" warning, which
+      is got past with **Advanced → Go to app**, once, by whoever re-runs the
+      script. Consider moving the whole thing to a `vit.edu` account later, so
+      the certificates do not live in one student's personal Drive.
+
+- [ ] **Delete the old service account.** The private key of
+      `cesac-761@cesac-508912` was printed into a Claude Code transcript on
+      18 September while diagnosing the upload failure. Nothing was published
+      and the file itself is gitignored, so this is caution rather than a known
+      compromise. Nothing reads it any more, so it does not need rotating:
+      delete the service account outright, and clear
+      `GOOGLE_SERVICE_ACCOUNT_JSON` from `.env.local` and from the Vercel
+      project settings. The code ignores that variable now.
 
 - [ ] **Custom SMTP.** Supabase's built-in mailer sends two emails an hour for
       the whole project. Nobody needs email to sign in, so this is not blocking

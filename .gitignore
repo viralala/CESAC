@@ -43,6 +43,13 @@ next-env.d.ts
 
 .vercel
 
+# google drive oauth
+# credentials.json is the OAuth client downloaded from the Cloud console, and
+# token.json is what scripts/google-oauth.ts writes: a refresh token that opens
+# an organiser's entire Google Drive. Neither ever belongs in the repository.
+credentials.json
+token.json
+
 # roster import
 # Holds the rows the import could not use, which means real student names and
 # addresses. Regenerate it by running the script; never commit it.
