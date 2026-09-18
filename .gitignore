@@ -54,3 +54,6 @@ token.json
 # Holds the rows the import could not use, which means real student names and
 # addresses. Regenerate it by running the script; never commit it.
 import-report.csv
+
+# Agent worktrees. Temporary checkouts, not part of the project.
+.claude/worktrees/
