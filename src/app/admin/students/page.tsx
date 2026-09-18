@@ -1,0 +1,271 @@
+import type { Metadata } from "next";
+import Link from "next/link";
+
+import { Container, Label } from "@/components/aot/bits";
+import { Chip, ConsoleBar, Empty, Panel, Stat, type ChipTone } from "@/components/console/shell";
+import { requireAdmin } from "@/lib/auth/guard";
+import { getPasswordHold, searchStudents, type StudentForOrganiser } from "@/lib/data/students";
+import { ADMIN_NAV } from "../nav";
+
+export const metadata: Metadata = {
+  title: "Students",
+  robots: { index: false, follow: false },
+};
+
+const ROLE_TONE: Record<StudentForOrganiser["role"], ChipTone> = {
+  participant: "muted",
+  admin: "teal",
+  owner: "ink",
+};
+
+/** The page asked for in the address bar, or the first one. */
+function pageFrom(value: string | string[] | undefined): number {
+  const asked = Number(Array.isArray(value) ? value[0] : value);
+  return Number.isInteger(asked) && asked >= 1 ? asked : 1;
+}
+
+/** The same search, a page further along. */
+function hrefFor(term: string, page: number): string {
+  const params = new URLSearchParams({ q: term });
+  if (page > 1) params.set("page", String(page));
+  return `/admin/students?${params}`;
+}
+
+/** The two things a class list is ordered by, for somebody holding one. */
+function classAndPrn(student: StudentForOrganiser): string {
+  const bits = [student.student_class, student.prn].filter(Boolean);
+  return bits.length ? bits.join(" · ") : "No class or PRN on the row";
+}
+
+/**
+ * The student directory.
+ *
+ * Every account on the site, and the one number that says whether the imported
+ * passwords have been replaced yet. It reads and nothing more: an address is
+ * the one field a student cannot change themselves and the database reverts a
+ * change made anywhere but through auth, so a box here that looked like it
+ * edited one would be lying about what it did.
+ *
+ * The search runs in Postgres from the query string, not in the browser from
+ * a copy of the table. That is not a performance decision. Every row on this
+ * page is somebody's real name, address and PRN, and the browser-side version
+ * of this page would put all of them in the page source of a search for one.
+ *
+ * Organiser only, like every page in here, and robots are told to stay away
+ * for the same reason.
+ */
+export default async function AdminStudentsPage(props: PageProps<"/admin/students">) {
+  const viewer = await requireAdmin();
+  const { q, page } = await props.searchParams;
+
+  const asked = typeof q === "string" ? q.trim() : "";
+  const [hold, found] = await Promise.all([
+    getPasswordHold(),
+    searchStudents(asked, pageFrom(page)),
+  ]);
+
+  // What the database was actually asked, which is not always what was typed:
+  // a box holding nothing but punctuation has not searched for anything.
+  const searched = found.term.length > 0;
+  const firstShown = (found.page - 1) * found.pageSize + 1;
+  const lastShown = firstShown + found.rows.length - 1;
+  const pastTheEnd = searched && found.total > 0 && found.rows.length === 0;
+
+  return (
+    <>
+      <ConsoleBar viewer={viewer} area="Students" nav={ADMIN_NAV} />
+
+      <div className="washi grain min-h-[100svh] py-12 sm:py-16">
+        <Container>
+          <header className="max-w-[52ch]">
+            <Label tone="teal">Accounts</Label>
+            <h1 className="d-tall mt-4 text-[clamp(2.4rem,6vw,4rem)] text-ink">Students</h1>
+            <p className="serif-it mt-4 text-[1.1rem] leading-relaxed text-muted">
+              Everybody with an account, found by the things an organiser has in front of them at
+              a desk: a name, an address, a PRN or a class. This page only reads. Changing an
+              address is an auth-level job and is still done in the Supabase dashboard.
+            </p>
+          </header>
+
+          <div className="mt-10 grid grid-cols-2 gap-4 sm:grid-cols-3">
+            <Stat value={hold.accounts} label="Accounts" note="Every profile row" />
+            <Stat
+              value={hold.waiting}
+              label="Still waiting"
+              note="Holding an imported password"
+            />
+            <Stat value={hold.released} label="Set their own" note="Not held at the screen" />
+          </div>
+
+          <div className="mt-6 grid gap-6">
+            <Panel
+              eyebrow="Passwords"
+              title="The imported password"
+              aside={hold.waiting > 0 ? "Window open" : "Window shut"}
+            >
+              {hold.waiting > 0 ? (
+                <p className="serif-it text-[1.02rem] leading-relaxed text-muted">
+                  Every account the roster import created was given the student&apos;s own email
+                  address as its password, and is held at the change-password screen until it is
+                  replaced. {hold.waiting} of {hold.accounts} accounts are still there. An address
+                  is not a secret, so every one of those is an account any classmate could sign in
+                  to, and this window is only shut when that number reaches zero.
+                </p>
+              ) : (
+                <p className="serif-it text-[1.02rem] leading-relaxed text-muted">
+                  No account is holding the password it was imported with. That window is shut,
+                  and it stays shut without anybody watching it: the flag is set once by the
+                  import and cleared only by the database function that runs after Supabase has
+                  accepted a new password.
+                </p>
+              )}
+
+              <p className="serif-it mt-4 text-[1.02rem] leading-relaxed text-muted">
+                {hold.released} accounts are not held at that screen. That is nearly the same as
+                having chosen a password, and not quite: the flag records that an account is
+                waiting, not where its password came from, so an account made through Google, and
+                one made before the check existed, are counted here as well.
+              </p>
+            </Panel>
+
+            <Panel
+              eyebrow="Directory"
+              title="Find a student"
+              aside={
+                searched ? `${found.total} ${found.total === 1 ? "match" : "matches"}` : undefined
+              }
+            >
+              {/*
+                A plain GET form, on purpose. The search belongs in the address
+                bar: an organiser can send a colleague the result, reload it, or
+                go back to it, none of which a server action posting into this
+                page would give them. It also means a new search always starts
+                at the first page, because the form carries no page number.
+              */}
+              <form
+                method="get"
+                action="/admin/students"
+                className="grid gap-4 sm:grid-cols-[1fr_auto] sm:items-end"
+              >
+                <div>
+                  <label htmlFor="q" className="label block text-ink">
+                    Name, address, PRN or class
+                  </label>
+                  <input
+                    id="q"
+                    name="q"
+                    type="search"
+                    defaultValue={asked}
+                    autoComplete="off"
+                    placeholder="Any part of one of them"
+                    className="field mt-2.5"
+                  />
+                </div>
+                <div className="flex flex-wrap items-center gap-2.5">
+                  <button type="submit" className="pill">
+                    Search
+                  </button>
+                  {searched ? (
+                    <Link href="/admin/students" className="pill pill-ghost">
+                      Clear
+                    </Link>
+                  ) : null}
+                </div>
+              </form>
+
+              <div className="mt-7 border-t border-ink/10 pt-7">
+                {!searched ? (
+                  <Empty>
+                    Nothing is listed until you search. A directory that opens on a page of real
+                    names, addresses and PRNs is printing them for no reason. Type any part of a
+                    name, an address, a PRN or a class, and the matches come back from the
+                    database rather than from a copy of the roster sent to this browser.
+                  </Empty>
+                ) : found.total === 0 ? (
+                  <Empty>
+                    Nothing matched <span className="text-ink">{found.term}</span>. The search
+                    looks for what you typed inside a name, an address, a PRN or a class, so part
+                    of any one of them will find somebody, and a name typed back to front will
+                    not.
+                  </Empty>
+                ) : pastTheEnd ? (
+                  <Empty>
+                    There is no page {found.page} of this search. It matched {found.total}{" "}
+                    {found.total === 1 ? "account" : "accounts"}, which is {found.pages}{" "}
+                    {found.pages === 1 ? "page" : "pages"}.{" "}
+                    <Link href={hrefFor(asked, 1)} className="text-ink underline">
+                      Back to the first one
+                    </Link>
+                    .
+                  </Empty>
+                ) : (
+                  <>
+                    <p className="label-sm text-muted">
+                      Showing {firstShown} to {lastShown} of {found.total}
+                    </p>
+
+                    <ul className="mt-4 grid gap-3">
+                      {found.rows.map((student) => (
+                        <li
+                          key={student.id}
+                          className="rounded-[var(--r-md)] border-2 border-ink/10 px-5 py-4"
+                        >
+                          <div className="flex flex-wrap items-start justify-between gap-x-6 gap-y-3">
+                            <div className="min-w-0">
+                              <p className="text-[1.05rem] text-ink">
+                                {student.full_name ?? "No name on the row"}
+                              </p>
+                              <p className="label-sm mt-1 break-words text-muted">
+                                {student.email}
+                              </p>
+                              <p className="label-sm mt-0.5 text-muted">{classAndPrn(student)}</p>
+                            </div>
+
+                            <div className="flex shrink-0 flex-wrap items-center gap-2">
+                              <Chip tone={ROLE_TONE[student.role]}>{student.role}</Chip>
+                              {student.must_change_password ? (
+                                <Chip tone="red">imported password</Chip>
+                              ) : (
+                                <Chip tone="lime">own password</Chip>
+                              )}
+                            </div>
+                          </div>
+                        </li>
+                      ))}
+                    </ul>
+
+                    {found.pages > 1 ? (
+                      <div className="mt-6 flex flex-wrap items-center justify-between gap-4 border-t border-ink/10 pt-5">
+                        <p className="label-sm text-muted">
+                          Page {found.page} of {found.pages}
+                        </p>
+                        <div className="flex flex-wrap items-center gap-2.5">
+                          {found.page > 1 ? (
+                            <Link
+                              href={hrefFor(asked, found.page - 1)}
+                              className="pill pill-ghost"
+                            >
+                              Previous
+                            </Link>
+                          ) : null}
+                          {found.page < found.pages ? (
+                            <Link
+                              href={hrefFor(asked, found.page + 1)}
+                              className="pill pill-ghost"
+                            >
+                              Next
+                            </Link>
+                          ) : null}
+                        </div>
+                      </div>
+                    ) : null}
+                  </>
+                )}
+              </div>
+            </Panel>
+          </div>
+        </Container>
+      </div>
+    </>
+  );
+}
