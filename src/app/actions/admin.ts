@@ -182,6 +182,160 @@ export async function removeOrganiserEmail(_state: AdminState, formData: FormDat
   return say(error, "Removed from the allowlist. Any existing role is unchanged.");
 }
 
+/**
+ * Open, lock or close one department event.
+ *
+ * The one control the committee actually reaches for, and until now the one
+ * that did not exist: every event sat at `locked` and the only way to open
+ * one was an UPDATE typed into the Supabase dashboard. Everything on the
+ * student side reads `dept_events.state`, so this single switch opens the
+ * events page, the entry form and register_for_event() together.
+ */
+export async function setEventState(_state: AdminState, formData: FormData): Promise<AdminState> {
+  const slug = String(formData.get("slug") ?? "");
+  const next = String(formData.get("state") ?? "") as Enums<"dept_event_state">;
+
+  if (!slug) return { error: "Which event? Reload the page and try again." };
+  if (next !== "locked" && next !== "open" && next !== "closed") {
+    return { error: "An event is locked, open or closed." };
+  }
+
+  const supabase = await adminClient();
+  const { error } = await supabase.rpc("admin_set_event_state", {
+    p_slug: slug,
+    p_state: next,
+  });
+
+  // Every page that shows the state of an event, including the two public
+  // ones, so nobody is looking at a cached "not open yet" a minute after it
+  // opened.
+  revalidatePath("/dashboard/events");
+  revalidatePath("/dashboard");
+  revalidatePath("/events");
+  revalidatePath(`/events/${slug}`);
+  revalidatePath("/");
+
+  return say(
+    error,
+    next === "open"
+      ? "Entries are open. Students can enter from their console now."
+      : next === "closed"
+        ? "Entries closed. Nobody new can enter, and everyone already in stays in."
+        : "Locked. The event is listed but takes no entries.",
+  );
+}
+
+/**
+ * Agree that an entry fee arrived, or send it back.
+ *
+ * Sending it back puts the entry at `pending` rather than `rejected`, so the
+ * student can record a corrected reference. `rejected` has no screen that
+ * clears it and would strand them.
+ */
+export async function verifyEntryPayment(
+  _state: AdminState,
+  formData: FormData,
+): Promise<AdminState> {
+  const id = String(formData.get("registration_id") ?? "");
+  const verified = String(formData.get("verified") ?? "") === "true";
+  const reason = String(formData.get("reason") ?? "").trim();
+
+  if (!id) return { error: "That entry is not on the page any more. Reload it." };
+
+  const supabase = await adminClient();
+  const { error } = await supabase.rpc("admin_verify_event_payment", {
+    p_registration_id: id,
+    p_verified: verified,
+    p_reason: reason || undefined,
+  });
+
+  revalidatePath("/admin/entries");
+  revalidatePath("/dashboard/events");
+
+  return say(
+    error,
+    verified ? "Fee verified." : "Sent back. They can record another reference.",
+  );
+}
+
+/**
+ * Withdraw an entry, or put one back.
+ *
+ * The row is kept either way rather than deleted, so what was entered and
+ * what was paid survives the withdrawal. Withdrawing frees both people to
+ * enter again, which is the usual reason for doing it: somebody named the
+ * wrong partner.
+ */
+export async function setEntryStatus(_state: AdminState, formData: FormData): Promise<AdminState> {
+  const id = String(formData.get("registration_id") ?? "");
+  const next = String(formData.get("status") ?? "") as Enums<"registration_status">;
+
+  if (!id) return { error: "That entry is not on the page any more. Reload it." };
+  if (next !== "registered" && next !== "withdrawn") {
+    return { error: "An entry is in or withdrawn." };
+  }
+
+  const supabase = await adminClient();
+  const { error } = await supabase.rpc("admin_set_entry_status", {
+    p_registration_id: id,
+    p_status: next,
+  });
+
+  revalidatePath("/admin/entries");
+  revalidatePath("/dashboard/events");
+  revalidatePath("/dashboard");
+
+  return say(
+    error,
+    next === "withdrawn"
+      ? "Withdrawn. Both of them can enter again."
+      : "Back in.",
+  );
+}
+
+/**
+ * Add an event, or change one.
+ *
+ * The slug is the key and the URL both, so an existing event is edited by
+ * its slug and a new one is born locked. Changing a slug is deliberately not
+ * possible here: every entry points at this column, and moving it would
+ * orphan them.
+ */
+export async function saveDeptEvent(_state: AdminState, formData: FormData): Promise<AdminState> {
+  const slug = String(formData.get("slug") ?? "").trim().toLowerCase();
+  const name = String(formData.get("name") ?? "").trim();
+
+  if (!slug) return { error: "Give it a slug: the last part of its web address." };
+  if (!name) return { error: "Give it a name." };
+
+  const fee = Number(String(formData.get("fee_inr") ?? "0"));
+  const size = Number(String(formData.get("team_size") ?? "1"));
+  const position = Number(String(formData.get("position") ?? "0"));
+
+  if (Number.isNaN(fee) || fee < 0) return { error: "The entry fee has to be a number." };
+  if (size !== 1 && size !== 2) return { error: "An event is entered solo or in pairs." };
+  if (Number.isNaN(position)) return { error: "The order has to be a number." };
+
+  const supabase = await adminClient();
+  const { error } = await supabase.rpc("admin_upsert_dept_event", {
+    p_slug: slug,
+    p_name: name,
+    p_kicker: String(formData.get("kicker") ?? "").trim(),
+    p_one_liner: String(formData.get("one_liner") ?? "").trim(),
+    p_when_label: String(formData.get("when_label") ?? "").trim(),
+    p_fee_inr: fee,
+    p_team_size: size,
+    p_position: position,
+    p_href: String(formData.get("href") ?? "").trim() || undefined,
+  });
+
+  revalidatePath("/admin/entries");
+  revalidatePath("/dashboard/events");
+  revalidatePath("/events");
+
+  return say(error, "Saved. A new event starts locked, so open it when you are ready.");
+}
+
 export async function updateSettings(_state: AdminState, formData: FormData): Promise<AdminState> {
   const viewer = await requireAdmin();
   const supabase = await createClient();

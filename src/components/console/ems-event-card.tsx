@@ -6,6 +6,7 @@ import {
 } from "@/app/actions/ems-team";
 import { ActionForm } from "@/components/console/action-form";
 import { EmsCheckout } from "@/components/console/ems-checkout";
+import { PendingFields } from "@/components/console/pending-fields";
 import { Chip, Empty } from "@/components/console/shell";
 import type { EmsRegistration, EventCard, RosterRow } from "@/lib/data/ems";
 import { formatDateTime, formatINR } from "@/lib/ems/time";
@@ -109,20 +110,17 @@ export function EmsEventCard({
               tone="lime"
               className="mt-3"
             >
-              {(pending) => (
-                <>
-                  <input type="hidden" name="event_id" value={event.id} />
-                  <input
-                    name="team_name"
-                    required
-                    minLength={2}
-                    maxLength={60}
-                    disabled={pending}
-                    placeholder={solo ? "A name for your entry" : "Your team name"}
-                    className={`${input} max-w-md`}
-                  />
-                </>
-              )}
+              <PendingFields>
+                <input type="hidden" name="event_id" value={event.id} />
+                <input
+                  name="team_name"
+                  required
+                  minLength={2}
+                  maxLength={60}
+                  placeholder={solo ? "A name for your entry" : "Your team name"}
+                  className={`${input} max-w-md`}
+                />
+              </PendingFields>
             </ActionForm>
           </div>
         ) : (
@@ -223,19 +221,16 @@ export function EmsEventCard({
                     pendingLabel="Sending"
                     className="mt-3"
                   >
-                    {(pending) => (
-                      <>
-                        <input type="hidden" name="team_id" value={event.my_team_id!} />
-                        <input
-                          type="email"
-                          name="email"
-                          required
-                          disabled={pending}
-                          placeholder="name@vit.edu"
-                          className={`${input} max-w-md`}
-                        />
-                      </>
-                    )}
+                    <PendingFields>
+                      <input type="hidden" name="team_id" value={event.my_team_id!} />
+                      <input
+                        type="email"
+                        name="email"
+                        required
+                        placeholder="name@vit.edu"
+                        className={`${input} max-w-md`}
+                      />
+                    </PendingFields>
                   </ActionForm>
                 </div>
               ) : null}

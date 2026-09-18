@@ -2076,12 +2076,64 @@ GRANT EXECUTE ON FUNCTION ems.update_event(
 ) TO authenticated;
 
 
+-- ------------------------------------------------------------
+-- Take EXECUTE back off PUBLIC.
+--
+-- Creating a function grants EXECUTE to PUBLIC by default, and the
+-- GRANTs above do not take that away. The moment ems was added to
+-- Supabase's exposed schemas, all 25 of these became reachable by
+-- `anon` at /rest/v1/rpc/<name>. Supabase's own linter caught it.
+--
+-- Nearly all of them refuse an anonymous caller on their own: the
+-- admin ones fail ems.is_committee_admin(), and the student ones fail
+-- either `auth.uid() IS NULL` or a `= auth.uid()` predicate that
+-- matches no row. The exception was ems.is_approved_student_email(),
+-- which answered yes or no about any address to anybody. That is an
+-- enumeration oracle, and requestPasswordReset one schema over goes
+-- out of its way not to be one.
+--
+-- So the grants are made explicit rather than inherited. The checks
+-- inside the functions holding is not a reason to leave the door open.
+-- ------------------------------------------------------------
+
+DO $revoke$
+DECLARE
+    r RECORD;
+BEGIN
+    FOR r IN
+        SELECT p.oid::regprocedure AS sig
+        FROM pg_proc p
+        JOIN pg_namespace n ON n.oid = p.pronamespace
+        WHERE n.nspname = 'ems'
+    LOOP
+        EXECUTE format('REVOKE ALL ON FUNCTION %s FROM PUBLIC', r.sig);
+        EXECUTE format('REVOKE ALL ON FUNCTION %s FROM anon', r.sig);
+    END LOOP;
+END $revoke$;
+
+
+DO $grant$
+DECLARE
+    r RECORD;
+BEGIN
+    FOR r IN
+        SELECT p.oid::regprocedure AS sig
+        FROM pg_proc p
+        JOIN pg_namespace n ON n.oid = p.pronamespace
+        WHERE n.nspname = 'ems'
+          AND p.proname <> 'confirm_razorpay_payment'
+          AND p.prorettype <> 'trigger'::regtype
+    LOOP
+        EXECUTE format('GRANT EXECUTE ON FUNCTION %s TO authenticated', r.sig);
+        EXECUTE format('GRANT EXECUTE ON FUNCTION %s TO service_role', r.sig);
+    END LOOP;
+END $grant$;
+
+
 -- Confirming a payment is the one thing a signed-in person must never
--- be able to call. Only the backend, holding the service role key and
--- having checked the Razorpay signature itself.
-REVOKE ALL ON FUNCTION ems.confirm_razorpay_payment(UUID, TEXT, TEXT, TEXT) FROM PUBLIC;
-REVOKE ALL ON FUNCTION ems.confirm_razorpay_payment(UUID, TEXT, TEXT, TEXT) FROM anon;
-REVOKE ALL ON FUNCTION ems.confirm_razorpay_payment(UUID, TEXT, TEXT, TEXT) FROM authenticated;
+-- be able to call, which is why it is left out of the loop above. Only
+-- the backend, holding the service role key and having checked the
+-- Razorpay signature itself.
 GRANT EXECUTE ON FUNCTION ems.confirm_razorpay_payment(UUID, TEXT, TEXT, TEXT) TO service_role;
 
 

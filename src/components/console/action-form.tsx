@@ -17,8 +17,15 @@ type Action = (state: AdminState, formData: FormData) => Promise<AdminState>;
  * console with feedback everywhere and one that silently does nothing when a
  * call fails.
  *
- * `children` is a render prop so the caller can disable its own fields while
- * the action is in flight.
+ * `children` is plain ReactNode and must stay that way. It used to be a
+ * render prop, `(pending) => ...`, so a caller could disable its own fields
+ * while the action was in flight. That works from another client component
+ * and throws from a server one, because a function cannot be serialized
+ * across the boundary, and three of the five callers were server components:
+ * /admin/events threw on every single render in production while building
+ * and typechecking perfectly here. Wrap fields in <PendingFields> instead,
+ * which reads the same pending state from inside the form. Typed as
+ * ReactNode, the old shape no longer compiles.
  */
 export function ActionForm({
   action,
@@ -34,7 +41,7 @@ export function ActionForm({
   pendingLabel?: string;
   tone?: "ghost" | "solid" | "lime" | "danger";
   className?: string;
-  children?: ReactNode | ((pending: boolean) => ReactNode);
+  children?: ReactNode;
   /** Shown in a browser confirm before anything is sent. For the cut. */
   confirm?: string;
 }) {
@@ -56,7 +63,7 @@ export function ActionForm({
         if (confirm && !window.confirm(confirm)) event.preventDefault();
       }}
     >
-      {typeof children === "function" ? children(pending) : children}
+      {children}
 
       {state.error ? (
         <div className="mt-4">

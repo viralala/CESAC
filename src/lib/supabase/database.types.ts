@@ -3,6 +3,13 @@
  *
  * Regenerate after every migration so the app cannot drift from the database:
  *   npm run db:types
+ *
+ * One exception, 19 September 2026: admin_set_entry_status,
+ * admin_set_event_state, admin_upsert_dept_event and
+ * admin_verify_event_payment were written in by hand, because generating
+ * needs `supabase login` and only the account holder can do that. They match
+ * the live signatures, so the next regeneration produces the same lines and
+ * this note can go.
  */
 export type Json = string | number | boolean | null | { [key: string]: Json | undefined } | Json[];
 
@@ -925,6 +932,43 @@ export type Database = {
         Args: {
           p_profile_id: string;
           p_role: Database["public"]["Enums"]["app_role"];
+        };
+        Returns: undefined;
+      };
+      admin_set_entry_status: {
+        Args: {
+          p_registration_id: string;
+          p_status: Database["public"]["Enums"]["registration_status"];
+        };
+        Returns: undefined;
+      };
+      admin_set_event_state: {
+        Args: {
+          p_slug: string;
+          p_state: Database["public"]["Enums"]["dept_event_state"];
+        };
+        Returns: undefined;
+      };
+      admin_upsert_dept_event: {
+        Args: {
+          p_fee_inr: number;
+          p_href?: string;
+          p_jp?: string;
+          p_kicker: string;
+          p_name: string;
+          p_one_liner: string;
+          p_position: number;
+          p_slug: string;
+          p_team_size: number;
+          p_when_label: string;
+        };
+        Returns: string;
+      };
+      admin_verify_event_payment: {
+        Args: {
+          p_reason?: string;
+          p_registration_id: string;
+          p_verified: boolean;
         };
         Returns: undefined;
       };

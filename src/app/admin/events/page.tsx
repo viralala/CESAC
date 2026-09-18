@@ -11,6 +11,7 @@ import {
 import { Container, Label } from "@/components/aot/bits";
 import { ActionForm } from "@/components/console/action-form";
 import { EmsEventForm } from "@/components/console/ems-event-form";
+import { PendingFields } from "@/components/console/pending-fields";
 import { Chip, ConsoleBar, Empty, Notice, Panel, Stat } from "@/components/console/shell";
 import { getAdminDirectory, getAuditFeed, getEventBoard } from "@/lib/data/ems";
 import { requireEmsAdmin } from "@/lib/ems/access";
@@ -281,32 +282,30 @@ export default async function AdminEventsPage() {
                   <div>
                     <h3 className="label text-teal">Add a committee admin</h3>
                     <ActionForm action={addCommitteeAdmin} submit="Add" pendingLabel="Adding">
-                      {(pending) => (
+                      <PendingFields>
                         <input
                           type="email"
                           name="email"
                           required
-                          disabled={pending}
                           placeholder="name@vit.edu"
                           className="mt-3 w-full rounded-[var(--r-sm)] border-2 border-ink/15 bg-white px-4 py-2.5 text-[1rem] text-ink outline-none transition-colors focus:border-teal disabled:opacity-60"
                         />
-                      )}
+                      </PendingFields>
                     </ActionForm>
                   </div>
 
                   <div>
                     <h3 className="label text-teal">Add a teacher admin</h3>
                     <ActionForm action={addTeacherAdmin} submit="Add" pendingLabel="Adding">
-                      {(pending) => (
+                      <PendingFields>
                         <input
                           type="email"
                           name="email"
                           required
-                          disabled={pending}
                           placeholder="faculty@vit.edu"
                           className="mt-3 w-full rounded-[var(--r-sm)] border-2 border-ink/15 bg-white px-4 py-2.5 text-[1rem] text-ink outline-none transition-colors focus:border-teal disabled:opacity-60"
                         />
-                      )}
+                      </PendingFields>
                     </ActionForm>
                   </div>
                 </div>

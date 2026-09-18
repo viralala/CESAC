@@ -12,6 +12,7 @@ import { Container, Label } from "@/components/aot/bits";
 import { ActionForm } from "@/components/console/action-form";
 import { EmsEventForm } from "@/components/console/ems-event-form";
 import { Chip, ConsoleBar, Empty, Panel, Stat } from "@/components/console/shell";
+import { PendingFields } from "@/components/console/pending-fields";
 import { getEvent, getOrganisers, getRegistrations } from "@/lib/data/ems";
 import { isEventOrganiser, requireEmsAdmin } from "@/lib/ems/access";
 import { formatDateTime, formatINR } from "@/lib/ems/time";
@@ -209,19 +210,16 @@ export default async function EventEntriesPage({ params }: PageProps<"/admin/eve
                 <div className="mt-7">
                   <h3 className="label text-teal">Assign an organiser</h3>
                   <ActionForm action={assignOrganiser} submit="Assign" pendingLabel="Assigning">
-                    {(pending) => (
-                      <>
-                        <input type="hidden" name="event_id" value={event.id} />
-                        <input
-                          type="email"
-                          name="email"
-                          required
-                          disabled={pending}
-                          placeholder="name@vit.edu"
-                          className="mt-3 w-full max-w-md rounded-[var(--r-sm)] border-2 border-ink/15 bg-white px-4 py-2.5 text-[1rem] text-ink outline-none transition-colors focus:border-teal disabled:opacity-60"
-                        />
-                      </>
-                    )}
+                    <PendingFields>
+                      <input type="hidden" name="event_id" value={event.id} />
+                      <input
+                        type="email"
+                        name="email"
+                        required
+                        placeholder="name@vit.edu"
+                        className="mt-3 w-full max-w-md rounded-[var(--r-sm)] border-2 border-ink/15 bg-white px-4 py-2.5 text-[1rem] text-ink outline-none transition-colors focus:border-teal disabled:opacity-60"
+                      />
+                    </PendingFields>
                   </ActionForm>
                 </div>
               ) : null}

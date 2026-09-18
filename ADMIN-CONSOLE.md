@@ -14,32 +14,61 @@ the case it says so.
 ## 1. Events
 
 - [ ] **Unlock and lock an event.** *Asked for, and the reason this file
-      exists.* Every event is `locked` right now and nothing in the site can
-      change that: `dept_events.state` is set by hand in the Supabase
-      dashboard. The console needs a control per event that moves it between
-      `locked`, `open` and `closed`. Nothing else has to change — the student
-      page, the entry form and `register_for_event()` all read that one column,
-      so flipping it opens everything at once.
-      *Ready in the database: `dept_events.state`, admin-only write policy.*
+      exists.* Built on 19 September and waiting on the deploy. It is on the
+      new **Entries** page, one row of controls per event, and it offers only
+      the moves that make sense from where the event is: a locked event can be
+      opened, an open one closed or locked again, a closed one re-opened.
+      Opening asks first, because every student on the site can enter from the
+      moment it is pressed.
 
-- [ ] **Add an event, and edit one.** Name, kicker, the one line, the date
-      label, the fee, whether it is entered solo or in pairs, and the order it
-      appears in. At the moment a new event is an `insert` typed into the SQL
-      editor.
-      *Ready in the database: the whole `dept_events` table.*
+      It goes through `admin_set_event_state()` rather than writing the column,
+      so the change and its audit row land in one transaction and a disputed
+      decision has a record of who made it.
 
-- [ ] **See who has entered.** A list per event with both names of each pair,
-      their class and PRN, and the payment state. Right now only the student
-      can see their own entry.
+      **Attack on Token was opened this way on 19 September 2026**, and
+      HR Final Boss was deliberately left locked.
 
-- [ ] **Verify an entry fee.** A student records a UPI reference and the entry
-      sits at "submitted" until somebody agrees the money arrived. Nothing can
-      currently move it to "verified" — the columns are there and unwritten.
-      *Ready in the database: `event_registrations.payment_status`,
-      `verified_by`, `verified_at`.*
+- [ ] **Add an event, and edit one.** Built on 19 September, at the bottom of
+      the Entries page. Name, kicker, the one line, the date label, the fee,
+      solo or pairs, the order, and the page it links to. Putting in a slug
+      that already exists edits that event instead of making a second one.
 
-- [ ] **Withdraw an entry.** Somebody enters the wrong partner, or drops out.
-      There is a `withdrawn` status on the table and no way to set it.
+      A new event is always born `locked`, so it is safe to fill the form in
+      early. The slug is deliberately not editable: `event_registrations`
+      points at it, so moving it would orphan every entry.
+
+- [ ] **See who has entered.** Built on 19 September. Each event on the
+      Entries page carries its own list: both names of each pair, both
+      addresses, class and PRN, and the payment state, newest first. Withdrawn
+      entries stay in the list, greyed, rather than vanishing.
+
+      PRN and class are on a separate type from the one the student side uses,
+      on purpose. Widening the shared one would have handed every student their
+      partner's PRN as a side effect, and the profiles policy allows that read,
+      so nothing would have stopped it.
+
+- [ ] **Verify an entry fee.** Built on 19 September. The reference the
+      student recorded is shown next to the entry, with the method, and two
+      controls: verify it, or send it back.
+
+      Sending it back puts the entry at `pending` rather than `rejected`.
+      `rejected` is on the enum and has no screen that clears it, so an entry
+      parked there would strand the student with no way to record a corrected
+      reference. The reason goes in the audit row instead.
+
+- [ ] **Withdraw an entry.** Built on 19 September, with the bug that came
+      with it. The row is kept rather than deleted, so what was entered and
+      what was paid survives the withdrawal, and both people are freed to enter
+      again because every check looks for `status = 'registered'`.
+
+      Freed in principle, that is. `register_for_event()` ended in
+      `on conflict do nothing`, which was right until withdrawing existed and
+      wrong the moment it did: the withdrawn row stayed, the new insert hit it,
+      nothing came back, and the student was told they were already entered for
+      something they had just been taken off. No screen could undo it. The
+      conflict now updates, and only where the existing row is withdrawn, so a
+      genuine double entry still gets the sentence it always got. Whatever was
+      paid is kept.
 
 ---
 
@@ -121,7 +150,41 @@ the case it says so.
 
 ---
 
-## 5. Things that are not features
+## 5. Things that broke
+
+- [ ] **The organiser console threw on `/admin/events`.** Fixed 19 September,
+      waiting on the deploy. This is the one that was reported: the page was
+      erroring for three people and had done so twenty-four times since the
+      EMS panel went live the day before.
+
+      `ActionForm` took its `children` as a render prop, `(pending) => ...`, so
+      a caller could disable its own fields while the action was in flight.
+      That is fine from another client component and an instant crash from a
+      server one: a function cannot be serialized across the boundary, and
+      React says so with *"Functions cannot be passed directly to Client
+      Components"*. Three of the five callers were server components.
+
+      What made it survive review is that **nothing catches it before
+      production**. `tsc --noEmit` passes, `eslint` passes, `next build`
+      passes, because `ReactNode | ((pending: boolean) => ReactNode)` is a
+      perfectly good type and the boundary is not part of it. It fails only
+      when the page is actually rendered by a signed-in organiser.
+
+      The pending state is read from inside the form now, by a
+      `<PendingFields>` wrapper calling `useFormStatus()`, and a disabled
+      fieldset disables every control inside it without the caller touching a
+      field. `ActionForm`'s `children` is plain `ReactNode`, so writing the old
+      shape is a compile error rather than something that shows up in the
+      Vercel error log a day later.
+
+      **The general lesson, worth remembering the next time a console panel is
+      added:** a green local build says nothing about whether a server
+      component can hand that prop to a client one. If a page is only reachable
+      signed in, it has to be opened signed in before it is called done.
+
+---
+
+## 6. Things that are not features
 
 Operational, and worth doing before any of the above.
 
@@ -191,6 +254,13 @@ Operational, and worth doing before any of the above.
   so a screen built here cannot be talked out of it by a crafted request.
 - Adding a screen for anything marked *Ready in the database* is a page in
   `/admin` plus a server action, with no migration.
+
+- **`/admin/entries` and `/admin/events` are two different things.** Entries is
+  the two events actually on the public site, held in `public.dept_events`,
+  entered by a pair of students against a slug. Event system is the newer
+  arrangement in the `ems` schema, with teams of up to eight, invitations, its
+  own payments and per-event organisers. Nothing is shared between them but the
+  accounts. The nav says "Entries" and "Event system" rather than two Events.
 - The certificate upload rides in on a server action, and Next.js caps those
   request bodies at 1MB by default. That cap is refused before any of our code
   runs, so an oversized file produced the error page and a reference number
