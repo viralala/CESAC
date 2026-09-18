@@ -4,6 +4,7 @@ import { useActionState, useId, useState } from "react";
 
 import { uploadCertificate, type CertificateState } from "@/app/actions/certificates";
 import { Chip, Notice } from "@/components/console/shell";
+import { MAX_CERTIFICATE_BYTES, MAX_CERTIFICATE_LABEL } from "@/lib/console/limits";
 import { CONTRIBUTIONS, rupees } from "@/lib/console/options";
 import type { Certificate } from "@/lib/data/certificates";
 
@@ -129,6 +130,7 @@ function AddForm({
 }) {
   const uid = useId();
   const [place, setPlace] = useState<string>("participation");
+  const [oversize, setOversize] = useState<string | null>(null);
   const won = place !== "participation";
 
   return (
@@ -205,9 +207,31 @@ function AddForm({
           type="file"
           required
           accept=".pdf,.jpg,.jpeg,.png,application/pdf,image/jpeg,image/png"
+          // Caught here, in the browser, because a file over the limit is
+          // refused by the server before the action runs and there is no way
+          // to answer it with a sentence at that point. Clearing the input is
+          // what makes the browser's own required check block the submit.
+          onChange={(event) => {
+            const chosen = event.currentTarget.files?.[0];
+            if (chosen && chosen.size > MAX_CERTIFICATE_BYTES) {
+              setOversize(
+                `That file is ${human(chosen.size)}, and the limit is ${MAX_CERTIFICATE_LABEL}. A lower quality scan, or a photo taken at a smaller size, will fit.`,
+              );
+              event.currentTarget.value = "";
+              return;
+            }
+            setOversize(null);
+          }}
           className="field mt-2.5 file:mr-4 file:rounded-full file:border-0 file:bg-ink file:px-4 file:py-1.5 file:text-cream"
         />
-        <p className="serif-it mt-2 text-[0.85rem] text-muted">PDF, JPG or PNG, up to 10MB.</p>
+        <p className="serif-it mt-2 text-[0.85rem] text-muted">
+          PDF, JPG or PNG, up to {MAX_CERTIFICATE_LABEL}.
+        </p>
+        {oversize ? (
+          <div className="mt-3">
+            <Notice tone="error">{oversize}</Notice>
+          </div>
+        ) : null}
       </div>
 
       {state.error ? <Notice tone="error">{state.error}</Notice> : null}

@@ -3,13 +3,14 @@
 import { revalidatePath } from "next/cache";
 
 import { requireParticipant } from "@/lib/auth/guard";
+import { MAX_CERTIFICATE_BYTES, MAX_CERTIFICATE_LABEL } from "@/lib/console/limits";
+import { CONTRIBUTIONS, type Contribution } from "@/lib/console/options";
 import {
   DriveError,
   driveCredentials,
   ensureStudentFolder,
   uploadToFolder,
 } from "@/lib/drive/client";
-import { CONTRIBUTIONS, type Contribution } from "@/lib/console/options";
 import { createClient } from "@/lib/supabase/server";
 
 export type CertificateState = {
@@ -27,8 +28,12 @@ export type CertificateState = {
   at?: number;
 };
 
-/** Ten megabytes. A scanned certificate is a fraction of this. */
-const MAX_BYTES = 10 * 1024 * 1024;
+/**
+ * The last of the three checks on file size, and the only one that cannot be
+ * skipped by editing the page. See src/lib/console/limits.ts for why the
+ * number is what it is.
+ */
+const MAX_BYTES = MAX_CERTIFICATE_BYTES;
 
 const TYPES = [
   { mime: "application/pdf", label: "PDF", ext: ".pdf" },
@@ -158,7 +163,7 @@ export async function uploadCertificate(
 
   if (file.size > MAX_BYTES) {
     const mb = (file.size / (1024 * 1024)).toFixed(1);
-    return { error: `That file is ${mb}MB. The limit is 10MB.` };
+    return { error: `That file is ${mb}MB. The limit is ${MAX_CERTIFICATE_LABEL}.` };
   }
 
   const bytes = new Uint8Array(await file.arrayBuffer());

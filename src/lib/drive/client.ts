@@ -199,6 +199,23 @@ async function call<T>(
       );
     }
 
+    /*
+     * The second failure worth naming precisely.
+     *
+     * Creating a service account and downloading its key does not switch the
+     * Drive API on for the project it belongs to. The credentials are then
+     * perfectly good, the token endpoint hands back a token, and every actual
+     * Drive call comes back 403, which reads exactly like a permissions
+     * problem on the folder and sends people off re-sharing it. It is one
+     * switch in the Cloud console instead.
+     */
+    if (body.includes("accessNotConfigured") || body.includes("SERVICE_DISABLED")) {
+      throw new DriveError(
+        "The Google Drive API is switched off in the Google Cloud project the service account belongs to. An organiser has to turn it on in the Cloud console. Nothing you did caused this.",
+        body,
+      );
+    }
+
     if (response.status === 404) {
       throw new DriveError(
         "The certificates folder was not found. Check GOOGLE_DRIVE_PARENT_FOLDER_ID, and that the folder is shared with the service account.",

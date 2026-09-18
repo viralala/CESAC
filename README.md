@@ -430,9 +430,23 @@ build.
 Uploads are validated by their **contents**, not their filename. The type a
 browser reports comes from the extension and is trivial to change, so
 `src/app/actions/certificates.ts` reads the leading bytes and accepts only a
-real PDF, PNG or JPEG, up to 10MB. Each student gets a subfolder named after
+real PDF, PNG or JPEG, up to 4MB. Each student gets a subfolder named after
 their email, made on their first upload and remembered on their profile.
 `certificates_read_own` means a student sees their own and nobody else's.
+
+**Why 4MB, and not more**
+
+The file rides in on a server action, and three things have to agree on the
+size or the failure is unreadable. `src/lib/console/limits.ts` holds the one
+number they all read: the form checks it in the browser, the action checks it
+again on arrival, and `next.config.ts` raises Next's own body limit above it,
+with room for what multipart adds. That framework limit defaults to **1MB**,
+and a request over it is refused before any of our code runs, so the student
+gets the error page and a reference number instead of a sentence. Above all
+three sits a platform ceiling: a Vercel function will not take a request body
+over **4.5MB** whatever Next is told to allow. Accepting larger certificates
+means uploading them to Drive from the browser instead, which is a different
+piece of work.
 
 **Uploads must go to a shared drive**
 

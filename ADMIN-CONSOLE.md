@@ -105,8 +105,8 @@ the case it says so.
 
 - [ ] **See whether a student has set their own password.** 1,868 accounts were
       created with the student's own email as the password and are held at the
-      change-password screen until they set a real one. 1,867 are still waiting
-      as of 17 September. A count on the console tells the committee when that
+      change-password screen until they set a real one. 1,866 are still waiting
+      as of 18 September. A count on the console tells the committee when that
       window is actually shut.
       *Ready in the database: `profiles.must_change_password`.*
 
@@ -125,13 +125,30 @@ the case it says so.
 
 Operational, and worth doing before any of the above.
 
-- [ ] **Google Drive credentials, anywhere.** `GOOGLE_SERVICE_ACCOUNT_JSON` and
-      `GOOGLE_DRIVE_PARENT_FOLDER_ID` are still the empty placeholders from
-      `.env.example`, in `.env.local` and in Vercel, so certificate uploads say
-      "not switched on yet" everywhere. Until they are set, the record page
-      lists certificates and cannot take a new one. Setup is in the README
-      under "Certificates and Google Drive"; the parent folder has to be in a
-      **shared drive**, not somebody's My Drive.
+- [x] **Google Drive credentials.** Done on 18 September. `GOOGLE_SERVICE_ACCOUNT_JSON`
+      and `GOOGLE_DRIVE_PARENT_FOLDER_ID` are set in `.env.local` and in Vercel,
+      and the service account authenticates: Google's token endpoint accepts it.
+
+- [ ] **Turn the Google Drive API on.** Creating the service account and
+      downloading its key does not enable the API for the Cloud project it
+      belongs to, and that is a separate switch. Until it is thrown, the token
+      works and every Drive call comes back 403 `SERVICE_DISABLED`, so no
+      certificate can be uploaded. Enable **Google Drive API** for project
+      `cesac-508912` in the Cloud console, wait a minute for it to propagate,
+      then upload one certificate end to end.
+
+- [ ] **Rotate the service account key.** The private key was printed into a
+      Claude Code transcript on 18 September while diagnosing the upload
+      failure. Nothing was published and the file itself is gitignored, so this
+      is caution rather than a known compromise: delete key `6b5f20b3` on the
+      `cesac-761@cesac-508912` service account, create a new one, and update
+      `.env.local` and the Vercel variable together.
+
+- [ ] **Confirm the parent folder is in a shared drive.** Not yet provable,
+      because every call fails at the API switch above first. A service account
+      has **no storage quota of its own**, so a folder in somebody's My Drive
+      fails with `storageQuotaExceeded` however much space that account has.
+      The client says so in as many words when it happens.
 
 - [ ] **Custom SMTP.** Supabase's built-in mailer sends two emails an hour for
       the whole project. Nobody needs email to sign in, so this is not blocking
@@ -152,3 +169,10 @@ Operational, and worth doing before any of the above.
   so a screen built here cannot be talked out of it by a crafted request.
 - Adding a screen for anything marked *Ready in the database* is a page in
   `/admin` plus a server action, with no migration.
+- The certificate upload rides in on a server action, and Next.js caps those
+  request bodies at 1MB by default. That cap is refused before any of our code
+  runs, so an oversized file produced the error page and a reference number
+  rather than a sentence. `src/lib/console/limits.ts` now holds the one number
+  the form, the action and `next.config.ts` all read. It cannot go past 4.5MB
+  while the upload goes through a server action, because that is where Vercel
+  stops accepting request bodies.
