@@ -13,6 +13,18 @@ export type Student = {
   email: string;
   phone: string | null;
   year: "SY" | "TY";
+  /**
+   * The number the office knows this student by, digits only.
+   *
+   * The two workbooks do not agree on what that number is. SY carries a ten
+   * digit "GR. No", which also turns up inside the student's own address, and
+   * TY carries an eight digit "PRN No", which does not. Both land in
+   * profiles.prn, because from the console's point of view it is one thing:
+   * the number on the sheet the organiser at the desk is holding.
+   */
+  prn: string | null;
+  /** Division, as "SY-A" or "TY-C". Null when the sheet has no division on it. */
+  studentClass: string | null;
   /** Where the row came from, so a rejection can be traced back to a cell. */
   source: string;
   /** Set when the address was repaired, for the report. */
@@ -53,6 +65,10 @@ export type Source = {
   nameHeader: string;
   emailHeader: string;
   phoneHeader: string;
+  /** "gr. no" on SY and "prn no" on TY. They are different numbers. */
+  prnHeader: string;
+  /** Plain letters on SY, "CS-A" on TY, so only the trailing letter is kept. */
+  divisionHeader: string;
 };
 
 export const SOURCES: Source[] = [
@@ -64,6 +80,8 @@ export const SOURCES: Source[] = [
     nameHeader: "name of student",
     emailHeader: "email id",
     phoneHeader: "mobile no",
+    prnHeader: "gr. no",
+    divisionHeader: "division",
   },
   {
     file: "TY-Student Info.xlsx",
@@ -78,6 +96,8 @@ export const SOURCES: Source[] = [
     nameHeader: "student name",
     emailHeader: "organization email",
     phoneHeader: "mobile number",
+    prnHeader: "prn no",
+    divisionHeader: "division",
   },
 ];
 
@@ -186,6 +206,20 @@ export function normalisePhone(raw: string): string | null {
 /** Institutional domains. Anything else is imported, but flagged. */
 const EXPECTED_DOMAIN = /^(vit|vitpune)\.edu(\.in)?$/;
 
+/**
+ * One label for a division, whichever sheet it came off.
+ *
+ * SY writes the division as a bare letter and TY writes it as "CS-A". Every
+ * student on this site is in the same department, so the "CS" carries no
+ * information and keeping it would mean SY and TY students sorted into
+ * different-looking classes for no reason. The trailing letter is the whole of
+ * what differs, so the label is built from the year and that.
+ */
+function divisionLabel(year: "SY" | "TY", raw: string): string | null {
+  const letter = tidy(raw).toUpperCase().match(/([A-Z])\s*$/);
+  return letter ? `${year}-${letter[1]}` : null;
+}
+
 function headerIndex(row: ExcelJS.Row, want: string): number | null {
   let found: number | null = null;
   row.eachCell({ includeEmpty: true }, (cell, col) => {
@@ -213,6 +247,8 @@ export async function parseWorkbook(dir: string, source: Source): Promise<ParseR
     let cName: number | null = null;
     let cEmail: number | null = null;
     let cPhone: number | null = null;
+    let cPrn: number | null = null;
+    let cDiv: number | null = null;
 
     for (let r = 1; r <= Math.min(12, sheet.rowCount); r++) {
       const row = sheet.getRow(r);
@@ -223,6 +259,8 @@ export async function parseWorkbook(dir: string, source: Source): Promise<ParseR
         cName = n;
         cEmail = e;
         cPhone = headerIndex(row, source.phoneHeader);
+        cPrn = headerIndex(row, source.prnHeader);
+        cDiv = headerIndex(row, source.divisionHeader);
         break;
       }
     }
@@ -280,6 +318,8 @@ export async function parseWorkbook(dir: string, source: Source): Promise<ParseR
         phone: cPhone !== null ? normalisePhone(cellText(row.getCell(cPhone).value)) : null,
         year: source.year,
         source: where,
+        prn: cPrn !== null ? cellText(row.getCell(cPrn).value).replace(/\D/g, "") || null : null,
+        studentClass: cDiv !== null ? divisionLabel(source.year, cellText(row.getCell(cDiv).value)) : null,
       };
       if (repaired) student.repairedFrom = rawEmail;
       if (!EXPECTED_DOMAIN.test(domain)) {

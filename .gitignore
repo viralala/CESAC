@@ -57,3 +57,4 @@ import-report.csv
 
 # Agent worktrees. Temporary checkouts, not part of the project.
 .claude/worktrees/
+backfill-report.csv

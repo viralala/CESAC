@@ -4,6 +4,19 @@ A shared list. Add anything you want built; I will do the same as things come
 up. Tick a box when the feature is live on `cesac-azure.vercel.app`, not when
 the code is written.
 
+**Registration for Attack on Token is open.** Opened 19 September 2026 from the
+new control on the Entries page. HR Final Boss is still locked. Two things
+about it are worth knowing before the first student asks:
+
+- The entry fee is Rs 125 and **no UPI ID is set**, so the payment panel tells
+  students to pay at the desk and record a receipt number. Set the UPI ID and
+  payee name in Event controls on the Command page to offer UPI as well.
+- 1,864 of 1,871 accounts are still holding the password they were imported
+  with, and `register_for_event()` refuses an account in that state. Everybody
+  has to set a password before they can enter anything. That is deliberate, and
+  it means the password count on the student directory is also the count of
+  who can actually register.
+
 The student console is built. Most of what is below already exists as a column,
 a policy or a function in the database, with no screen behind it yet, so
 building each one is a page in `/admin` rather than a migration. Where that is
@@ -13,8 +26,8 @@ the case it says so.
 
 ## 1. Events
 
-- [ ] **Unlock and lock an event.** *Asked for, and the reason this file
-      exists.* Built on 19 September and waiting on the deploy. It is on the
+- [x] **Unlock and lock an event.** *Asked for, and the reason this file
+      exists.* Live since 19 September. It is on the
       new **Entries** page, one row of controls per event, and it offers only
       the moves that make sense from where the event is: a locked event can be
       opened, an open one closed or locked again, a closed one re-opened.
@@ -28,7 +41,7 @@ the case it says so.
       **Attack on Token was opened this way on 19 September 2026**, and
       HR Final Boss was deliberately left locked.
 
-- [ ] **Add an event, and edit one.** Built on 19 September, at the bottom of
+- [x] **Add an event, and edit one.** Live since 19 September, at the bottom of
       the Entries page. Name, kicker, the one line, the date label, the fee,
       solo or pairs, the order, and the page it links to. Putting in a slug
       that already exists edits that event instead of making a second one.
@@ -37,7 +50,7 @@ the case it says so.
       early. The slug is deliberately not editable: `event_registrations`
       points at it, so moving it would orphan every entry.
 
-- [ ] **See who has entered.** Built on 19 September. Each event on the
+- [x] **See who has entered.** Live since 19 September. Each event on the
       Entries page carries its own list: both names of each pair, both
       addresses, class and PRN, and the payment state, newest first. Withdrawn
       entries stay in the list, greyed, rather than vanishing.
@@ -47,7 +60,7 @@ the case it says so.
       partner's PRN as a side effect, and the profiles policy allows that read,
       so nothing would have stopped it.
 
-- [ ] **Verify an entry fee.** Built on 19 September. The reference the
+- [x] **Verify an entry fee.** Live since 19 September. The reference the
       student recorded is shown next to the entry, with the method, and two
       controls: verify it, or send it back.
 
@@ -56,7 +69,7 @@ the case it says so.
       parked there would strand the student with no way to record a corrected
       reference. The reason goes in the audit row instead.
 
-- [ ] **Withdraw an entry.** Built on 19 September, with the bug that came
+- [x] **Withdraw an entry.** Live since 19 September, with the bug that came
       with it. The row is kept rather than deleted, so what was entered and
       what was paid survives the withdrawal, and both people are freed to enter
       again because every check looks for `status = 'registered'`.
@@ -102,24 +115,41 @@ the case it says so.
 
 ## 3. Questions
 
-- [ ] **Answer a question.** The table, the policies and the student's side of
-      it are all live, and there is no screen for the committee. An organiser
-      currently has to write the answer into the `queries` table by hand.
-      *Ready in the database: `queries.answer`, `answered_by`, `answered_at`,
-      `status`, and an admin update policy.*
+- [x] **Answer a question.** Live since 19 September at `/admin/queries`. An
+      answer box per question, and sending the same question again overwrites,
+      which is the only way to correct an answer that went out wrong.
 
-- [ ] **A queue, oldest first, with a count.** Five open questions per student
-      is the ceiling, so an unanswered queue quietly stops people asking.
+      It is a plain update rather than a `security definer` function, because
+      the admin update policy on `queries` is the whole rule. It does select
+      the row back afterwards, and that is not for the value: an update row
+      level security refuses matches nothing and comes back from PostgREST as
+      a success with no error, so without it an organiser would be told the
+      student had their answer when nothing had been written.
 
-- [ ] **Canned answers.** The same six questions will arrive two hundred times
-      in the week after the roster announcement.
+- [x] **A queue, oldest first, with a count.** Live since 19 September. The
+      page also counts how many students are sitting on all five of their
+      slots, which is the number that says the ceiling has started behaving
+      like a mute.
+
+- [x] **Canned answers.** Live since 19 September. Seven of them, appended to
+      the box rather than dropped on top of it, so a misclick cannot destroy a
+      half-written answer and two can be stacked.
 
 ---
 
 ## 4. Students
 
-- [ ] **Find a student.** By name, email, PRN or class. There are 1,871
-      accounts and no way to look one up.
+- [x] **Find a student.** Live since 19 September at `/admin/students`. Name,
+      address, PRN or class, one substring, twenty-five to a page.
+
+      The search runs in Postgres rather than the browser. Every row carries a
+      real name, a real address and a real PRN, so loading the roster and
+      filtering it client-side would put the whole department in the page
+      source of every search. An empty box shows no names at all, for the same
+      reason. PostgREST's own syntax is taken out of the term before it goes
+      into the `or=` expression: a comma or a bracket would be writing filter
+      structure rather than searching for it, and a bare `%` would match every
+      account and read like a search that had found the entire college.
 
 - [ ] **Change a student's email.** The one field a student cannot edit
       themselves, deliberately: it is what the account signs in with, and the
@@ -132,12 +162,14 @@ the case it says so.
       They are in `import-report.csv`, which is gitignored because it has real
       names and addresses in it.
 
-- [ ] **See whether a student has set their own password.** 1,868 accounts were
-      created with the student's own email as the password and are held at the
-      change-password screen until they set a real one. 1,866 are still waiting
-      as of 18 September. A count on the console tells the committee when that
-      window is actually shut.
-      *Ready in the database: `profiles.must_change_password`.*
+- [x] **See whether a student has set their own password.** Live since
+      19 September, on the same page, counted at request time.
+
+      Read the number honestly: "set their own" is a subtraction rather than a
+      column. `must_change_password` records that an account is *held*, not
+      where its password came from, so an account made through Google was
+      never held in the first place and counts as released. The page says so
+      rather than claiming a precision the data does not have.
 
 - [ ] **Send a password reset for one student.** Needs custom SMTP first, see
       below.
@@ -146,14 +178,77 @@ the case it says so.
       created 15 September, never confirmed and never signed in. Its password
       is its own email and it is not held at the change-password screen,
       because it predates that check. Harmless as it stands, and still one
-      account nobody owns.
+      account nobody owns. It is now also one of the three accounts with no
+      PRN against it, so it shows up in the list below.
 
 ---
 
-## 5. Things that broke
+## 5. The roster numbers, and the seven cells that need a person
 
-- [ ] **The organiser console threw on `/admin/events`.** Fixed 19 September,
-      waiting on the deploy. This is the one that was reported: the page was
+Filled in on 19 September. Before that, **2 of 1,871 accounts had a PRN or a
+class**: the import carried a name, an address and a year and nothing else, and
+those two columns were left for students to fill in themselves. Which meant the
+new entries list and the student directory both said "No class or PRN on the
+row" against very nearly everybody, and the one place that matters is a desk on
+the day with a printed class list on it.
+
+Both numbers were in the spreadsheets the accounts were made from all along.
+`scripts/backfill-roster.ts` reads the same two files through the same parser
+and writes only what is missing:
+
+    npx tsx scripts/backfill-roster.ts              # report only
+    npx tsx scripts/backfill-roster.ts --commit     # write
+
+**1,868 of 1,871 accounts now carry both.** It never overwrites: a student who
+typed their own PRN in keeps it.
+
+Two things worth knowing about the data:
+
+- **The two workbooks do not agree on what the number is.** SY carries a ten
+  digit "GR. No", which also appears inside the student's own address. TY
+  carries an eight digit "PRN No", which does not, except for one group inside
+  TY that uses the ten digit style. All of them land in `profiles.prn`, because
+  from the console's point of view it is one thing: the number on the sheet the
+  organiser at the desk is holding.
+
+- **`profiles.prn` is unique, and that caught seven bad cells.** Seven SY
+  numbers were each written against two different students. The address settles
+  it, since an SY address contains the student's own number, so the four people
+  holding somebody else's were put back to their own and the seven who had been
+  refused got theirs. None of that was a guess.
+
+### The seven rows a person still has to settle
+
+Three have no number at all:
+
+| Address | Why |
+| --- | --- |
+| `pruthviraj.125107043@vit.edu` | Nine digits. The address is the truncated cell that kept a student out of the original import, and the number is short with it, so writing it would record a wrong one. |
+| `anshay.peter17@vit.edu` | Seven digits, `1710056`. Looks like an older intake and is probably simply right, which is why a script should not be the one deciding. |
+| `you@vit.edu` | The placeholder account. Nothing to fill in; delete it. |
+
+Four carry a number that disagrees with their own address:
+
+| Address | On the roster | In the address |
+| --- | --- | --- |
+| `shriram.1271070378@vit.edu` | `1251070378` | `1271070378` |
+| `jayesh.1252070648@vit.edu` | `1251070648` | `1252070648` |
+| `om.1251071042@vit.edu` | `1251150362` | `1251071042` |
+| `mahavir.1252070086@vit.edu` | `12520125` | `1252070086` |
+
+These four were deliberately left as the roster has them. Unlike the seven
+duplicates there is no second student to cross-check against, and for the first
+two the difference is a single digit that could as easily be a typo in the
+address as in the sheet. `om` and `mahavir` look like plain roster errors and
+probably want the address value. Check them against the office copy and set
+them from the student directory, or in the dashboard.
+
+---
+
+## 6. Things that broke
+
+- [x] **The organiser console threw on `/admin/events`.** Fixed and live on
+      19 September. This is the one that was reported: the page was
       erroring for three people and had done so twenty-four times since the
       EMS panel went live the day before.
 
@@ -184,7 +279,7 @@ the case it says so.
 
 ---
 
-## 6. Things that are not features
+## 7. Things that are not features
 
 Operational, and worth doing before any of the above.
 
