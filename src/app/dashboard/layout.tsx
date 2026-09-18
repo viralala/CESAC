@@ -10,16 +10,23 @@ const OUT = [
 ] as const;
 
 /**
- * The six things a student has on this site.
+ * The seven things a student has on this site.
  *
  * In the order somebody would actually use them: what have I got, what is it
  * worth, what can I enter, what do I want to ask, and who am I.
+ *
+ * Events and Competitions sit side by side because they are two different
+ * decisions. Events is the department calendar, entered alone or in a pair
+ * and signed off by an organiser. Competitions is the team system: you build
+ * a team of up to eight, people accept, and the seat is claimed and paid for
+ * in one move.
  */
 const TABS: readonly Tab[] = [
   { href: "/dashboard", label: "Overview" },
   { href: "/dashboard/certificates", label: "Certificates" },
   { href: "/dashboard/ranking", label: "Ranking" },
   { href: "/dashboard/events", label: "Events" },
+  { href: "/dashboard/competitions", label: "Competitions" },
   { href: "/dashboard/queries", label: "Questions" },
   { href: "/dashboard/profile", label: "My details" },
 ];

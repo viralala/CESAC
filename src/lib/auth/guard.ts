@@ -49,8 +49,13 @@ function toGate(role: Role, next: string): never {
  * protected page already calls rather than in a layout or the proxy, where a
  * page added later could quietly miss it. The change-password screen itself
  * calls getViewer directly and never this, so there is no loop.
+ *
+ * Exported because the event system has its own guards in lib/ems/access.ts,
+ * built on getViewer rather than on requireRole. They have to call this
+ * themselves, and the first cut of them did not, which is exactly the miss
+ * this comment warns about.
  */
-function gateUnsetPassword(viewer: Viewer): void {
+export function gateUnsetPassword(viewer: Viewer): void {
   if (viewer.mustChangePassword) redirect("/account/password?first=1");
 }
 
