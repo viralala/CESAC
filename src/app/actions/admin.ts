@@ -350,6 +350,103 @@ export async function answerQuery(_state: AdminState, formData: FormData): Promi
 }
 
 /**
+ * Verify a certificate, turn one down, or put one back in the queue.
+ *
+ * A plain update rather than a security definer function, for the same
+ * reason answerQuery above is one: the admin update policy on `certificates`
+ * is the whole rule, there is no second table to keep in step, and a
+ * function would only be a second copy of a check Postgres already makes on
+ * the row. `verified_by` is the viewer and never anything the form sent,
+ * because who checked a certificate is not the browser's to say.
+ *
+ * **Three states out of one boolean.** The table has `verified` and nothing
+ * else, and an organiser has three things to say: not looked at, checked and
+ * good, checked and no. The third is carried by `verified_at`. A row nobody
+ * has opened has `verified = false` and no stamp; a row somebody turned down
+ * has `verified = false` and a stamp and a name. That is what makes the queue
+ * clearable, and a queue that cannot be cleared is the whole problem this
+ * page exists to solve: without it the duplicate a student uploaded twice
+ * sits at the top of the list every morning and every organiser decides
+ * about it again.
+ *
+ * A `rejected` column would say it more plainly and is a migration, which
+ * this page deliberately is not. Leaving a turned-down row indistinguishable
+ * from an unread one was the other option and is worse than it sounds: the
+ * rows that most need turning down are the ones an organiser has already
+ * looked at, so they are exactly the rows that would never leave the queue.
+ *
+ * Putting one back clears all three columns, rather than keeping the name of
+ * whoever last touched it. `verified_by` on a row in the queue would be a
+ * claim that somebody has checked it, and the entire point of that move is
+ * that nobody has.
+ *
+ * **What this does not do.** Turning a certificate down does not take its
+ * points off the ranking: ranking_board() counts every row whatever its
+ * state, and changing that is a migration too. It does not delete anything
+ * from Drive either. The page says both out loud.
+ */
+export async function reviewCertificate(
+  _state: AdminState,
+  formData: FormData,
+): Promise<AdminState> {
+  const id = String(formData.get("certificate_id") ?? "");
+  const decision = String(formData.get("decision") ?? "");
+
+  if (!id) return { error: "That certificate is not on the page any more. Reload it." };
+  if (decision !== "verify" && decision !== "reject" && decision !== "reopen") {
+    return { error: "A certificate is verified, turned down, or put back in the queue." };
+  }
+
+  const viewer = await requireAdmin();
+  const supabase = await createClient();
+
+  const decided =
+    decision === "reopen"
+      ? { verified: false, verified_by: null, verified_at: null }
+      : {
+          verified: decision === "verify",
+          verified_by: viewer.id,
+          verified_at: new Date().toISOString(),
+        };
+
+  // Selecting the row back is not for the value. An update that row level
+  // security refuses matches nothing and comes back from PostgREST as a
+  // success with no error, so without this an organiser would be told a
+  // certificate had been checked when nothing was written. It earns its keep
+  // here more than anywhere else on the console: the admin update policy on
+  // `certificates` is the one thing about this page that could not be
+  // confirmed by reading the repository, because the base schema is not in
+  // it. If that policy turns out to be missing, this is what says so.
+  const { data, error } = await supabase
+    .from("certificates")
+    .update(decided)
+    .eq("id", id)
+    .select("id");
+
+  // The student's own record carries the verified mark, so their page has to
+  // be rebuilt too. The ranking is deliberately not in this list: it counts
+  // certificates whatever state they are in, so nothing here changes it.
+  revalidatePath("/admin/certificates");
+  revalidatePath("/dashboard/certificates");
+
+  if (!error && !data?.length) {
+    return {
+      error:
+        "Nothing was written, so nothing has changed. Either that certificate is gone, or the admin update policy on the table is not letting this through. Reload the page before trying again.",
+    };
+  }
+
+  return say(
+    error,
+    decision === "verify"
+      ? "Verified. It shows as checked on the student's record."
+      : decision === "reject"
+        ? "Turned down, and out of the queue. It still counts on the ranking, and the file is still in Drive."
+        : "Back in the queue, with no decision on it.",
+  );
+}
+
+/**
  * Add an event, or change one.
  *
  * The slug is the key and the URL both, so an existing event is edited by
