@@ -423,3 +423,37 @@ REVOKE ALL ON FUNCTION public.register_for_event(TEXT, TEXT) FROM PUBLIC;
 REVOKE ALL ON FUNCTION public.register_for_event(TEXT, TEXT) FROM anon;
 GRANT EXECUTE ON FUNCTION public.register_for_event(TEXT, TEXT) TO authenticated;
 GRANT EXECUTE ON FUNCTION public.register_for_event(TEXT, TEXT) TO service_role;
+
+
+-- ------------------------------------------------------------
+-- What a signed-out visitor may know about an event's state.
+--
+-- Added later the same day, once opening an event made the public pages
+-- wrong. The home page and the events index each carry a badge per event,
+-- written by hand in src/lib/data/cesac.ts. That was fine while every event
+-- sat locked all year and became wrong the minute there was a control to
+-- open one: registration for Attack on Token opened and both pages carried
+-- on saying "Announced".
+--
+-- dept_events itself stays closed to anon, and should: it carries
+-- updated_by, which is an organiser's user id and no visitor's business.
+-- This returns the two columns the badge needs and nothing else. Which state
+-- an event is in is not a secret; it is printed on the page, and a visitor
+-- learns it by looking.
+-- ------------------------------------------------------------
+CREATE OR REPLACE FUNCTION public.dept_event_states()
+RETURNS TABLE (slug TEXT, state TEXT)
+LANGUAGE sql
+STABLE
+SECURITY DEFINER
+SET search_path TO 'public'
+AS $function$
+    SELECT d.slug, d.state::text
+      FROM public.dept_events d
+     ORDER BY d.position, d.name;
+$function$;
+
+REVOKE ALL ON FUNCTION public.dept_event_states() FROM PUBLIC;
+GRANT EXECUTE ON FUNCTION public.dept_event_states() TO anon;
+GRANT EXECUTE ON FUNCTION public.dept_event_states() TO authenticated;
+GRANT EXECUTE ON FUNCTION public.dept_event_states() TO service_role;

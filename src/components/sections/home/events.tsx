@@ -6,12 +6,7 @@ import { ParallaxLayer, ParallaxScene } from "@/components/aot/parallax";
 import { Reveal } from "@/components/aot/reveal";
 import { Sticker } from "@/components/aot/stickers";
 import { EVENTS } from "@/lib/data/cesac";
-
-const STATUS: Record<string, { label: string; bg: string; fg: string }> = {
-  open: { label: "Registration open", bg: "var(--lime)", fg: "var(--ink)" },
-  announced: { label: "Announced", bg: "var(--azure)", fg: "var(--ink)" },
-  past: { label: "Wrapped", bg: "var(--cream-3)", fg: "var(--ink)" },
-};
+import { badgeFor, getEventBadges } from "@/lib/data/event-status";
 
 /**
  * The events board.
@@ -23,8 +18,10 @@ const STATUS: Record<string, { label: string; bg: string; fg: string }> = {
  * One event is listed because one event exists. If this ever renders a thin
  * list, that is the honest state of the calendar, not a bug to pad.
  */
-export function HomeEvents() {
+export async function HomeEvents() {
   const [feature, ...rest] = EVENTS;
+  const badges = await getEventBadges();
+  const featureBadge = feature ? badgeFor(feature, badges) : null;
 
   return (
     <section id="events" className="washi grain relative scroll-mt-24 py-20 sm:py-24">
@@ -46,11 +43,11 @@ export function HomeEvents() {
                     <span
                       className="label-sm rounded-full px-4 py-2"
                       style={{
-                        background: STATUS[feature.status].bg,
-                        color: STATUS[feature.status].fg,
+                        background: featureBadge?.bg,
+                        color: featureBadge?.fg,
                       }}
                     >
-                      {STATUS[feature.status].label}
+                      {featureBadge?.label}
                     </span>
                     <Label tone="light">{feature.kicker}</Label>
                   </div>
@@ -132,9 +129,9 @@ export function HomeEvents() {
                 >
                   <span
                     className="label-sm w-fit rounded-full px-3.5 py-1.5"
-                    style={{ background: STATUS[e.status].bg, color: STATUS[e.status].fg }}
+                    style={{ background: badgeFor(e, badges).bg, color: badgeFor(e, badges).fg }}
                   >
-                    {STATUS[e.status].label}
+                    {badgeFor(e, badges).label}
                   </span>
                   <h3 className="d-tall mt-5 text-[1.9rem] text-ink">{e.name}</h3>
                   <p className="mt-2 text-[0.9375rem] leading-relaxed text-ink/70">{e.blurb}</p>

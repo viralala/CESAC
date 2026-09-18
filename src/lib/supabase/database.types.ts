@@ -6,8 +6,9 @@
  *
  * One exception, 19 September 2026: admin_set_entry_status,
  * admin_set_event_state, admin_upsert_dept_event and
- * admin_verify_event_payment were written in by hand, because generating
- * needs `supabase login` and only the account holder can do that. They match
+ * admin_verify_event_payment and dept_event_states were written in by hand,
+ * because generating needs `supabase login` and only the account holder can
+ * do that. They match
  * the live signatures, so the next regeneration produces the same lines and
  * this note can go.
  */
@@ -990,6 +991,10 @@ export type Database = {
         Returns: number;
       };
       complete_password_change: { Args: never; Returns: undefined };
+      dept_event_states: {
+        Args: never;
+        Returns: { slug: string; state: string }[];
+      };
       create_team: {
         Args: {
           p_name: string;
