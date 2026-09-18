@@ -331,6 +331,42 @@ them from the student directory, or in the dashboard.
 
 ---
 
+- [ ] **`TypeError: fetch failed` on the public pages, source unknown.** Six of
+      them between 15 and 17 September, across five people, on `/index.rsc`,
+      `/events.rsc`, `/signin.rsc` and `/_not-found`. The cause is
+      `UND_ERR_SOCKET`, "other side closed", against `104.18.38.10`, which is
+      Cloudflare and so almost certainly Supabase.
+
+      **Not diagnosed.** Written down here rather than guessed at, because an
+      afternoon of guessing at it produced a plausible fix for the wrong
+      thing.
+
+      What was ruled out on 19 September, by pointing a local build at a
+      socket that accepts the connection and then destroys it, which is
+      exactly what `other side closed` means:
+
+      - **It is not the proxy.** `supabase.auth.getUser()` in
+        `lib/supabase/proxy.ts` looked like the obvious suspect, since the
+        proxy runs before routing and would explain why four unrelated routes
+        failed together. It does not throw: supabase-js catches the fetch
+        failure and returns it as an error on the result, so the proxy
+        carries on and the page still renders 200. Verified both with and
+        without a guard around it, and the status codes were identical.
+      - **It is not `authMethods()`**, which wraps its own fetch and falls
+        back to no social buttons.
+      - **It is not the fonts.** `next/font/google` downloads at build time.
+      - The other raw fetches in the codebase are Razorpay and Google Drive,
+        and neither runs on any of those four routes.
+
+      Worth knowing before picking it up again: the `.rsc` suffix means these
+      were client-side navigations rather than fresh page loads, and **it was
+      never established that any of them returned a 5xx.** They may be logged
+      and recovered rather than fatal. Vercel keeps runtime logs for one hour
+      on the Hobby plan, so the status codes for those requests are long gone;
+      the next occurrence needs catching inside that window. If the pages did
+      stay up, this is noise in the error list rather than an outage, and
+      should be closed as such.
+
 ## 7. Things that are not features
 
 Operational, and worth doing before any of the above.
