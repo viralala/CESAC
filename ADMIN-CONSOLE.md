@@ -87,13 +87,19 @@ the case it says so.
 
 ## 2. Certificates and the ranking
 
-- [ ] **Verify a certificate.** Every upload lands with `verified = false` and
-      the board counts it anyway, which is stated plainly on the ranking page
-      but is not a good long-term answer. A queue of unverified certificates,
-      each with its Drive link and an approve or reject, is what makes the
-      ranking mean something.
-      *Ready in the database: `certificates.verified`, `verified_by`,
-      `verified_at`, and an admin update policy.*
+- [x] **Verify a certificate.** Live since 19 September at
+      `/admin/certificates`. A queue oldest first with the student's name,
+      class and PRN, the Drive link and how long it has been waiting, then the
+      settled ones underneath so a decision can be undone.
+
+      **Three states out of one boolean.** The table has `verified` and an
+      organiser has three things to say: not looked at, checked and good,
+      checked and no. The third is carried by `verified_at`, so a row nobody
+      has opened has no stamp and a row somebody turned down has one. That is
+      what makes the queue clearable, and a queue that cannot be cleared is
+      the whole problem: without it the duplicate a student uploaded twice
+      sits at the top of the list every morning. A `rejected` column would say
+      it more plainly and is a migration.
 
 - [ ] **Reject or delete a certificate.** A duplicate, a file for somebody
       else's event, a screenshot of nothing. Deleting the row is easy; it also
@@ -102,14 +108,26 @@ the case it says so.
 - [ ] **Decide whether unverified certificates count.** A switch, defaulting to
       counting them, so the board can be tightened up once there are enough
       organisers to check them. Today it is baked into `ranking_board()`.
+      **Turning a certificate down on the new page does not take its points
+      off the board**, for exactly this reason. The page says so out loud, and
+      it is the one thing about the queue that is not yet honest.
 
 - [ ] **Bulk-issue certificates for our own events.** After Attack on Token we
       will know exactly who participated and who placed. Typing that back in
       one student at a time is the wrong shape; issuing them from the entry
       list is the right one.
 
-- [ ] **Export.** The board and the whole certificate table as CSV, for the
-      department's own records and for anything that has to go to the office.
+- [x] **Export.** Live since 19 September, the button at the bottom of the
+      certificates page. The whole table with the student, their class and
+      PRN, the state, who verified it and the Drive link.
+
+      A route handler rather than a server action, because the point is a file
+      and `Content-Disposition` already does what an action would need a
+      client component and an object URL to do. Every field is quoted rather
+      than only the ones that need it, and a value starting `=`, `+`, `-` or
+      `@` is prefixed, because Excel runs those as formulas.
+
+      Still to do: the ranking board itself as CSV.
 
 ---
 
@@ -246,6 +264,40 @@ them from the student directory, or in the dashboard.
 ---
 
 ## 6. Things that broke
+
+- [x] **The sign-in throttle would have locked out the whole campus.** Changed
+      19 September, before it happened rather than after. Found while checking
+      what opening registration exposes.
+
+      The per-IP half was written for "a whole lecture hall can share one
+      campus NAT address" and sized at **sixty failed attempts in fifteen
+      minutes**. The population it now faces is the whole department: 1,871
+      accounts, 1,864 of them still holding the password they were imported
+      with, all signing in for the first time in the same few days, from
+      behind one campus NAT. Sixty failures is perhaps sixty confused
+      students, after which **every student on campus is locked out for
+      fifteen minutes, including the ones typing the right password**, and it
+      would have happened during the registration rush with nobody watching.
+
+      Two changes, both about the signal rather than the number. It counts
+      distinct addresses now rather than attempts, because "one source working
+      through many addresses" is what the rule is for and one student retrying
+      ten times is one address. And it asks whether that source is also
+      succeeding, which is the thing an IP alone cannot tell you: a campus
+      mid-rush produces failures and successes together, because most people
+      do know their password, while a sprayer working a list produces failures
+      and almost nothing else.
+
+      Verified against three cases before it shipped: 200 failing addresses
+      with 120 successes from one IP is allowed, 200 failing addresses with no
+      successes is throttled, and ten failures on one address is still
+      throttled. **The per-address rule is untouched** and is the one that
+      actually protects an account.
+
+      On a shared campus NAT the IP rule is now close to inert by design, and
+      that is the honest trade. **Worth a look when you are up**, since it is
+      the one security control that was deliberately loosened.
+
 
 - [x] **The organiser console threw on `/admin/events`.** Fixed and live on
       19 September. This is the one that was reported: the page was
