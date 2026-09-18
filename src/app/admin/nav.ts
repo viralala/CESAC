@@ -5,6 +5,7 @@ export const ADMIN_NAV = [
   { href: "/admin/queries", label: "Questions" },
   { href: "/admin/teams", label: "Teams" },
   { href: "/admin/events", label: "Event system" },
+  { href: "/admin/certificates", label: "Certificates" },
   { href: "/admin/students", label: "Students" },
   { href: "/people", label: "Roster" },
   { href: "/events/attack-on-token", label: "Event page" },
