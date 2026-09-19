@@ -1,6 +1,7 @@
 import "server-only";
 
 import { createServerClient } from "@supabase/ssr";
+import { createClient as createSupabaseClient } from "@supabase/supabase-js";
 import { cookies } from "next/headers";
 
 import { SUPABASE_PUBLISHABLE_KEY, SUPABASE_URL } from "./config";
@@ -42,5 +43,28 @@ export async function createClient() {
         }
       },
     },
+  });
+}
+
+/**
+ * A client that answers to nobody's session.
+ *
+ * Row level security does not apply to it and neither does any policy, so it
+ * exists for exactly one job: calling the handful of functions that refuse
+ * anything but the service role. public.confirm_event_razorpay_payment is
+ * the one that matters, because marking a fee paid has to be something a
+ * student cannot do by talking to the console, and "the console promises not
+ * to" is not the same as "Postgres refuses".
+ *
+ * Returns null rather than throwing when the key is missing, so a deploy
+ * without it degrades to a readable message instead of a stack trace on the
+ * one page where money has just changed hands.
+ */
+export function createServiceClient() {
+  const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
+  if (!key) return null;
+
+  return createSupabaseClient<Database>(SUPABASE_URL, key, {
+    auth: { persistSession: false, autoRefreshToken: false },
   });
 }

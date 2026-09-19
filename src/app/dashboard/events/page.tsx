@@ -1,9 +1,9 @@
 import type { Metadata } from "next";
 
+import { eventRazorpayConfigured } from "@/app/actions/events";
 import { EventBoard } from "@/components/console/event-board";
 import { Panel } from "@/components/console/shell";
 import { requireParticipant } from "@/lib/auth/guard";
-import { getSettings } from "@/lib/data/console";
 import { getDeptEvents, getMyRegistrations } from "@/lib/data/dept-events";
 
 export const metadata: Metadata = {
@@ -25,16 +25,11 @@ export const metadata: Metadata = {
 export default async function EventsPage() {
   const viewer = await requireParticipant();
 
-  const [events, registrations, settings] = await Promise.all([
+  const [events, registrations, online] = await Promise.all([
     getDeptEvents(),
     getMyRegistrations(),
-    getSettings(),
+    eventRazorpayConfigured(),
   ]);
-
-  const upi =
-    settings.upi_id && settings.upi_payee_name
-      ? { id: settings.upi_id, payee: settings.upi_payee_name }
-      : null;
 
   const anyOpen = events.some((event) => event.state === "open");
 
@@ -49,7 +44,7 @@ export default async function EventsPage() {
         one event at a time, so most of this list is locked most of the year.
       </p>
 
-      <EventBoard events={events} registrations={registrations} upi={upi} meId={viewer.id} />
+      <EventBoard events={events} registrations={registrations} online={online} meId={viewer.id} />
     </Panel>
   );
 }

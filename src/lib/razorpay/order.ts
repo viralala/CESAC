@@ -1,5 +1,7 @@
 import "server-only";
 
+import { createHmac, timingSafeEqual } from "node:crypto";
+
 /**
  * The one place an order is opened against Razorpay.
  *
@@ -93,4 +95,31 @@ export async function openOrder({
   }
 
   return { id: order.id, amount: order.amount ?? amount };
+}
+
+/**
+ * Does this payment really come from Razorpay?
+ *
+ * The signature is an HMAC-SHA256 of "order_id|payment_id" keyed with the
+ * secret, which only the server holds, so a browser cannot forge a success no
+ * matter what it posts back. Everything that marks a fee paid runs through
+ * here first.
+ *
+ * Compared with timingSafeEqual rather than ===, so the comparison leaks
+ * nothing about where a wrong signature first differs. Lengths are checked
+ * separately because timingSafeEqual throws on a mismatch rather than
+ * returning false.
+ */
+export function signatureIsValid(
+  keySecret: string,
+  payload: { orderId: string; paymentId: string; signature: string },
+): boolean {
+  const expected = createHmac("sha256", keySecret)
+    .update(`${payload.orderId}|${payload.paymentId}`)
+    .digest("hex");
+
+  const given = Buffer.from(payload.signature ?? "", "utf8");
+  const mine = Buffer.from(expected, "utf8");
+
+  return given.length === mine.length && timingSafeEqual(given, mine);
 }

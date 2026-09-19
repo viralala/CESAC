@@ -1,12 +1,18 @@
 "use client";
 
 import Link from "next/link";
-import { useActionState, useId } from "react";
+import { useActionState, useId, useState, useTransition } from "react";
 
-import { enterEvent, recordEventPayment, type EventState } from "@/app/actions/events";
+import {
+  confirmEventRazorpayPayment,
+  createEventRazorpayOrder,
+  enterEvent,
+  type EventState,
+} from "@/app/actions/events";
 import { Chip, Notice, Row } from "@/components/console/shell";
 import { rupees } from "@/lib/console/options";
 import type { DeptEvent, MyRegistration } from "@/lib/data/dept-events";
+import { loadCheckout, openCheckout } from "@/lib/razorpay/checkout";
 
 const STATE: Record<string, { label: string; tone: "lime" | "muted" | "ink" }> = {
   open: { label: "Entries open", tone: "lime" },
@@ -16,6 +22,8 @@ const STATE: Record<string, { label: string; tone: "lime" | "muted" | "ink" }> =
 
 const PAID: Record<string, { label: string; tone: "lime" | "teal" | "muted" | "red" }> = {
   verified: { label: "Paid", tone: "lime" },
+  // Nothing the student console does produces this any more. It survives on
+  // entries an organiser recorded by hand, so it still needs a label.
   submitted: { label: "Waiting on an organiser", tone: "teal" },
   pending: { label: "Fee outstanding", tone: "muted" },
   rejected: { label: "Payment not accepted", tone: "red" },
@@ -38,12 +46,13 @@ const PAID: Record<string, { label: string; tone: "lime" | "teal" | "muted" | "r
 export function EventBoard({
   events,
   registrations,
-  upi,
+  online,
   meId,
 }: {
   events: DeptEvent[];
   registrations: MyRegistration[];
-  upi: { id: string; payee: string } | null;
+  /** Whether the server holds Razorpay keys. Without them there is no way to pay. */
+  online: boolean;
   /**
    * An entry has two sides and they are not the same. The one who signed up
    * owes the fee and sees the box for it; the partner they named sees the
@@ -101,7 +110,7 @@ export function EventBoard({
             ) : null}
 
             {mine ? (
-              <Entered registration={mine} event={event} upi={upi} meId={meId} />
+              <Entered registration={mine} event={event} online={online} meId={meId} />
             ) : event.state === "open" ? (
               <EnterForm event={event} action={action} pending={pending} />
             ) : (
@@ -174,12 +183,12 @@ function EnterForm({
 function Entered({
   registration,
   event,
-  upi,
+  online,
   meId,
 }: {
   registration: MyRegistration;
   event: DeptEvent;
-  upi: { id: string; payee: string } | null;
+  online: boolean;
   meId: string;
 }) {
   const mine = registration.student_id === meId;
@@ -218,7 +227,7 @@ function Entered({
       </dl>
 
       {owes ? (
-        <PaymentForm registration={registration} event={event} upi={upi} />
+        <PayNow registration={registration} event={event} online={online} />
       ) : !mine && event.fee_inr > 0 && registration.payment_status !== "verified" ? (
         <p className="serif-it mt-6 text-[0.95rem] leading-relaxed text-muted">
           The fee is theirs to pay, and they record it from their own console.
@@ -228,72 +237,104 @@ function Entered({
   );
 }
 
-function PaymentForm({
+/**
+ * The fee, and the only way to pay it.
+ *
+ * There is no reference box and no "I have paid" button any more, because
+ * there is nothing for a student to assert. They pay in the Razorpay window,
+ * the server checks the signature against a secret the browser never sees,
+ * and the entry is confirmed by that. An organiser is not in the loop, which
+ * is the point: the old flow left every entry sitting at "waiting on an
+ * organiser" until somebody read a bank statement.
+ */
+function PayNow({
   registration,
   event,
-  upi,
+  online,
 }: {
   registration: MyRegistration;
   event: DeptEvent;
-  upi: { id: string; payee: string } | null;
+  online: boolean;
 }) {
-  const [state, action, pending] = useActionState<EventState, FormData>(recordEventPayment, {});
-  const uid = useId();
+  const [state, setState] = useState<EventState>({});
+  const [busy, start] = useTransition();
+
+  if (!online) {
+    return (
+      <p className="serif-it mt-6 rounded-[var(--r-md)] bg-white px-5 py-4 text-[0.95rem] leading-relaxed text-muted">
+        Paying online is not switched on yet. Your entry is held either way, so hold on to it and
+        the button appears here once the committee turns the counter on.
+      </p>
+    );
+  }
+
+  function pay() {
+    start(async () => {
+      setState({});
+
+      const order = await createEventRazorpayOrder(registration.id);
+      if (order.error || !order.orderId || !order.keyId) {
+        setState({ error: order.error ?? "Could not open the checkout." });
+        return;
+      }
+
+      const ready = await loadCheckout();
+      if (!ready) {
+        setState({ error: "The payment window could not load. Check your connection and try again." });
+        return;
+      }
+
+      openCheckout({
+        keyId: order.keyId,
+        orderId: order.orderId,
+        amount: order.amount ?? Math.round(event.fee_inr * 100),
+        name: "CESAC",
+        description: `Entry for ${event.name}`,
+        prefill: {},
+        upiFirst: true,
+        onPaid: (response) => {
+          setState({ notice: "Checking that payment." });
+          void confirmEventRazorpayPayment({
+            orderId: response.razorpay_order_id,
+            paymentId: response.razorpay_payment_id,
+            signature: response.razorpay_signature,
+          }).then(setState);
+        },
+        onFailed: (message) => setState({ error: message }),
+        onDismissed: () =>
+          setState({
+            notice: "You closed the payment window, so nothing was charged. Your entry is still held.",
+          }),
+      });
+    });
+  }
 
   return (
-    <form action={action} className="mt-6 grid gap-4">
-      <input type="hidden" name="registration_id" value={registration.id} />
-
-      {upi ? (
-        <p className="serif-it rounded-[var(--r-md)] bg-white px-5 py-4 text-[0.95rem] leading-relaxed text-muted">
-          Send {rupees(event.fee_inr)} to{" "}
-          <span className="label text-ink [overflow-wrap:anywhere]">{upi.id}</span> ({upi.payee}),
-          then put the reference below.
-        </p>
-      ) : (
-        <p className="serif-it rounded-[var(--r-md)] bg-white px-5 py-4 text-[0.95rem] leading-relaxed text-muted">
-          Pay at the desk and record the receipt number below. The committee has not put a UPI
-          address on the site yet.
-        </p>
-      )}
-
-      <div className="grid gap-4 sm:grid-cols-[minmax(0,12rem)_1fr]">
-        <div>
-          <label htmlFor={`${uid}-method`} className="label block text-ink">
-            How
-          </label>
-          <select id={`${uid}-method`} name="method" defaultValue="upi" className="field mt-2.5">
-            <option value="upi">UPI</option>
-            <option value="cash">At the desk</option>
-          </select>
-        </div>
-
-        <div>
-          <label htmlFor={`${uid}-reference`} className="label block text-ink">
-            Reference
-          </label>
-          <input
-            id={`${uid}-reference`}
-            name="reference"
-            type="text"
-            required
-            maxLength={120}
-            placeholder="From your payment app, or the receipt"
-            className="field mt-2.5"
-          />
-        </div>
-      </div>
-
-      {state.error ? <Notice tone="error">{state.error}</Notice> : null}
-      {state.notice ? <Notice tone="ok">{state.notice}</Notice> : null}
-
+    <div className="mt-6">
       <button
-        type="submit"
-        disabled={pending}
-        className="pill justify-self-start disabled:cursor-progress disabled:opacity-70"
+        type="button"
+        onClick={pay}
+        disabled={busy}
+        className="pill pill-lime justify-self-start disabled:cursor-progress disabled:opacity-70"
       >
-        {pending ? "Recording" : "I have paid"}
+        {busy ? "Opening" : `Pay ${rupees(event.fee_inr)}`}
       </button>
-    </form>
+
+      <p className="serif-it mt-3 text-[0.9rem] leading-relaxed text-muted">
+        Scan the UPI QR in the window, or use a card. Your entry is confirmed the moment it goes
+        through, with nobody to wait on.
+      </p>
+
+      {state.error ? (
+        <div className="mt-4">
+          <Notice tone="error">{state.error}</Notice>
+        </div>
+      ) : null}
+      {state.notice ? (
+        <div className="mt-4">
+          <Notice tone="ok">{state.notice}</Notice>
+        </div>
+      ) : null}
+    </div>
   );
 }

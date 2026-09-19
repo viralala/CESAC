@@ -17,6 +17,14 @@ type RazorpayFailure = {
   error?: { code?: string; description?: string; reason?: string; step?: string };
 };
 
+type RazorpayDisplayConfig = {
+  display: {
+    blocks: Record<string, { name: string; instruments: { method: string }[] }>;
+    sequence: string[];
+    preferences: { show_default_blocks: boolean };
+  };
+};
+
 type RazorpayOptions = {
   key: string;
   amount: number;
@@ -27,7 +35,22 @@ type RazorpayOptions = {
   prefill: { name?: string; email?: string };
   theme: { color: string };
   modal?: { ondismiss?: () => void };
+  config?: RazorpayDisplayConfig;
   handler: (response: RazorpayResponse) => void;
+};
+
+/**
+ * Put UPI at the top of the window, which is what makes a QR the first thing
+ * on screen rather than something found three taps in. Cards and netbanking
+ * are still there underneath: show_default_blocks keeps every other method
+ * Razorpay offers, this only decides what comes first.
+ */
+const UPI_FIRST: RazorpayDisplayConfig = {
+  display: {
+    blocks: { upi: { name: "Pay by UPI", instruments: [{ method: "upi" }] } },
+    sequence: ["block.upi"],
+    preferences: { show_default_blocks: true },
+  },
 };
 
 type RazorpayInstance = {
@@ -72,6 +95,8 @@ export type CheckoutRequest = {
   name: string;
   description: string;
   prefill: { name?: string; email?: string };
+  /** Opens on UPI, so a student can scan straight away. */
+  upiFirst?: boolean;
   onPaid: (response: RazorpayResponse) => void;
   /** The card was declined, the UPI request timed out, and so on. */
   onFailed: (message: string) => void;
@@ -113,6 +138,7 @@ export function openCheckout(request: CheckoutRequest): void {
     order_id: request.orderId,
     prefill: request.prefill,
     theme: { color: "#12656f" },
+    ...(request.upiFirst ? { config: UPI_FIRST } : {}),
     modal: {
       ondismiss: () => {
         if (!reported) request.onDismissed();

@@ -292,6 +292,9 @@ export type Database = {
           payment_method: Database["public"]["Enums"]["payment_method"] | null;
           payment_reference: string | null;
           payment_status: Database["public"]["Enums"]["payment_status"];
+          razorpay_order_id: string | null;
+          razorpay_payment_id: string | null;
+          razorpay_signature: string | null;
           status: Database["public"]["Enums"]["registration_status"];
           student_id: string;
           submitted_at: string | null;
@@ -307,6 +310,9 @@ export type Database = {
           payment_method?: Database["public"]["Enums"]["payment_method"] | null;
           payment_reference?: string | null;
           payment_status?: Database["public"]["Enums"]["payment_status"];
+          razorpay_order_id?: string | null;
+          razorpay_payment_id?: string | null;
+          razorpay_signature?: string | null;
           status?: Database["public"]["Enums"]["registration_status"];
           student_id: string;
           submitted_at?: string | null;
@@ -322,6 +328,9 @@ export type Database = {
           payment_method?: Database["public"]["Enums"]["payment_method"] | null;
           payment_reference?: string | null;
           payment_status?: Database["public"]["Enums"]["payment_status"];
+          razorpay_order_id?: string | null;
+          razorpay_payment_id?: string | null;
+          razorpay_signature?: string | null;
           status?: Database["public"]["Enums"]["registration_status"];
           student_id?: string;
           submitted_at?: string | null;
@@ -1049,6 +1058,14 @@ export type Database = {
         Returns: string;
       };
       registration_is_open: { Args: never; Returns: boolean };
+      confirm_event_razorpay_payment: {
+        Args: { p_order_id: string; p_payment_id: string; p_signature: string };
+        Returns: string;
+      };
+      start_event_razorpay_order: {
+        Args: { p_order_id: string; p_registration_id: string };
+        Returns: undefined;
+      };
       start_razorpay_order: { Args: { p_order_id: string }; Returns: undefined };
       submit_chapter: { Args: { p_chapter_id: string }; Returns: undefined };
       submit_event_payment: {

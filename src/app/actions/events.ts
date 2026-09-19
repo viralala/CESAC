@@ -3,8 +3,8 @@
 import { revalidatePath } from "next/cache";
 
 import { requireParticipant } from "@/lib/auth/guard";
-import { createClient } from "@/lib/supabase/server";
-import type { Enums } from "@/lib/supabase/database.types";
+import { openOrder, razorpayKeys, signatureIsValid } from "@/lib/razorpay/order";
+import { createClient, createServiceClient } from "@/lib/supabase/server";
 
 export type EventState = { error?: string; notice?: string };
 
@@ -52,52 +52,147 @@ export async function enterEvent(_state: EventState, formData: FormData): Promis
   return { notice: "You are entered. The fee, if there is one, is below." };
 }
 
+// ---------------------------------------------------------------------------
+// Razorpay
+// ---------------------------------------------------------------------------
+
 /**
- * Say what was paid, and how.
+ * Whether the checkout can be offered at all.
  *
- * Sets the entry to "submitted" and never to "paid": an organiser still has to
- * agree that the money arrived. A console that marks itself paid on the
- * student's word is a console the committee cannot reconcile against a bank
- * statement.
+ * There is no organiser toggle beside this one, unlike the older team fee.
+ * The entry fee is either payable or the event is free, and a switch that
+ * hides the only way to pay would just be a way to take entries the site
+ * cannot collect on.
  */
-export async function recordEventPayment(
-  _state: EventState,
-  formData: FormData,
-): Promise<EventState> {
+export async function eventRazorpayConfigured(): Promise<boolean> {
+  return razorpayKeys() !== null;
+}
+
+export type EventOrder = {
+  orderId?: string;
+  amount?: number;
+  keyId?: string;
+  error?: string;
+};
+
+/**
+ * Opens a Razorpay order for one entry.
+ *
+ * The amount is read from the event row here rather than taken from the
+ * browser, so the price cannot be edited on the way in. Everything about
+ * whose entry it is and whether it is still owed is settled by
+ * start_event_razorpay_order, under the student's own session.
+ */
+export async function createEventRazorpayOrder(registrationId: string): Promise<EventOrder> {
   await requireParticipant();
 
-  const id = String(formData.get("registration_id") ?? "");
-  const method = String(formData.get("method") ?? "") as Enums<"payment_method">;
-  const reference = String(formData.get("reference") ?? "")
-    .trim()
-    .slice(0, 120);
-
-  if (!id) return { error: "That entry is not on the page any more. Reload and try again." };
-  if (method !== "upi" && method !== "cash") {
-    return { error: "Say whether you paid by UPI or at the desk." };
-  }
-  if (!reference) {
-    return {
-      error:
-        method === "upi"
-          ? "Put in the UPI reference from your payment app."
-          : "Put in the receipt number you were given at the desk.",
-    };
-  }
+  const keys = razorpayKeys();
+  if (!keys) return { error: "Online payment is not switched on yet. Find a committee member." };
+  if (!registrationId) return { error: "That entry is not on the page any more. Reload and try again." };
 
   const supabase = await createClient();
-  const { error } = await supabase.rpc("submit_event_payment", {
-    p_registration_id: id,
-    p_method: method,
-    p_reference: reference,
+
+  const { data: registration, error: readError } = await supabase
+    .from("event_registrations")
+    .select("id, event_slug, payment_status")
+    .eq("id", registrationId)
+    .maybeSingle();
+
+  if (readError || !registration) return { error: "That is not your entry." };
+  if (registration.payment_status === "verified") return { error: "That entry is already paid up." };
+
+  const { data: event } = await supabase
+    .from("dept_events")
+    .select("fee_inr, name")
+    .eq("slug", registration.event_slug)
+    .maybeSingle();
+
+  if (!event || event.fee_inr <= 0) return { error: "There is nothing to pay for this one." };
+
+  const order = await openOrder({
+    keys,
+    amount: Math.round(event.fee_inr * 100), // Razorpay counts in paise.
+    receipt: `evt-${registration.id}`,
+    notes: { registration_id: String(registration.id), event_slug: registration.event_slug },
+  });
+
+  if ("error" in order) return { error: order.error };
+
+  const { error } = await supabase.rpc("start_event_razorpay_order", {
+    p_registration_id: registration.id,
+    p_order_id: order.id,
   });
 
   if (error) {
     if (error.code === SPOKEN_FOR_STUDENTS) return { error: error.message };
-    console.error("event payment failed", error);
+    console.error("event order start failed", error);
     return { error: "That did not go through. Try again in a minute." };
   }
 
+  return { orderId: order.id, amount: order.amount, keyId: keys.keyId };
+}
+
+/**
+ * Checks what the browser brings back, then marks the entry paid.
+ *
+ * This is the whole of the verification. There is no organiser step after it
+ * and there is not meant to be: a valid signature is Razorpay saying the
+ * money is theirs to settle, and a person re-typing that into a console adds
+ * a delay rather than a check.
+ *
+ * Which means the order of the two halves below is the security property. The
+ * signature is checked first, against a secret the browser has never seen, and
+ * only if it holds does the service role client come out. Postgres refuses
+ * confirm_event_razorpay_payment to anything else, so even a wrong version of
+ * this file cannot mark a fee paid from a student's session.
+ */
+export async function confirmEventRazorpayPayment(payload: {
+  orderId: string;
+  paymentId: string;
+  signature: string;
+}): Promise<EventState> {
+  await requireParticipant();
+
+  const keys = razorpayKeys();
+  if (!keys) return { error: "Online payment is not switched on." };
+
+  if (!payload.orderId || !payload.paymentId || !payload.signature) {
+    return { error: "That payment came back incomplete. Contact an organiser before paying again." };
+  }
+
+  if (!signatureIsValid(keys.keySecret, payload)) {
+    console.error("event payment signature rejected", { orderId: payload.orderId });
+    return {
+      error: "That payment could not be verified. Nothing was recorded. Contact an organiser.",
+    };
+  }
+
+  const service = createServiceClient();
+  if (!service) {
+    console.error("event payment cannot be recorded: no service role key");
+    return {
+      error:
+        "The payment went through but the server could not record it. Contact an organiser with your Razorpay payment id: " +
+        payload.paymentId,
+    };
+  }
+
+  const { error } = await service.rpc("confirm_event_razorpay_payment", {
+    p_order_id: payload.orderId,
+    p_payment_id: payload.paymentId,
+    p_signature: payload.signature,
+  });
+
+  if (error) {
+    console.error("event payment confirm failed", error);
+    return {
+      error:
+        "The payment went through but the entry could not be updated. Contact an organiser with your Razorpay payment id: " +
+        payload.paymentId,
+    };
+  }
+
+  revalidatePath("/dashboard");
   revalidatePath("/dashboard/events");
-  return { notice: "Recorded. An organiser checks it against the account and marks it verified." };
+  return { notice: "Paid. Your entry is confirmed, and nobody needs to check it." };
 }
