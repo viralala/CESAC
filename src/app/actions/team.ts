@@ -1,9 +1,7 @@
 "use server";
 
-import { createHmac, timingSafeEqual } from "node:crypto";
 import { revalidatePath } from "next/cache";
 
-import { openOrder, razorpayKeys } from "@/lib/razorpay/order";
 import { createClient } from "@/lib/supabase/server";
 
 export type TeamState = { error?: string; notice?: string; field?: string };
@@ -80,127 +78,14 @@ export async function updateTeamName(_state: TeamState, formData: FormData): Pro
   return { notice: "Saved." };
 }
 
-/** What a team records after paying by UPI or at the desk. */
-export async function submitPaymentReference(
-  _state: TeamState,
-  formData: FormData,
-): Promise<TeamState> {
-  const method = String(formData.get("method") ?? "");
-  const reference = String(formData.get("reference") ?? "").trim();
-  const note = String(formData.get("note") ?? "").trim();
-
-  if (method !== "upi" && method !== "cash") {
-    return { error: "Pick how the team paid.", field: "method" };
-  }
-  if (reference.length < 4) {
-    return {
-      error:
-        method === "upi"
-          ? "Enter the UPI transaction reference."
-          : "Enter the receipt number you were given.",
-      field: "reference",
-    };
-  }
-
-  const supabase = await createClient();
-  const { error } = await supabase.rpc("submit_payment_reference", {
-    p_method: method,
-    p_reference: reference,
-    p_note: note || undefined,
-  });
-
-  if (error) return fail(error.message, "reference");
-
-  revalidatePath("/dashboard");
-  return { notice: "Recorded. An organiser checks it against the account and marks it verified." };
-}
-
-// ---------------------------------------------------------------------------
-// Razorpay
-// ---------------------------------------------------------------------------
-
-/**
- * Online payment is off unless the server holds both keys. The page reads
- * this to decide whether to offer the button at all, so a half-configured
- * deploy shows the offline route only rather than a checkout that dies.
- */
-export async function razorpayConfigured(): Promise<boolean> {
-  return razorpayKeys() !== null;
-}
-
-export type OrderResult = { orderId?: string; amount?: number; keyId?: string; error?: string };
-
-/**
- * Opens a Razorpay order for this team's entry fee.
+/*
+ * The entry fee used to be collected here too, with its own Razorpay
+ * checkout, its own offline form and its own row in public.payments. It is
+ * not any more. One event cannot have two prices and two places to pay them:
+ * the fee lives on the entry, on the events page, and this file is left with
+ * the thing it is actually about, which is the team.
  *
- * The amount comes from the settings row rather than the browser, so the
- * price cannot be edited on the way in.
+ * public.payments and the organiser tools that read it are untouched, so an
+ * organiser can still record and verify a payment that arrived some other
+ * way. Nothing a student can click writes to it.
  */
-export async function createRazorpayOrder(): Promise<OrderResult> {
-  const keys = razorpayKeys();
-  if (!keys) return { error: "Online payment is not switched on." };
-
-  const supabase = await createClient();
-
-  const [{ data: teamId }, { data: settings }] = await Promise.all([
-    supabase.rpc("my_team_id"),
-    supabase.from("settings").select("entry_fee_inr, online_payment").eq("id", 1).single(),
-  ]);
-
-  if (!teamId) return { error: "Create or join a team first." };
-  if (!settings?.online_payment) return { error: "Online payment is not switched on." };
-
-  const order = await openOrder({
-    keys,
-    amount: Math.round(settings.entry_fee_inr * 100), // Razorpay counts in paise.
-    receipt: `aot-${teamId}`,
-    notes: { team_id: String(teamId) },
-  });
-
-  if ("error" in order) return { error: order.error };
-
-  const { error } = await supabase.rpc("start_razorpay_order", { p_order_id: order.id });
-  if (error) return { error: error.message };
-
-  return { orderId: order.id, amount: order.amount, keyId: keys.keyId };
-}
-
-/**
- * Checks what the browser brings back from Razorpay.
- *
- * The signature is an HMAC of `order_id|payment_id` keyed with the secret,
- * which only the server has, so a forged success cannot pass this. Compared
- * with timingSafeEqual rather than ===, so the comparison leaks nothing about
- * where a wrong signature first differs.
- */
-export async function confirmRazorpayPayment(payload: {
-  orderId: string;
-  paymentId: string;
-  signature: string;
-}): Promise<TeamState> {
-  const keySecret = process.env.RAZORPAY_KEY_SECRET;
-  if (!keySecret) return { error: "Online payment is not switched on." };
-
-  const expected = createHmac("sha256", keySecret)
-    .update(`${payload.orderId}|${payload.paymentId}`)
-    .digest("hex");
-
-  const given = Buffer.from(payload.signature ?? "", "utf8");
-  const mine = Buffer.from(expected, "utf8");
-  const ok = given.length === mine.length && timingSafeEqual(given, mine);
-
-  if (!ok) {
-    return { error: "That payment could not be verified. Nothing was recorded. Contact an organiser." };
-  }
-
-  const supabase = await createClient();
-  const { error } = await supabase.rpc("record_razorpay_payment", {
-    p_order_id: payload.orderId,
-    p_payment_id: payload.paymentId,
-  });
-
-  if (error) return fail(error.message);
-
-  revalidatePath("/dashboard");
-  return { notice: "Payment received. An organiser confirms it against the Razorpay dashboard." };
-}

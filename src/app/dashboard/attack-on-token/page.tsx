@@ -5,7 +5,6 @@ import { redirect } from "next/navigation";
 import { Label } from "@/components/aot/bits";
 import { HandInForm } from "@/components/console/hand-in-form";
 import { InviteCode } from "@/components/console/invite-code";
-import { PaymentPanel } from "@/components/console/payment-panel";
 import { Chip, Empty, Panel, Row } from "@/components/console/shell";
 import { TeamSetup } from "@/components/console/team-setup";
 import { requireParticipant } from "@/lib/auth/guard";
@@ -16,10 +15,9 @@ import {
   getMyTeam,
   getSettings,
 } from "@/lib/data/console";
-import { getDeptEvents } from "@/lib/data/dept-events";
+import { getDeptEvents, getMyRegistrations, type MyRegistration } from "@/lib/data/dept-events";
 import { handInFor } from "@/lib/data/hand-ins";
 import { EVENT } from "@/lib/data/event";
-import { razorpayConfigured } from "@/app/actions/team";
 
 export const metadata: Metadata = {
   title: "Attack on Token",
@@ -46,14 +44,21 @@ export default async function AttackOnTokenConsole() {
   const event = events.find((e) => e.slug === "attack-on-token");
   if (!event || event.state === "locked") redirect("/dashboard/events");
 
-  const [team, settings, chapters, submissions, board, onlinePayments] = await Promise.all([
+  const [team, settings, chapters, submissions, board, registrations] = await Promise.all([
     getMyTeam(),
     getSettings(),
     getChapters(),
     getMySubmissions(),
     getLeaderboard(),
-    razorpayConfigured(),
+    getMyRegistrations(),
   ]);
+
+  // The fee is collected on the events page and nowhere else. This console
+  // reads that entry rather than holding a second one of its own: it used to
+  // run its own checkout against its own table, which meant the same 125
+  // rupees could be asked for twice, on two pages, into two rows that never
+  // met.
+  const entry = registrations.find((r) => r.event_slug === "attack-on-token") ?? null;
 
   const standing = team ? board.rows.find((row) => row.team_id === team.id) : undefined;
   const isCaptain = team?.captain_id === viewer.id;
@@ -93,7 +98,7 @@ export default async function AttackOnTokenConsole() {
                 {
                   step: "03",
                   title: "Pay the entry fee",
-                  note: `₹${settings.entry_fee_inr} per team. An organiser verifies it, and the seat is yours.`,
+                  note: `₹${event.fee_inr}, on the events page. It is confirmed the moment it goes through.`,
                 },
               ].map((item) => (
                 <li
@@ -160,7 +165,7 @@ export default async function AttackOnTokenConsole() {
                   }
                 />
                 <Row k="Seat" v={team.seat ? `#${team.seat}` : "Assigned once registered"} />
-                <Row k="Entry" v={`₹${settings.entry_fee_inr} per team of two`} />
+                <Row k="Entry" v={`₹${event.fee_inr} per team of two`} />
                 {team.eliminated_at_chapter ? (
                   <Row k="Out at" v={team.eliminated_at_chapter} />
                 ) : null}
@@ -173,12 +178,7 @@ export default async function AttackOnTokenConsole() {
               ) : null}
             </Panel>
 
-            <PaymentPanel
-              payment={team.payment}
-              settings={settings}
-              onlineEnabled={settings.online_payment && onlinePayments}
-              viewer={{ name: viewer.name, email: viewer.email }}
-            />
+            <EntryFee entry={entry} fee={event.fee_inr} />
           </div>
 
           <div className="mt-6 grid gap-6 lg:grid-cols-2">
@@ -266,5 +266,66 @@ export default async function AttackOnTokenConsole() {
         </>
       )}
     </>
+  );
+}
+
+/**
+ * The entry fee, as this console sees it.
+ *
+ * It reports and never collects. The fee belongs to the entry on the events
+ * page, which is where a student enters and where the Razorpay checkout
+ * lives; this panel exists so somebody who lands here first is told where to
+ * go rather than being handed a second way to pay the same money.
+ */
+function EntryFee({ entry, fee }: { entry: MyRegistration | null; fee: number }) {
+  const paid = entry?.payment_status === "verified";
+  const submitted = entry?.payment_status === "submitted";
+
+  return (
+    <Panel
+      eyebrow="Entry"
+      title={`₹${fee} per team`}
+      aside={
+        <Chip tone={paid ? "lime" : submitted ? "teal" : "muted"}>
+          {paid ? "Paid" : submitted ? "Waiting on an organiser" : "Not paid"}
+        </Chip>
+      }
+    >
+      {paid ? (
+        <p className="serif-it text-[1.02rem] leading-relaxed text-muted">
+          Paid and confirmed. Nothing else is owed.
+        </p>
+      ) : submitted ? (
+        <p className="serif-it text-[1.02rem] leading-relaxed text-muted">
+          You recorded a payment before the checkout existed, so an organiser is still matching it
+          against the account. You do not need to pay again.
+        </p>
+      ) : entry ? (
+        <>
+          <p className="serif-it text-[1.02rem] leading-relaxed text-muted">
+            You are entered and the fee is still outstanding. Pay it on the events page: scan the
+            UPI code in the window, or use a card, and your entry is confirmed on the spot with
+            nobody to wait on.
+          </p>
+          <p className="label mt-6">
+            <Link href="/dashboard/events" className="text-teal hover:underline">
+              Pay the entry fee
+            </Link>
+          </p>
+        </>
+      ) : (
+        <>
+          <p className="serif-it text-[1.02rem] leading-relaxed text-muted">
+            You have not entered Attack on Token yet. Entering and paying both happen on the events
+            page, and a team here is separate from that.
+          </p>
+          <p className="label mt-6">
+            <Link href="/dashboard/events" className="text-teal hover:underline">
+              Enter the event
+            </Link>
+          </p>
+        </>
+      )}
+    </Panel>
   );
 }
