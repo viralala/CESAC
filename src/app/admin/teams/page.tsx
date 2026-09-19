@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 
 import { markPaidOffline, restoreTeam, verifyPayment } from "@/app/actions/admin";
 import { Container, Label } from "@/components/aot/bits";
@@ -6,6 +7,7 @@ import { ActionForm } from "@/components/console/action-form";
 import { Chip, ConsoleBar, Empty, Panel, Row } from "@/components/console/shell";
 import { requireAdmin } from "@/lib/auth/guard";
 import { getAdminOverview, getSettings, type TeamWithPeople } from "@/lib/data/console";
+import { getEventEntries, type Entry } from "@/lib/data/dept-events";
 import { ADMIN_NAV } from "../nav";
 
 export const metadata: Metadata = {
@@ -14,18 +16,42 @@ export const metadata: Metadata = {
 };
 
 /**
- * Every team, and the money.
+ * Who is in, and the money.
  *
- * Ordered so the work comes first: payments waiting on a check sit at the
- * top, because that is the only thing on this page that blocks a team from
- * being registered.
+ * Two different things share this page because an organiser thinks of both as
+ * "teams" and should not have to know which table a name came out of.
+ *
+ * The pairs at the top are entries: somebody registered on the events page and
+ * named a partner, and the fee is theirs. That is where every real entry lives
+ * and it is what an organiser wants at a desk, flat and scannable, rather than
+ * nested under an event the way /admin/entries shows it.
+ *
+ * The teams below are the hand-in teams, made with a join code for the day
+ * itself. They are a different arrangement with a different table and they no
+ * longer collect any money, so a team can be empty here while its people are
+ * perfectly well entered above.
  */
 export default async function AdminTeamsPage() {
   const viewer = await requireAdmin();
-  const [{ teams, counts }, settings] = await Promise.all([getAdminOverview(), getSettings()]);
+  const [{ teams, counts }, settings, entries] = await Promise.all([
+    getAdminOverview(),
+    getSettings(),
+    getEventEntries(),
+  ]);
 
   const waiting = teams.filter((team) => team.payment?.status === "submitted");
   const rest = teams.filter((team) => team.payment?.status !== "submitted");
+
+  // Unpaid first: that is the only thing on this page anybody has to chase.
+  const live = entries
+    .filter((entry) => entry.status === "registered")
+    .sort((a, b) => {
+      const rank = (e: Entry) => (e.payment_status === "verified" ? 1 : 0);
+      return rank(a) - rank(b) || a.event_slug.localeCompare(b.event_slug);
+    });
+
+  const paidUp = live.filter((entry) => entry.payment_status === "verified").length;
+  const heads = live.reduce((n, entry) => n + (entry.partner_id ? 2 : 1), 0);
 
   return (
     <>
@@ -37,12 +63,41 @@ export default async function AdminTeamsPage() {
             <Label tone="teal">Registration</Label>
             <h1 className="d-tall mt-4 text-[clamp(2.6rem,7vw,4.5rem)] text-ink">Teams</h1>
             <p className="serif-it mt-4 text-[1.1rem] leading-relaxed text-muted">
+              {live.length} {live.length === 1 ? "pair is" : "pairs are"} entered, {heads} people
+              in all, {paidUp} paid up. Hand-in teams are counted separately below:{" "}
               {counts.registered} registered of {counts.teams} made, {counts.seated} seats held
               against a cap of {settings.seats_cap}.
             </p>
           </header>
 
           <section className="mt-10">
+            <h2 className="d-tall text-[1.9rem] text-ink">Entered pairs</h2>
+            <p className="serif-it mt-2 text-[1rem] leading-relaxed text-muted">
+              Everybody who has entered an event and what they owe. Opening and closing events,
+              and verifying a fee that came in by hand, are on{" "}
+              <Link href="/admin/entries" className="text-teal hover:underline">
+                Entries
+              </Link>
+              .
+            </p>
+
+            {live.length === 0 ? (
+              <div className="mt-5">
+                <Empty>
+                  Nobody has entered anything yet. The first pair appears here the moment somebody
+                  enters on the events page.
+                </Empty>
+              </div>
+            ) : (
+              <ul className="mt-5 grid gap-3">
+                {live.map((entry) => (
+                  <EntryRow key={entry.id} entry={entry} />
+                ))}
+              </ul>
+            )}
+          </section>
+
+          <section className="mt-12">
             <h2 className="d-tall text-[1.9rem] text-ink">Waiting on a check</h2>
             {waiting.length === 0 ? (
               <div className="mt-5">
@@ -61,11 +116,14 @@ export default async function AdminTeamsPage() {
             )}
           </section>
 
-          <section className="mt-10">
-            <h2 className="d-tall text-[1.9rem] text-ink">Everyone else</h2>
+          <section className="mt-12">
+            <h2 className="d-tall text-[1.9rem] text-ink">Hand-in teams</h2>
             {rest.length === 0 ? (
               <div className="mt-5">
-                <Empty>No other team has been made yet.</Empty>
+                <Empty>
+                  No hand-in team has been made yet. These are separate from the entries above:
+                  a pair can be entered and paid up without having made one.
+                </Empty>
               </div>
             ) : (
               <div className="mt-5 grid gap-5 lg:grid-cols-2">
@@ -230,5 +288,59 @@ function TeamCard({ team, highlight = false }: { team: TeamWithPeople; highlight
         </div>
       ) : null}
     </Panel>
+  );
+}
+
+
+const ENTRY_TONE = {
+  pending: "muted",
+  submitted: "teal",
+  verified: "lime",
+  rejected: "red",
+} as const;
+
+/** A person as an organiser needs them: name to say, address to write to, PRN to find on a list. */
+function who(p: Entry["student"]): string {
+  if (!p) return "Account deleted";
+  const tail = [p.student_class, p.prn].filter(Boolean).join(" · ");
+  const name = p.full_name ?? p.email;
+  return tail ? `${name} · ${tail}` : name;
+}
+
+/** One entry, flat. Both people, the event, and whether the fee is in. */
+function EntryRow({ entry }: { entry: Entry }) {
+  const tone = ENTRY_TONE[entry.payment_status] ?? "muted";
+
+  return (
+    <li className="rounded-[var(--r-md)] border-2 border-ink/10 px-5 py-4">
+      <div className="flex flex-wrap items-start justify-between gap-x-6 gap-y-2">
+        <div className="min-w-0">
+          <p className="label-sm text-teal">{entry.event_slug}</p>
+          <p className="mt-1 text-[1.02rem] text-ink [overflow-wrap:anywhere]">
+            {who(entry.student)}
+          </p>
+          <p className="mt-0.5 text-[0.95rem] text-muted [overflow-wrap:anywhere]">
+            {entry.partner ? `with ${who(entry.partner)}` : "On their own"}
+          </p>
+          <p className="mt-1.5 text-[0.88rem] text-muted [overflow-wrap:anywhere]">
+            {entry.student?.email ?? "No address"}
+            {entry.partner?.email ? ` · ${entry.partner.email}` : ""}
+          </p>
+        </div>
+
+        <span className="flex flex-wrap items-center gap-2">
+          <Chip tone={tone}>{entry.payment_status}</Chip>
+          {entry.payment_method ? (
+            <span className="label-sm text-muted">{entry.payment_method}</span>
+          ) : null}
+        </span>
+      </div>
+
+      {entry.payment_reference ? (
+        <p className="mt-3 border-t border-ink/10 pt-3 font-mono text-[0.85rem] text-muted [overflow-wrap:anywhere]">
+          {entry.payment_reference}
+        </p>
+      ) : null}
+    </li>
   );
 }

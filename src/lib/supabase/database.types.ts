@@ -1058,6 +1058,10 @@ export type Database = {
         Returns: string;
       };
       registration_is_open: { Args: never; Returns: boolean };
+      change_event_partner: {
+        Args: { p_partner_email: string; p_registration_id: string };
+        Returns: undefined;
+      };
       confirm_event_razorpay_payment: {
         Args: { p_order_id: string; p_payment_id: string; p_signature: string };
         Returns: string;
@@ -1084,6 +1088,7 @@ export type Database = {
         };
         Returns: undefined;
       };
+      withdraw_event_entry: { Args: { p_registration_id: string }; Returns: undefined };
     };
     Enums: {
       app_role: "participant" | "admin" | "owner";

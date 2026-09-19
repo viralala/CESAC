@@ -4,9 +4,11 @@ import Link from "next/link";
 import { useActionState, useId, useState, useTransition } from "react";
 
 import {
+  changePartner,
   confirmEventRazorpayPayment,
   createEventRazorpayOrder,
   enterEvent,
+  withdrawEntry,
   type EventState,
 } from "@/app/actions/events";
 import { Chip, Notice, Row } from "@/components/console/shell";
@@ -202,6 +204,13 @@ function Entered({
   // The other one, from wherever you are standing.
   const other = mine ? registration.partner : registration.student;
 
+  // Changing who you entered with is the same decision as entering, so it
+  // lives behind the same conditions: your entry, entries still open, and the
+  // fee not yet paid. Once it is paid the entry is a seat somebody has been
+  // charged for, and an organiser owns it from then on.
+  const canChange =
+    mine && event.state === "open" && registration.payment_status !== "verified";
+
   return (
     <div className="mt-5 border-t border-ink/10 pt-5">
       <dl>
@@ -233,6 +242,8 @@ function Entered({
           The fee is theirs to pay, and they record it from their own console.
         </p>
       ) : null}
+
+      {canChange ? <ChangeTeam registration={registration} event={event} /> : null}
     </div>
   );
 }
@@ -335,6 +346,116 @@ function PayNow({
           <Notice tone="ok">{state.notice}</Notice>
         </div>
       ) : null}
+    </div>
+  );
+}
+
+
+/**
+ * Changing your mind, while that is still free to do.
+ *
+ * Two different things, kept apart because they cost different amounts. A
+ * swap keeps the entry and anything paid against it, so it is the ordinary
+ * one and sits first. Giving the entry up releases both people to enter with
+ * somebody else and cannot be taken back, so it is folded away behind a
+ * summary rather than sitting next to the other button waiting to be hit.
+ *
+ * Both disappear the moment the fee is verified. The database refuses them
+ * then as well, so hiding them here is a courtesy rather than the rule.
+ */
+function ChangeTeam({
+  registration,
+  event,
+}: {
+  registration: MyRegistration;
+  event: DeptEvent;
+}) {
+  const [swap, swapAction, swapping] = useActionState<EventState, FormData>(changePartner, {});
+  const [drop, dropAction, dropping] = useActionState<EventState, FormData>(withdrawEntry, {});
+  const uid = useId();
+  const pairs = event.team_size === 2;
+
+  return (
+    <div className="mt-6 border-t border-ink/10 pt-5">
+      <p className="label text-ink">{pairs ? "Change your partner" : "Change your entry"}</p>
+
+      {pairs ? (
+        <>
+          <p className="serif-it mt-2 text-[0.9rem] leading-relaxed text-muted">
+            Swapping keeps your entry and anything you have paid. You can do this until the fee
+            goes through.
+          </p>
+
+          <form action={swapAction} className="mt-4 grid gap-3 sm:grid-cols-[1fr_auto]">
+            <input type="hidden" name="registration_id" value={registration.id} />
+            <div>
+              <label htmlFor={`${uid}-mate`} className="sr-only">
+                New partner email
+              </label>
+              <input
+                id={`${uid}-mate`}
+                name="partner_email"
+                type="email"
+                required
+                placeholder="their.name@vit.edu"
+                className="field"
+              />
+            </div>
+            <button
+              type="submit"
+              disabled={swapping}
+              className="pill pill-ghost self-start disabled:cursor-progress disabled:opacity-70"
+            >
+              {swapping ? "Changing" : "Change partner"}
+            </button>
+          </form>
+
+          {swap.error ? (
+            <div className="mt-4">
+              <Notice tone="error">{swap.error}</Notice>
+            </div>
+          ) : null}
+          {swap.notice ? (
+            <div className="mt-4">
+              <Notice tone="ok">{swap.notice}</Notice>
+            </div>
+          ) : null}
+        </>
+      ) : null}
+
+      <details className="mt-5 [&_summary::-webkit-details-marker]:hidden">
+        <summary className="label cursor-pointer text-muted hover:text-ink">
+          {pairs ? "Or start again with a new team" : "Or give up this entry"}
+        </summary>
+
+        <div className="mt-3 rounded-[var(--r-md)] border-2 border-ink/10 px-5 py-4">
+          <p className="serif-it text-[0.9rem] leading-relaxed text-muted">
+            This gives up the entry altogether.{" "}
+            {pairs
+              ? "You and your partner are both free afterwards, and you can enter again with anybody who is not already in."
+              : "You can enter again afterwards."}{" "}
+            Your place is not held while you are out, so if entries fill up in between you are not
+            getting it back.
+          </p>
+
+          <form action={dropAction} className="mt-4">
+            <input type="hidden" name="registration_id" value={registration.id} />
+            <button
+              type="submit"
+              disabled={dropping}
+              className="pill pill-ghost disabled:cursor-progress disabled:opacity-70"
+            >
+              {dropping ? "Giving up the entry" : "Give up this entry"}
+            </button>
+          </form>
+
+          {drop.error ? (
+            <div className="mt-4">
+              <Notice tone="error">{drop.error}</Notice>
+            </div>
+          ) : null}
+        </div>
+      </details>
     </div>
   );
 }
