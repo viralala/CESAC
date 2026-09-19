@@ -422,6 +422,48 @@ Operational, and worth doing before any of the above.
       the whole project. Nobody needs email to sign in, so this is not blocking
       today, but the first wave of forgotten passwords will jam instantly.
 
+- [ ] **Who is allowed to enter, and the three students the rule already
+      excludes.** *Needs a decision from you, not code. Raised 19 September
+      because opening registration made it live.*
+
+      `register_for_event()` demands a `@vit.edu` address **of the partner**,
+      with the reasoning that an address outside the roster belongs to
+      somebody the department cannot vouch for. It asks nothing at all of the
+      student doing the entering. That asymmetry looks like an oversight
+      rather than a decision, and while public sign-up is open it means
+      anybody with any address can make an account and enter, naming a VIT
+      student as their partner.
+
+      **It was left alone deliberately**, because the obvious fix is wrong in
+      both directions:
+
+      - Demanding `@vit.edu` of the lead as well would lock out three real
+        students whose roster address is not one:
+        `kaustubh.1251070844@vie.edu` (a typo for vit in the spreadsheet),
+        `aditya.1251071035@gmail.com` and `tanay.1251070733@gmail.com`. All
+        three were imported from the roster on 17 September and all three are
+        genuine.
+      - Dropping the partner rule instead would let a stranger be named as
+        somebody's partner.
+
+      Those same three students **cannot be named as a partner today**, which
+      is a live problem for them and not a hypothetical one.
+
+      The real fix is to gate on the roster rather than on the domain, which
+      needs somewhere to record who is on it: `ems.approved_students` exists,
+      is empty, and is advisory precisely because making it a gate would have
+      locked out every imported account. Wiring it up is a schema decision.
+
+      In the meantime: turning off public sign-up below closes most of this,
+      and an entry from somebody who does not belong shows up in the list on
+      the Entries page with a Withdraw button next to it.
+
+- [ ] **`register_for_event()` has no capacity limit.** `settings.seats_cap`
+      is 80 and belongs to the older `teams` arrangement, not to
+      `dept_events`, which has no seat column at all. So entries for Attack on
+      Token are currently unbounded. Worth knowing before the day rather than
+      on it.
+
 - [ ] **Turn off public sign-up.** Everybody who belongs here already has an
       account. Leaving it open means anybody with any address can make one.
 
