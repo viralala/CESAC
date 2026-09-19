@@ -10,53 +10,7 @@ import {
 } from "@/app/actions/team";
 import { Chip, Notice, Panel, Row } from "@/components/console/shell";
 import type { Payment, Settings } from "@/lib/data/console";
-
-type RazorpayResponse = {
-  razorpay_order_id: string;
-  razorpay_payment_id: string;
-  razorpay_signature: string;
-};
-
-type RazorpayOptions = {
-  key: string;
-  amount: number;
-  currency: string;
-  name: string;
-  description: string;
-  order_id: string;
-  prefill: { name?: string; email?: string };
-  theme: { color: string };
-  handler: (response: RazorpayResponse) => void;
-};
-
-declare global {
-  interface Window {
-    Razorpay?: new (options: RazorpayOptions) => { open: () => void };
-  }
-}
-
-const CHECKOUT_SRC = "https://checkout.razorpay.com/v1/checkout.js";
-
-/** Loaded on demand rather than on every page view, so the console stays light. */
-function loadCheckout(): Promise<boolean> {
-  if (typeof window === "undefined") return Promise.resolve(false);
-  if (window.Razorpay) return Promise.resolve(true);
-
-  return new Promise((resolve) => {
-    const existing = document.querySelector<HTMLScriptElement>(`script[src="${CHECKOUT_SRC}"]`);
-    if (existing) {
-      existing.addEventListener("load", () => resolve(true), { once: true });
-      existing.addEventListener("error", () => resolve(false), { once: true });
-      return;
-    }
-    const script = document.createElement("script");
-    script.src = CHECKOUT_SRC;
-    script.async = true;
-    script.onload = () => resolve(true);
-    script.onerror = () => resolve(false);
-    document.head.appendChild(script);
-  });
-}
+import { loadCheckout, openCheckout } from "@/lib/razorpay/checkout";
 
 const STATUS: Record<Payment["status"], { label: string; tone: "muted" | "teal" | "lime" | "red" }> =
   {
@@ -106,30 +60,34 @@ export function PaymentPanel({
       }
 
       const ready = await loadCheckout();
-      if (!ready || !window.Razorpay) {
+      if (!ready) {
         setOnline({ error: "The payment window could not load. Pay by UPI and record it below." });
         return;
       }
 
-      const checkout = new window.Razorpay({
-        key: order.keyId,
+      openCheckout({
+        keyId: order.keyId,
+        orderId: order.orderId,
         amount: order.amount ?? fee * 100,
-        currency: "INR",
         name: "Attack on Token",
-        description: `Entry for one team of two`,
-        order_id: order.orderId,
+        description: "Entry for one team of two",
         prefill: { name: viewer.name, email: viewer.email },
-        theme: { color: "#12656f" },
-        handler: (response) => {
+        onPaid: (response) => {
           void confirmRazorpayPayment({
             orderId: response.razorpay_order_id,
             paymentId: response.razorpay_payment_id,
             signature: response.razorpay_signature,
           }).then(setOnline);
         },
+        onFailed: (message) => setOnline({ error: message }),
+        // Closing the window is not a mistake and not an error. The offline
+        // route is right underneath, so the panel says so instead of going quiet.
+        onDismissed: () =>
+          setOnline({
+            notice:
+              "You closed the payment window, so nothing was charged. Open it again when you are ready, or pay by UPI below.",
+          }),
       });
-
-      checkout.open();
     });
   }
 

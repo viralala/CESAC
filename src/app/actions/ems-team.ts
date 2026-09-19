@@ -4,6 +4,7 @@ import { createHmac, timingSafeEqual } from "node:crypto";
 import { revalidatePath } from "next/cache";
 
 import { requireParticipant } from "@/lib/auth/guard";
+import { openOrder, razorpayKeys } from "@/lib/razorpay/order";
 import { createEmsClient, createEmsServiceClient, readableError } from "@/lib/supabase/ems";
 
 export type TeamState = { error?: string; notice?: string; teamId?: string };
@@ -141,7 +142,7 @@ export async function registerTeam(_state: TeamState, formData: FormData): Promi
  * checkout that dies.
  */
 export async function emsRazorpayConfigured(): Promise<boolean> {
-  return Boolean(process.env.RAZORPAY_KEY_ID && process.env.RAZORPAY_KEY_SECRET);
+  return razorpayKeys() !== null;
 }
 
 export type EmsOrder = {
@@ -161,9 +162,8 @@ export type EmsOrder = {
  * person's and one that is not actually awaiting payment.
  */
 export async function createEmsRazorpayOrder(registrationId: string): Promise<EmsOrder> {
-  const keyId = process.env.RAZORPAY_KEY_ID;
-  const keySecret = process.env.RAZORPAY_KEY_SECRET;
-  if (!keyId || !keySecret) return { error: "Online payment is not switched on." };
+  const keys = razorpayKeys();
+  if (!keys) return { error: "Online payment is not switched on." };
 
   const supabase = await participantClient();
 
@@ -179,27 +179,14 @@ export async function createEmsRazorpayOrder(registrationId: string): Promise<Em
     return { error: "That registration is not waiting on a payment." };
   }
 
-  const amount = Math.round(registration.amount_inr * 100); // Razorpay counts in paise.
-
-  const response = await fetch("https://api.razorpay.com/v1/orders", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Basic ${Buffer.from(`${keyId}:${keySecret}`).toString("base64")}`,
-    },
-    body: JSON.stringify({
-      amount,
-      currency: "INR",
-      receipt: `ems-${registration.id}`.slice(0, 40),
-      notes: { registration_id: registration.id },
-    }),
-    cache: "no-store",
+  const order = await openOrder({
+    keys,
+    amount: Math.round(registration.amount_inr * 100), // Razorpay counts in paise.
+    receipt: `ems-${registration.id}`,
+    notes: { registration_id: String(registration.id) },
   });
 
-  if (!response.ok) return { error: "Razorpay refused the order. Try again in a moment." };
-
-  const order = (await response.json()) as { id?: string };
-  if (!order.id) return { error: "Razorpay returned no order." };
+  if ("error" in order) return { error: order.error };
 
   const { error } = await supabase.rpc("create_payment_record", {
     p_registration_id: registration.id,
@@ -208,7 +195,12 @@ export async function createEmsRazorpayOrder(registrationId: string): Promise<Em
 
   if (error) return { error: readableError(error)! };
 
-  return { orderId: order.id, amount, keyId, registrationId: registration.id };
+  return {
+    orderId: order.id,
+    amount: order.amount,
+    keyId: keys.keyId,
+    registrationId: registration.id,
+  };
 }
 
 /**

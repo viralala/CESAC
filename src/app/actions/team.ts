@@ -3,6 +3,7 @@
 import { createHmac, timingSafeEqual } from "node:crypto";
 import { revalidatePath } from "next/cache";
 
+import { openOrder, razorpayKeys } from "@/lib/razorpay/order";
 import { createClient } from "@/lib/supabase/server";
 
 export type TeamState = { error?: string; notice?: string; field?: string };
@@ -124,11 +125,7 @@ export async function submitPaymentReference(
  * deploy shows the offline route only rather than a checkout that dies.
  */
 export async function razorpayConfigured(): Promise<boolean> {
-  return Boolean(process.env.RAZORPAY_KEY_ID && process.env.RAZORPAY_KEY_SECRET);
-}
-
-export async function razorpayKeyId(): Promise<string | null> {
-  return process.env.RAZORPAY_KEY_ID ?? null;
+  return razorpayKeys() !== null;
 }
 
 export type OrderResult = { orderId?: string; amount?: number; keyId?: string; error?: string };
@@ -140,9 +137,8 @@ export type OrderResult = { orderId?: string; amount?: number; keyId?: string; e
  * price cannot be edited on the way in.
  */
 export async function createRazorpayOrder(): Promise<OrderResult> {
-  const keyId = process.env.RAZORPAY_KEY_ID;
-  const keySecret = process.env.RAZORPAY_KEY_SECRET;
-  if (!keyId || !keySecret) return { error: "Online payment is not switched on." };
+  const keys = razorpayKeys();
+  if (!keys) return { error: "Online payment is not switched on." };
 
   const supabase = await createClient();
 
@@ -154,34 +150,19 @@ export async function createRazorpayOrder(): Promise<OrderResult> {
   if (!teamId) return { error: "Create or join a team first." };
   if (!settings?.online_payment) return { error: "Online payment is not switched on." };
 
-  const amount = settings.entry_fee_inr * 100; // Razorpay counts in paise.
-
-  const response = await fetch("https://api.razorpay.com/v1/orders", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Basic ${Buffer.from(`${keyId}:${keySecret}`).toString("base64")}`,
-    },
-    body: JSON.stringify({
-      amount,
-      currency: "INR",
-      receipt: `aot-${teamId}`.slice(0, 40),
-      notes: { team_id: teamId },
-    }),
-    cache: "no-store",
+  const order = await openOrder({
+    keys,
+    amount: Math.round(settings.entry_fee_inr * 100), // Razorpay counts in paise.
+    receipt: `aot-${teamId}`,
+    notes: { team_id: String(teamId) },
   });
 
-  if (!response.ok) {
-    return { error: "Razorpay refused the order. Pay by UPI and record the reference instead." };
-  }
-
-  const order = (await response.json()) as { id?: string };
-  if (!order.id) return { error: "Razorpay returned no order." };
+  if ("error" in order) return { error: order.error };
 
   const { error } = await supabase.rpc("start_razorpay_order", { p_order_id: order.id });
   if (error) return { error: error.message };
 
-  return { orderId: order.id, amount, keyId };
+  return { orderId: order.id, amount: order.amount, keyId: keys.keyId };
 }
 
 /**
