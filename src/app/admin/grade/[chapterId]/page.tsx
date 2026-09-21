@@ -5,13 +5,13 @@ import { notFound } from "next/navigation";
 import { scoreTeam } from "@/app/actions/admin";
 import { Container, Label } from "@/components/aot/bits";
 import { ActionForm } from "@/components/console/action-form";
-import { Chip, ConsoleBar, Empty, Panel, Row } from "@/components/console/shell";
+import { Chip, Empty, Panel, Row } from "@/components/console/shell";
 import { requireAdmin } from "@/lib/auth/guard";
+import { requireCap } from "@/lib/auth/caps";
 import { getChapters, getChapterSubmissions } from "@/lib/data/console";
 import { handInFor } from "@/lib/data/hand-ins";
 import { SUBMISSIONS_BUCKET } from "@/lib/supabase/config";
 import { createClient } from "@/lib/supabase/server";
-import { ADMIN_NAV } from "../../nav";
 
 export const metadata: Metadata = {
   title: "Grade a chapter",
@@ -26,7 +26,8 @@ export const metadata: Metadata = {
  * out of this page stops working on its own.
  */
 export default async function GradePage(props: PageProps<"/admin/grade/[chapterId]">) {
-  const viewer = await requireAdmin();
+  await requireAdmin();
+  await requireCap("events");
   const { chapterId } = await props.params;
 
   const chapters = await getChapters();
@@ -55,8 +56,6 @@ export default async function GradePage(props: PageProps<"/admin/grade/[chapterI
 
   return (
     <>
-      <ConsoleBar viewer={viewer} area="Organiser console" nav={ADMIN_NAV} />
-
       <div className="washi grain min-h-[100svh] py-12 sm:py-16">
         <Container>
           <header className="max-w-[52ch]">

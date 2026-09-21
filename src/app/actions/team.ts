@@ -79,11 +79,11 @@ export async function updateTeamName(_state: TeamState, formData: FormData): Pro
 }
 
 /*
- * The entry fee used to be collected here too, with its own Razorpay
- * checkout, its own offline form and its own row in public.payments. It is
- * not any more. One event cannot have two prices and two places to pay them:
- * the fee lives on the entry, on the events page, and this file is left with
- * the thing it is actually about, which is the team.
+ * The entry fee used to be collected here too, with its own checkout, its own
+ * offline form and its own row in public.payments. It is not any more. One
+ * event cannot have two prices and two places to pay them: the fee is settled
+ * on the registration form now, and this file is left with the thing it is
+ * actually about, which is the team.
  *
  * public.payments and the organiser tools that read it are untouched, so an
  * organiser can still record and verify a payment that arrived some other

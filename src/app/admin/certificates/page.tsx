@@ -1,21 +1,22 @@
 import type { Metadata } from "next";
 
-import { reviewCertificate } from "@/app/actions/admin";
+import { deleteCertificate, reviewCertificate } from "@/app/actions/admin";
 import { Container, Label } from "@/components/aot/bits";
 import { ActionForm } from "@/components/console/action-form";
-import { Chip, ConsoleBar, Empty, Panel, Stat, type ChipTone } from "@/components/console/shell";
+import { Chip, Empty, Panel, Stat, type ChipTone } from "@/components/console/shell";
 import { requireAdmin } from "@/lib/auth/guard";
+import { requireCap } from "@/lib/auth/caps";
 import { CONTRIBUTION_LABEL, rupees } from "@/lib/console/options";
+import { KIND_LABEL, LEVEL_LABEL, SLOT_LABEL, isPublication } from "@/lib/console/records";
 import {
   certificateState,
   getCertificatesForReview,
   type CertificateForOrganiser,
 } from "@/lib/data/certificates";
 import { EVENT } from "@/lib/data/event";
-import { ADMIN_NAV } from "../nav";
 
 export const metadata: Metadata = {
-  title: "Certificates",
+  title: "Records",
   robots: { index: false, follow: false },
 };
 
@@ -58,6 +59,14 @@ function day(iso: string): string {
 /** Whole days between the upload landing and this request. */
 function waited(iso: string): number {
   return Math.floor((Date.now() - new Date(iso).getTime()) / DAY);
+}
+
+/** A date somebody typed on a form, printed the way they would read it. */
+function onDay(date: string | null): string | null {
+  if (!date) return null;
+  const parsed = new Date(`${date}T00:00:00`);
+  if (Number.isNaN(parsed.getTime())) return null;
+  return parsed.toLocaleDateString("en-IN", { dateStyle: "medium", timeZone: ZONE });
 }
 
 function human(bytes: number): string {
@@ -142,25 +151,79 @@ function Record({ certificate }: { certificate: CertificateForOrganiser }) {
   const state = certificateState(certificate);
   const days = waited(certificate.created_at);
 
-  const file = [
-    certificate.file_name,
-    KIND[certificate.mime_type] ?? "File",
-    human(certificate.size_bytes),
-    `uploaded ${stamp(certificate.created_at)}`,
-  ].join(" · ");
+  // Every file on a record is optional now. A publication usually has none at
+  // all, so "no file" is a normal state and is said plainly rather than left
+  // as a row of empty separators.
+  const file =
+    certificate.file_name && certificate.mime_type && certificate.size_bytes
+      ? [
+          certificate.file_name,
+          KIND[certificate.mime_type] ?? "File",
+          human(certificate.size_bytes),
+          `uploaded ${stamp(certificate.created_at)}`,
+        ].join(" · ")
+      : `No certificate attached · added ${stamp(certificate.created_at)}`;
+
+  /*
+   * The fields this kind of record actually carries.
+   *
+   * Built rather than listed, because five layouts share twenty columns and a
+   * fixed list would print nine blanks against every hackathon. What is not
+   * filled in is left out, which is also what makes the panel read as a
+   * summary of the claim being checked rather than a dump of the row.
+   */
+  const detail = (
+    [
+      ["Kind", KIND_LABEL[certificate.kind] ?? certificate.kind],
+      ["Level", certificate.level ? LEVEL_LABEL[certificate.level] : ""],
+      ["Date", onDay(certificate.happened_on) ?? ""],
+      ["Year", certificate.publication_year ? String(certificate.publication_year) : ""],
+      [
+        isPublication(certificate.kind) ? "Journal or conference" : "Organised by",
+        certificate.venue_name ?? "",
+      ],
+      ["Chapter", certificate.chapter_name ?? ""],
+      ["Primary author", certificate.primary_author ?? ""],
+      ["Other authors", certificate.secondary_authors ?? ""],
+      ["Indexing", certificate.indexing ?? ""],
+      ["Quartile", certificate.quartile ?? ""],
+      [
+        "Impact factor",
+        certificate.impact_factor === null ? "" : String(certificate.impact_factor),
+      ],
+      [
+        "Peer reviewed",
+        certificate.peer_reviewed === null ? "" : certificate.peer_reviewed ? "Yes" : "No",
+      ],
+      ["E-journal", certificate.e_journal === null ? "" : certificate.e_journal ? "Yes" : "No"],
+      ["Specialisation", certificate.specialization ?? ""],
+      ["Volume", certificate.volume ?? ""],
+      ["Edition", certificate.edition ?? ""],
+      ["Edited book", certificate.is_edited === null ? "" : certificate.is_edited ? "Yes" : "No"],
+      ["ISBN or ISSN", certificate.isbn_issn ?? ""],
+      ["Publisher", certificate.publisher ?? ""],
+      ["Place of publication", certificate.place_of_publication ?? ""],
+      ["Pages", certificate.page_numbers ?? ""],
+      ["Where", certificate.location ?? ""],
+    ] as [string, string][]
+  ).filter(([, value]) => Boolean(value));
 
   return (
     <li className="rounded-[var(--r-md)] border-2 border-ink/10 px-5 py-4">
       <div className="flex flex-wrap items-start justify-between gap-x-6 gap-y-3">
         <div className="min-w-0">
-          <a
-            href={certificate.drive_link}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="text-[1.05rem] text-ink underline decoration-teal decoration-2 underline-offset-4 transition-colors hover:text-teal"
-          >
-            {certificate.event_name}
-          </a>
+          {certificate.drive_link ? (
+            <a
+              href={certificate.drive_link}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-[1.05rem] text-ink underline decoration-teal decoration-2 underline-offset-4 transition-colors hover:text-teal"
+            >
+              {certificate.event_name}
+            </a>
+          ) : (
+            <span className="text-[1.05rem] text-ink">{certificate.event_name}</span>
+          )}
           <p className="mt-1.5 text-[1.02rem] text-ink">
             {certificate.owner?.full_name ?? certificate.owner?.email ?? "Account deleted"}
           </p>
@@ -168,9 +231,13 @@ function Record({ certificate }: { certificate: CertificateForOrganiser }) {
         </div>
 
         <div className="flex shrink-0 flex-wrap items-center gap-2">
-          <Chip tone={PLACE_TONE[certificate.contribution] ?? "muted"}>
-            {CONTRIBUTION_LABEL[certificate.contribution] ?? certificate.contribution}
-          </Chip>
+          <Chip tone="ink">{KIND_LABEL[certificate.kind] ?? certificate.kind}</Chip>
+          {certificate.level ? <Chip tone="teal">{LEVEL_LABEL[certificate.level]}</Chip> : null}
+          {isPublication(certificate.kind) ? null : (
+            <Chip tone={PLACE_TONE[certificate.contribution] ?? "muted"}>
+              {CONTRIBUTION_LABEL[certificate.contribution] ?? certificate.contribution}
+            </Chip>
+          )}
           {certificate.prize_amount_inr ? (
             <Chip tone="ink">{rupees(certificate.prize_amount_inr)}</Chip>
           ) : null}
@@ -181,6 +248,34 @@ function Record({ certificate }: { certificate: CertificateForOrganiser }) {
       </div>
 
       <p className="label-sm mt-3 break-words text-muted">{file}</p>
+
+      {detail.length ? (
+        <dl className="mt-3 grid gap-x-6 gap-y-1 sm:grid-cols-2">
+          {detail.map(([k, v]) => (
+            <div key={k} className="flex flex-wrap items-baseline gap-x-3">
+              <dt className="label-sm text-muted">{k}</dt>
+              <dd className="min-w-0 break-words text-[0.92rem] text-ink">{v}</dd>
+            </div>
+          ))}
+        </dl>
+      ) : null}
+
+      {certificate.files.length ? (
+        <p className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-1">
+          <span className="label-sm text-muted">Photos</span>
+          {certificate.files.map((extra) => (
+            <a
+              key={extra.id}
+              href={extra.drive_link}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="label-sm text-teal underline underline-offset-4"
+            >
+              {SLOT_LABEL[extra.slot] ?? extra.slot}
+            </a>
+          ))}
+        </p>
+      ) : null}
 
       {certificate.verified_at ? (
         <p className="label-sm mt-1 text-muted">
@@ -204,6 +299,22 @@ function Record({ certificate }: { certificate: CertificateForOrganiser }) {
             <input type="hidden" name="decision" value={move.to} />
           </ActionForm>
         ))}
+
+        {/* Turning a record down leaves it on the board, which is the honest
+            behaviour for a disputed claim. This is for the row that should
+            never have existed: the duplicate, the screenshot of nothing, the
+            certificate that belongs to somebody else. It takes the points with
+            it, because the row is gone. */}
+        <ActionForm
+          action={deleteCertificate}
+          submit="Delete"
+          pendingLabel="Deleting"
+          tone="danger"
+          className="contents"
+          confirm={`Delete ${certificate.event_name} from this record? Its points go with it and its files go to the Drive bin. This cannot be undone from here.`}
+        >
+          <input type="hidden" name="certificate_id" value={certificate.id} />
+        </ActionForm>
       </div>
     </li>
   );
@@ -231,7 +342,8 @@ function Record({ certificate }: { certificate: CertificateForOrganiser }) {
  * disagree with the rows underneath them.
  */
 export default async function AdminCertificatesPage() {
-  const viewer = await requireAdmin();
+  await requireAdmin();
+  await requireCap("records");
   const certificates = await getCertificatesForReview();
 
   // getCertificatesForReview returns oldest first, which is the order the
@@ -249,17 +361,17 @@ export default async function AdminCertificatesPage() {
 
   return (
     <>
-      <ConsoleBar viewer={viewer} area="Certificates" nav={ADMIN_NAV} />
-
       <div className="washi grain min-h-[100svh] py-12 sm:py-16">
         <Container>
           <header className="max-w-[52ch]">
             <Label tone="teal">{EVENT.host}</Label>
-            <h1 className="d-tall mt-4 text-[clamp(2.4rem,6vw,4rem)] text-ink">Certificates</h1>
+            <h1 className="d-tall mt-4 text-[clamp(2.4rem,6vw,4rem)] text-ink">Records</h1>
             <p className="serif-it mt-4 text-[1.1rem] leading-relaxed text-muted">
-              Everything students have uploaded, oldest first. The file itself is in the
-              department Drive and the row here is only the claim made about it, so opening the
-              link is the only thing that actually decides anything.
+              Everything students have filed, oldest first: hackathon certificates and the four
+              publication layouts from the department sheet. The files are in the department
+              Drive and the row here is only the claim made about them, so opening the link is
+              the only thing that actually decides anything. A publication often has no file at
+              all, which is normal and not a missing upload.
             </p>
             <p className="serif-it mt-4 text-[1.02rem] leading-relaxed text-muted">
               Nothing on this page moves the ranking. The board counts a certificate from the
@@ -376,10 +488,10 @@ export default async function AdminCertificatesPage() {
               )}
             </Panel>
 
-            <Panel eyebrow="Export" title="The whole table as CSV" aside="For the office">
+            <Panel eyebrow="Export" title="CSV, for the office" aside="Built on the press">
               <p className="serif-it text-[1.02rem] leading-relaxed text-muted">
-                One row per certificate, whatever state it is in, with the student it belongs to
-                and the Drive link beside it. It is built when you press the button and kept
+                One row per record, whatever state it is in, with the student it belongs to and
+                every Drive link beside it. It is built when you press the button and kept
                 nowhere, so it is never a stale copy of anything.
               </p>
               <p className="serif-it mt-4 text-[1.02rem] leading-relaxed text-muted">
@@ -395,9 +507,36 @@ export default async function AdminCertificatesPage() {
                 destination. The browser has to make an ordinary request and
                 let Content-Disposition do its job.
               */}
-              <a href="/admin/certificates/export" className="pill pill-ghost mt-6">
-                Download CSV
+              <a href="/admin/certificates/export" className="pill pill-lime mt-6">
+                Everything, one wide sheet
               </a>
+
+              <div className="mt-8 border-t border-ink/10 pt-7">
+                <p className="label text-ink">Straight into Formats.xlsx</p>
+                <p className="serif-it mt-2 text-[1rem] leading-relaxed text-muted">
+                  These four are the department sheet&rsquo;s own columns, in its own order and
+                  its own wording, one file per layout. Open one and paste the block under the
+                  headings you already have. The department name, the serial number and
+                  &ldquo;data entered by&rdquo; are filled in for you.
+                </p>
+
+                <div className="mt-5 flex flex-wrap gap-2.5">
+                  {[
+                    { sheet: "journal", label: "Journal publications" },
+                    { sheet: "conference", label: "Conference publications" },
+                    { sheet: "book", label: "Book publications" },
+                    { sheet: "book_chapter", label: "Book chapters" },
+                  ].map((one) => (
+                    <a
+                      key={one.sheet}
+                      href={`/admin/certificates/export?sheet=${one.sheet}`}
+                      className="pill pill-ghost"
+                    >
+                      {one.label}
+                    </a>
+                  ))}
+                </div>
+              </div>
             </Panel>
           </div>
         </Container>

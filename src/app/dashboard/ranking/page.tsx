@@ -3,6 +3,7 @@ import type { Metadata } from "next";
 import { Panel } from "@/components/console/shell";
 import { PointsScale, RankingTable, StandingSummary } from "@/components/console/standing";
 import { requireParticipant } from "@/lib/auth/guard";
+import { getCopy, getScale } from "@/lib/data/site";
 import { getMyStanding, getRankingBoard } from "@/lib/data/student";
 
 export const metadata: Metadata = {
@@ -25,7 +26,12 @@ export const metadata: Metadata = {
 export default async function RankingPage() {
   const viewer = await requireParticipant();
 
-  const [standing, board] = await Promise.all([getMyStanding(), getRankingBoard(10)]);
+  const [standing, board, scale, t] = await Promise.all([
+    getMyStanding(),
+    getRankingBoard(10),
+    getScale(),
+    getCopy(),
+  ]);
 
   return (
     <div className="grid gap-6">
@@ -42,14 +48,12 @@ export default async function RankingPage() {
           <RankingTable rows={board} meId={viewer.id} />
 
           <p className="serif-it mt-6 border-t border-ink/10 pt-5 text-[0.95rem] leading-relaxed text-muted">
-            This counts what people have uploaded. An organiser marks a certificate verified once
-            they have seen it, and until then it still counts, so treat the board as a record of
-            what the department has on file rather than a judgement about anybody.
+            {t("console.ranking.note")}
           </p>
         </Panel>
 
         <Panel eyebrow="How it counts" title="Points">
-          <PointsScale />
+          <PointsScale scale={scale} />
         </Panel>
       </div>
     </div>

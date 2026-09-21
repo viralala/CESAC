@@ -1,17 +1,15 @@
 "use server";
 
-import { createHmac, timingSafeEqual } from "node:crypto";
 import { revalidatePath } from "next/cache";
 
 import { requireParticipant } from "@/lib/auth/guard";
-import { openOrder, razorpayKeys } from "@/lib/razorpay/order";
-import { createEmsClient, createEmsServiceClient, readableError } from "@/lib/supabase/ems";
+import { createEmsClient, readableError } from "@/lib/supabase/ems";
 
 export type TeamState = { error?: string; notice?: string; teamId?: string };
 
 /**
  * The student side of the event management system: form a team, invite
- * people, answer an invitation, register, pay.
+ * people, answer an invitation, register.
  *
  * Every one of these is a thin wrapper over a database function, and that is
  * the point. The rules that matter (registration is open, the team is big
@@ -129,134 +127,5 @@ export async function registerTeam(_state: TeamState, formData: FormData): Promi
 
   return registration?.status === "registered"
     ? done("You are in. Nothing left to pay.")
-    : done("Seat held. Pay now to confirm it.");
-}
-
-// ---------------------------------------------------------------------------
-// Razorpay
-// ---------------------------------------------------------------------------
-
-/**
- * Online payment is off unless the server holds both keys, matching how the
- * Attack on Token flow decides. A half-configured deploy should not offer a
- * checkout that dies.
- */
-export async function emsRazorpayConfigured(): Promise<boolean> {
-  return razorpayKeys() !== null;
-}
-
-export type EmsOrder = {
-  orderId?: string;
-  amount?: number;
-  keyId?: string;
-  registrationId?: string;
-  error?: string;
-};
-
-/**
- * Opens a Razorpay order for a registration that is waiting on payment.
- *
- * The amount comes off the registration row, not the browser, so the price
- * cannot be edited on the way in. The order is recorded through
- * ems.create_payment_record, which refuses a registration that is not this
- * person's and one that is not actually awaiting payment.
- */
-export async function createEmsRazorpayOrder(registrationId: string): Promise<EmsOrder> {
-  const keys = razorpayKeys();
-  if (!keys) return { error: "Online payment is not switched on." };
-
-  const supabase = await participantClient();
-
-  const { data: registration, error: readError } = await supabase
-    .from("event_registrations")
-    .select("id, amount_inr, status")
-    .eq("id", registrationId)
-    .maybeSingle();
-
-  if (readError) return { error: readableError(readError)! };
-  if (!registration) return { error: "That registration is not yours." };
-  if (registration.status !== "payment_pending") {
-    return { error: "That registration is not waiting on a payment." };
-  }
-
-  const order = await openOrder({
-    keys,
-    amount: Math.round(registration.amount_inr * 100), // Razorpay counts in paise.
-    receipt: `ems-${registration.id}`,
-    notes: { registration_id: String(registration.id) },
-  });
-
-  if ("error" in order) return { error: order.error };
-
-  const { error } = await supabase.rpc("create_payment_record", {
-    p_registration_id: registration.id,
-    p_razorpay_order_id: order.id,
-  });
-
-  if (error) return { error: readableError(error)! };
-
-  return {
-    orderId: order.id,
-    amount: order.amount,
-    keyId: keys.keyId,
-    registrationId: registration.id,
-  };
-}
-
-/**
- * Checks what the browser brings back from Razorpay, then records it.
- *
- * The signature is an HMAC of `order_id|payment_id` keyed with the secret,
- * which only the server holds, so a forged success cannot pass. Compared with
- * timingSafeEqual rather than ===, so the comparison leaks nothing about
- * where a wrong signature first differs.
- *
- * Only after that does the service role client come out, because
- * ems.confirm_razorpay_payment refuses anything that is not the service role.
- * A signed-in session cannot mark its own payment paid even if this file is
- * wrong, which is the whole reason that check is in the database.
- */
-export async function confirmEmsRazorpayPayment(payload: {
-  registrationId: string;
-  orderId: string;
-  paymentId: string;
-  signature: string;
-}): Promise<TeamState> {
-  const keySecret = process.env.RAZORPAY_KEY_SECRET;
-  if (!keySecret) return { error: "Online payment is not switched on." };
-
-  await requireParticipant();
-
-  const expected = createHmac("sha256", keySecret)
-    .update(`${payload.orderId}|${payload.paymentId}`)
-    .digest("hex");
-
-  const given = Buffer.from(payload.signature ?? "", "utf8");
-  const mine = Buffer.from(expected, "utf8");
-  const ok = given.length === mine.length && timingSafeEqual(given, mine);
-
-  if (!ok) {
-    return {
-      error: "That payment could not be verified. Nothing was recorded. Contact an organiser.",
-    };
-  }
-
-  const service = createEmsServiceClient();
-  if (!service) {
-    return {
-      error:
-        "The payment went through but the server could not record it. Contact an organiser with your Razorpay payment id.",
-    };
-  }
-
-  const { error } = await service.rpc("confirm_razorpay_payment", {
-    p_registration_id: payload.registrationId,
-    p_razorpay_payment_id: payload.paymentId,
-    p_razorpay_order_id: payload.orderId,
-    p_razorpay_signature: payload.signature,
-  });
-
-  if (error) return { error: readableError(error)! };
-
-  return done("Payment received. Your seat is confirmed.");
+    : done("Seat held. An organiser will tell you how to settle the fee.");
 }

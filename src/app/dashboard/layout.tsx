@@ -23,7 +23,7 @@ const OUT = [
  */
 const TABS: readonly Tab[] = [
   { href: "/dashboard", label: "Overview" },
-  { href: "/dashboard/certificates", label: "Certificates" },
+  { href: "/dashboard/certificates", label: "My record" },
   { href: "/dashboard/ranking", label: "Ranking" },
   { href: "/dashboard/events", label: "Events" },
   { href: "/dashboard/competitions", label: "Competitions" },

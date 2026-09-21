@@ -6,7 +6,6 @@ import { Container } from "@/components/aot/bits";
 import { ParallaxLayer, ParallaxScene } from "@/components/aot/parallax";
 import { Sticker } from "@/components/aot/stickers";
 import { CESAC } from "@/lib/data/cesac";
-import { TEAM_TOTAL, VERTICALS } from "@/lib/data/committee";
 
 /**
  * The community hero.
@@ -27,7 +26,7 @@ const BLOBS = [
   { c: "var(--lime)", d: 20, cls: "left-[18%] bottom-[8%] h-[22vmin] w-[22vmin]" },
 ];
 
-export function HomeHero() {
+export function HomeHero({ members, verticals }: { members: number; verticals: number }) {
   return (
     <section className="washi grain relative isolate flex min-h-[92svh] flex-col overflow-hidden pt-24 sm:pt-28">
       <ParallaxScene className="pointer-events-none absolute inset-0">
@@ -94,7 +93,7 @@ export function HomeHero() {
             className="absolute right-[1%] top-[14%] z-40 hidden text-[0.78rem] xl:grid xl:right-[2%] xl:text-[clamp(0.78rem,1vw,0.9rem)]"
           >
             <span>
-              {TEAM_TOTAL}
+              {members}
               {/* Tighter than label-sm: at the clamp floor the badge is 90px
                   across and "MEMBERS" at the normal 0.2em tracking runs past
                   the clip-path edge. */}
@@ -113,7 +112,7 @@ export function HomeHero() {
             className="absolute bottom-[18%] right-[4%] z-40 hidden text-[0.78rem] lg:grid"
           >
             <span>
-              {VERTICALS.length}
+              {verticals}
               <br />
               <span className="opacity-75">verticals</span>
             </span>

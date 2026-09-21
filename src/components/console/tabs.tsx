@@ -17,18 +17,27 @@ export type Tab = { href: string; label: string; badge?: number };
 export function ConsoleTabs({ tabs }: { tabs: readonly Tab[] }) {
   const pathname = usePathname();
 
+  /*
+   * The longest matching href wins, and only one tab lights.
+   *
+   * This used to special-case /dashboard, because /dashboard is a prefix of
+   * every other tab in that row and would otherwise have been lit on all of
+   * them. The same trap is in every nested strip: /admin/site is a prefix of
+   * /admin/site/roster. Picking the longest match handles both without a rule
+   * about any particular path, and a nested page with no tab of its own still
+   * lights its parent.
+   */
+  const current = [...tabs]
+    .sort((a, b) => b.href.length - a.href.length)
+    .find((tab) => pathname === tab.href || pathname.startsWith(`${tab.href}/`))?.href;
+
   return (
     <nav
       aria-label="Your console"
       className="hide-scrollbar -mx-1 flex gap-1.5 overflow-x-auto px-1 py-1"
     >
       {tabs.map((tab) => {
-        // /dashboard is only itself. Everything else owns what is under it, so
-        // a nested page keeps its own tab lit.
-        const active =
-          tab.href === "/dashboard"
-            ? pathname === "/dashboard"
-            : pathname === tab.href || pathname.startsWith(`${tab.href}/`);
+        const active = tab.href === current;
 
         return (
           <Link

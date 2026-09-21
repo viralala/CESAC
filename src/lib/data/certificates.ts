@@ -7,6 +7,18 @@ import type { Tables } from "@/lib/supabase/database.types";
 import type { PersonForOrganiser } from "@/lib/data/dept-events";
 
 export type Certificate = Tables<"certificates">;
+export type CertificateFile = Tables<"certificate_files">;
+
+/**
+ * One record and the optional photos hung off it.
+ *
+ * The certificate itself stays on the record's own drive_link, where it has
+ * always been; the prize, the event and the photo with the HOD are rows in
+ * certificate_files. Two places rather than one because there is exactly one
+ * certificate and any number of the others, and because every page and every
+ * export written before today reads drive_link.
+ */
+export type CertificateWithFiles = Certificate & { files: CertificateFile[] };
 
 /**
  * The signed-in student's certificates, newest first.
@@ -19,21 +31,24 @@ export type Certificate = Tables<"certificates">;
  * quietly return the whole department the day somebody calls it from an admin
  * page. The policy is the boundary; this is the function keeping its word.
  */
-export const getMyCertificates = cache(async (): Promise<Certificate[]> => {
+export const getMyCertificates = cache(async (): Promise<CertificateWithFiles[]> => {
   const supabase = await createClient();
 
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) return [];
+  // getClaims rather than getUser. See the note in lib/auth/guard.ts.
+  const { data: verified } = await supabase.auth.getClaims();
+  const userId = verified?.claims?.sub;
+  if (!userId) return [];
 
   const { data } = await supabase
     .from("certificates")
-    .select("*")
-    .eq("owner_id", user.id)
+    .select("*, files:certificate_files(*)")
+    .eq("owner_id", userId)
     .order("created_at", { ascending: false });
 
-  return data ?? [];
+  return (data ?? []).map((row) => ({
+    ...row,
+    files: (row.files ?? []) as CertificateFile[],
+  })) as CertificateWithFiles[];
 });
 
 /**
@@ -48,6 +63,10 @@ export const getMyCertificates = cache(async (): Promise<Certificate[]> => {
 export type CertificateForOrganiser = Certificate & {
   owner: PersonForOrganiser | null;
   verifier: Pick<Tables<"profiles">, "id" | "full_name"> | null;
+  /** The sheet's "Data entered by": usually the student, sometimes an
+   *  organiser who filled it in for them. */
+  enteredBy: Pick<Tables<"profiles">, "id" | "full_name" | "email"> | null;
+  files: CertificateFile[];
 };
 
 /**
@@ -78,11 +97,16 @@ export const getCertificatesForReview = cache(async (): Promise<CertificateForOr
     .select(
       `*,
        owner:profiles!certificates_owner_id_fkey(id, full_name, email, prn, student_class),
-       verifier:profiles!certificates_verified_by_fkey(id, full_name)`,
+       verifier:profiles!certificates_verified_by_fkey(id, full_name),
+       enteredBy:profiles!certificates_entered_by_fkey(id, full_name, email),
+       files:certificate_files(*)`,
     )
     .order("created_at", { ascending: true });
 
-  return (data ?? []) as unknown as CertificateForOrganiser[];
+  return (data ?? []).map((row) => ({
+    ...row,
+    files: (row.files ?? []) as CertificateFile[],
+  })) as unknown as CertificateForOrganiser[];
 });
 
 /**

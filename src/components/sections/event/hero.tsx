@@ -1,11 +1,10 @@
 "use client";
 
-import Link from "next/link";
-
 import { WallMark } from "@/components/aot/art";
 import { Container } from "@/components/aot/bits";
 import { ParallaxLayer, ParallaxScene } from "@/components/aot/parallax";
 import { CursorTag, Nib, Squiggle, Sticker } from "@/components/aot/stickers";
+import { RegisterButton } from "@/components/sections/event/register-button";
 import { EVENT } from "@/lib/data/event";
 
 /**
@@ -261,9 +260,7 @@ export function EventHero() {
               <a href="#chapters" className="toolbar-seg label-sm hidden sm:inline-flex">
                 Open: <span className="text-cream">Chapters</span>
               </a>
-              <Link href="/signin" className="pill pill-lime px-6 py-2.5 text-[0.8rem]">
-                Enlist now
-              </Link>
+              <RegisterButton size="sm" />
               <a href="#prizes" className="toolbar-seg label-sm hidden sm:inline-flex">
                 View: <span className="text-cream">Prizes</span>
               </a>

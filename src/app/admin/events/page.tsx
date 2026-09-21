@@ -12,12 +12,12 @@ import { Container, Label } from "@/components/aot/bits";
 import { ActionForm } from "@/components/console/action-form";
 import { EmsEventForm } from "@/components/console/ems-event-form";
 import { PendingFields } from "@/components/console/pending-fields";
-import { Chip, ConsoleBar, Empty, Notice, Panel, Stat } from "@/components/console/shell";
+import { Chip, Empty, Notice, Panel, Stat } from "@/components/console/shell";
 import { getAdminDirectory, getAuditFeed, getEventBoard } from "@/lib/data/ems";
+import { requireCap } from "@/lib/auth/caps";
 import { requireEmsAdmin } from "@/lib/ems/access";
 import { formatDateTime, formatINR } from "@/lib/ems/time";
 import type { EventStatus } from "@/lib/supabase/ems.types";
-import { ADMIN_NAV } from "../nav";
 
 export const metadata: Metadata = {
   title: "Events",
@@ -57,7 +57,8 @@ function nextMove(status: EventStatus): { to: EventStatus; label: string } | nul
  */
 export default async function AdminEventsPage() {
   const access = await requireEmsAdmin();
-  const { viewer, isCommittee, schemaReady } = access;
+  await requireCap("events");
+  const { isCommittee, schemaReady } = access;
 
   const [events, admins, audit] = schemaReady
     ? await Promise.all([
@@ -72,8 +73,6 @@ export default async function AdminEventsPage() {
 
   return (
     <>
-      <ConsoleBar viewer={viewer} area="Event system" nav={ADMIN_NAV} />
-
       <div className="washi grain min-h-[100svh] py-12 sm:py-16">
         <Container>
           <header className="max-w-[52ch]">

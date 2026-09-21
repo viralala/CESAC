@@ -5,7 +5,6 @@ import {
   removeMember,
 } from "@/app/actions/ems-team";
 import { ActionForm } from "@/components/console/action-form";
-import { EmsCheckout } from "@/components/console/ems-checkout";
 import { PendingFields } from "@/components/console/pending-fields";
 import { Chip, Empty } from "@/components/console/shell";
 import type { EmsRegistration, EventCard, RosterRow } from "@/lib/data/ems";
@@ -26,15 +25,10 @@ export function EmsEventCard({
   event,
   roster,
   registration,
-  viewer,
-  onlineEnabled,
 }: {
   event: EventCard;
   roster: RosterRow[];
   registration: EmsRegistration | null;
-  viewer: { name: string; email: string };
-  /** False when the server holds no Razorpay keys. */
-  onlineEnabled: boolean;
 }) {
   const solo = event.min_team_size === 1 && event.max_team_size === 1;
   const accepted = roster.filter((person) => person.status === "accepted");
@@ -190,22 +184,14 @@ export function EmsEventCard({
               You are in. Nothing left to do before the day.
             </p>
           ) : owes && registration ? (
-            onlineEnabled ? (
-              <EmsCheckout
-                registrationId={registration.id}
-                eventName={event.name}
-                amountInr={registration.amount_inr}
-                viewer={viewer}
-              />
-            ) : (
-              /* Better to say the counter is shut than to show a button that
-                 opens a checkout the server cannot finish. The seat is held
-                 either way, so nothing is lost by waiting. */
-              <p className="mt-5 text-[0.98rem] leading-relaxed text-muted">
-                Your seat is held. Paying online is not switched on yet, so hold on to it and an
-                organiser will tell you how to settle the {formatINR(registration.amount_inr)}.
-              </p>
-            )
+            /* Nothing on this site takes money any more, so the card reports
+               the fee rather than collecting it. The seat is held from the
+               moment it was claimed, so there is nothing to lose by settling
+               it with an organiser instead. */
+            <p className="mt-5 text-[0.98rem] leading-relaxed text-muted">
+              Your seat is held. The {formatINR(registration.amount_inr)} is settled with an
+              organiser, who marks it off here once it is in.
+            </p>
           ) : (
             <>
               {event.my_is_leader && room > 0 && event.registration_open ? (

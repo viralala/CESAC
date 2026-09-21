@@ -13,6 +13,14 @@
  * Department Representative sits in `STUDENT_LEADERSHIP`, not `FACULTY`: on
  * the sheet the DR is a student representative to the department, boxed
  * separately from the HOD/Assistant HOD pairing, and the roster keeps that.
+ *
+ * **This file is no longer what the site renders.** Since 21 September 2026
+ * the roster lives in `public.roster_groups` and `public.roster_people`, where
+ * the committee edits it from the console, and `getRoster()` in
+ * lib/data/site.ts reads it. These constants are the fallback: what the site
+ * shows when the database cannot be reached, and what seeds a fresh project.
+ * Keep them in step with the seed in the migration, or do not change them at
+ * all and use the console.
  */
 
 export const DEPARTMENT = {
@@ -28,7 +36,7 @@ export type Person = { name: string; role: string };
 
 export const FACULTY: readonly Person[] = [
   { name: "Dr. Sandeep Shinde", role: "HOD, Computer Engineering" },
-  { name: "Dr. Aarti Agarkar", role: "Assistant HOD, Computer Engineering" },
+  { name: "Dr. Aarti Agarkar", role: "Asst Head-Admin Computer Engineering" },
   { name: "Dr. Geeta Navale", role: "Student Activity Co-Ordinator" },
 ];
 
@@ -131,9 +139,11 @@ export const VERTICALS: readonly Vertical[] = [
   },
 ];
 
-export const TEAM_TOTAL =
-  FACULTY.length +
-  STUDENT_LEADERSHIP.length +
-  BOARD.length +
-  ASSOCIATES.length +
-  VERTICALS.reduce((n, v) => n + v.members.length, 0);
+/*
+ * There was a TEAM_TOTAL here, adding these five lists up. It was deleted on
+ * 21 September rather than kept, because the roster is in the database now and
+ * a constant counting the fallback copy would have printed the wrong number on
+ * the front page the first time somebody was added from the console.
+ * rosterTotal() in lib/data/site.ts counts whatever is actually being
+ * rendered, which is the only count that can be right.
+ */

@@ -46,7 +46,7 @@ export function Seal({
         <span className="label-sm relative text-center leading-[1.25]">
           {center ?? (
             <>
-              Enlist
+              Register
               <br />
               Now
             </>

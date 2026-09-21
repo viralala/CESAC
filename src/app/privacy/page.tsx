@@ -69,9 +69,17 @@ const BLOCKS: readonly LegalBlock[] = [
   {
     heading: "The entry fee",
     body: [
-      "If you pay by UPI or at the desk, we store what you type: the method, the transaction or receipt reference and any note you add. An organiser checks that against the account and marks it verified.",
-      "If you pay through Razorpay, the checkout window is Razorpay's own and opens only when you press the pay button. Your card, UPI or netbanking details go to Razorpay and never reach this site. We store the Razorpay order and payment identifiers so an organiser can find the payment in the Razorpay dashboard, and nothing else.",
-      "We never see, receive or store card numbers, UPI PINs, bank credentials or anything else you enter in that window.",
+      "There is no payment gateway on this site and no checkout window. You pay the entry fee by scanning a UPI code with your own banking app, and that payment happens entirely between your app and the bank.",
+      "We never see, receive or store card numbers, UPI PINs, bank credentials or anything else you enter in your banking app. What reaches us is the transaction reference you choose to type in, so an organiser can match the payment against your entry.",
+      "If an organiser records a payment for you, we store what they type: the method, the reference and any note they add.",
+    ],
+  },
+  {
+    heading: "Registering on a form",
+    body: [
+      "Entries for Attack on Token are collected on a form hosted by another company, not on this site. What you put into that form is held by them under their own privacy policy, and it reaches CESAC as a list of entries.",
+      "We ask for your name, your team name, a WhatsApp number, and your partner's name, plus a VIT email address for each of you. The email addresses are what let us check that both of you are students here.",
+      "Nothing you type into that form passes through this website, and this website sets no cookie on it.",
     ],
   },
   {

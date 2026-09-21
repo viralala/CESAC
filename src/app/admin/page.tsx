@@ -9,10 +9,12 @@ import {
   setRole,
   updateSettings,
 } from "@/app/actions/admin";
+import { clearGrants, setGrants } from "@/app/actions/console-content";
 import { Container, Label } from "@/components/aot/bits";
 import { ActionForm } from "@/components/console/action-form";
-import { Chip, ConsoleBar, Empty, Notice, Panel, Stat } from "@/components/console/shell";
+import { Chip, Empty, Notice, Panel, Stat } from "@/components/console/shell";
 import { requireAdmin } from "@/lib/auth/guard";
+import { CAPS, CAP_LABEL, getMyCaps } from "@/lib/auth/caps";
 import { createClient } from "@/lib/supabase/server";
 import {
   getAdminOverview,
@@ -22,7 +24,6 @@ import {
   getSettings,
 } from "@/lib/data/console";
 import { EVENT } from "@/lib/data/event";
-import { ADMIN_NAV } from "./nav";
 
 export const metadata: Metadata = {
   title: "Organiser console",
@@ -43,25 +44,35 @@ const CHAPTER_STATES = [
  * Where a thing has genuinely not happened yet, the panel says so instead of
  * showing a zero dressed up as a result.
  */
-export default async function AdminPage() {
+export default async function AdminPage({ searchParams }: PageProps<"/admin">) {
   const viewer = await requireAdmin();
   const supabase = await createClient();
 
-  const [settings, chapters, overview, organisers, audit, allowlist] = await Promise.all([
-    getSettings(),
-    getChapters(),
-    getAdminOverview(),
-    getOrganisers(),
-    getAuditLog(10),
-    supabase.from("admin_emails").select("*").order("created_at"),
-  ]);
+  const [settings, chapters, overview, organisers, audit, allowlist, grants, myCaps, params] =
+    await Promise.all([
+      getSettings(),
+      getChapters(),
+      getAdminOverview(),
+      getOrganisers(),
+      getAuditLog(10),
+      supabase.from("admin_emails").select("*").order("created_at"),
+      supabase.from("admin_grants").select("*"),
+      getMyCaps(),
+      searchParams,
+    ]);
 
   const { counts } = overview;
 
+  // A grant row is a narrowing. No row means the whole console, which is why
+  // this is a lookup and not a column on the profile.
+  const grantFor = new Map((grants.data ?? []).map((row) => [row.profile_id, row]));
+
+  // Set by requireCap when somebody follows a link to a page they hold
+  // nothing on. Named rather than generic, so they can ask for the right thing.
+  const denied = typeof params.denied === "string" ? params.denied : null;
+
   return (
     <>
-      <ConsoleBar viewer={viewer} area="Organiser console" nav={ADMIN_NAV} />
-
       <div className="washi grain min-h-[100svh] py-12 sm:py-16">
         <Container>
           <header className="max-w-[46ch]">
@@ -72,6 +83,15 @@ export default async function AdminPage() {
               changes what every participant sees on their next request.
             </p>
           </header>
+
+          {denied ? (
+            <div className="mt-8">
+              <Notice tone="error">
+                {CAP_LABEL[denied] ?? denied} is not one of your areas, so that page sent you back
+                here. Ask whoever set up the committee&rsquo;s access to add it.
+              </Notice>
+            </div>
+          ) : null}
 
           {!settings.registration_open ? (
             <div className="mt-8">
@@ -100,6 +120,7 @@ export default async function AdminPage() {
           </div>
 
           <div className="mt-6 grid gap-6 lg:grid-cols-[1fr_1.1fr]">
+            {myCaps.includes("settings") ? (
             <Panel eyebrow="Switches" title="Event controls">
               <ActionForm action={updateSettings} submit="Save controls" tone="lime">
                 <div className="grid gap-4">
@@ -117,10 +138,10 @@ export default async function AdminPage() {
                       on: settings.leaderboard_public,
                     },
                     {
-                      name: "online_payment",
-                      label: "Razorpay checkout",
-                      note: "Only takes effect if the deployment also holds the Razorpay keys.",
-                      on: settings.online_payment,
+                      name: "showcase_public",
+                      label: "Standouts on the front page",
+                      note: "Names a few students publicly, with their year and one number. Off means the section does not render at all. Set the categories up under Site.",
+                      on: settings.showcase_public,
                     },
                   ].map((toggle) => (
                     <label
@@ -213,7 +234,9 @@ export default async function AdminPage() {
                 </div>
               </ActionForm>
             </Panel>
+            ) : null}
 
+            {myCaps.includes("events") ? (
             <Panel eyebrow="Run of show" title="Chapter control" aside={EVENT.tagline}>
               <div className="grid gap-4">
                 {chapters.map((chapter) => (
@@ -288,43 +311,124 @@ export default async function AdminPage() {
                 ))}
               </div>
             </Panel>
+            ) : null}
           </div>
 
           <div className="mt-6 grid gap-6 lg:grid-cols-[1.1fr_1fr]">
+            {myCaps.includes("people") ? (
             <Panel
               eyebrow="Access"
               title="Organisers"
               aside={`${counts.organisers} with the role`}
             >
-              <ul className="grid gap-2.5">
-                {organisers.map((person) => (
-                  <li
-                    key={person.id}
-                    className="flex flex-wrap items-center gap-x-4 gap-y-2 rounded-[var(--r-md)] bg-cream-2 px-5 py-3.5"
-                  >
-                    <span className="min-w-0 flex-1">
-                      <span className="label block truncate text-ink">
-                        {person.full_name ?? person.email}
-                      </span>
-                      <span className="label-sm block truncate text-muted">{person.email}</span>
-                    </span>
-                    <Chip tone={person.role === "owner" ? "ink" : "teal"}>{person.role}</Chip>
-                    {person.id === viewer.id ? (
-                      <span className="label-sm text-muted">You</span>
-                    ) : (
-                      <ActionForm
-                        action={setRole}
-                        submit="Remove"
-                        tone="danger"
-                        className="contents"
-                        confirm={`Remove organiser access from ${person.email}?`}
-                      >
-                        <input type="hidden" name="profile_id" value={person.id} />
-                        <input type="hidden" name="role" value="participant" />
-                      </ActionForm>
-                    )}
-                  </li>
-                ))}
+              <p className="serif-it text-[0.98rem] leading-relaxed text-muted">
+                An organiser with nothing set below can reach the whole console, which is how
+                every one of them started. Tick the areas somebody should have and they are
+                narrowed to those, in the database and not merely on screen: the pages disappear
+                from their nav and every write behind them is refused by Postgres. An owner is
+                never narrowed.
+              </p>
+
+              <ul className="mt-6 grid gap-3">
+                {organisers.map((person) => {
+                  const grant = grantFor.get(person.id);
+                  const isOwner = person.role === "owner";
+                  const isMe = person.id === viewer.id;
+
+                  return (
+                    <li
+                      key={person.id}
+                      className="rounded-[var(--r-md)] bg-cream-2 px-5 py-4"
+                    >
+                      <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
+                        <span className="min-w-0 flex-1">
+                          <span className="label block truncate text-ink">
+                            {person.full_name ?? person.email}
+                          </span>
+                          <span className="label-sm block truncate text-muted">
+                            {person.email}
+                          </span>
+                        </span>
+                        <Chip tone={isOwner ? "ink" : "teal"}>{person.role}</Chip>
+                        <Chip tone={grant ? "muted" : "lime"}>
+                          {isOwner
+                            ? "everything"
+                            : grant
+                              ? `${grant.caps.length} of ${CAPS.length}`
+                              : "everything"}
+                        </Chip>
+                        {isMe ? (
+                          <span className="label-sm text-muted">You</span>
+                        ) : (
+                          <ActionForm
+                            action={setRole}
+                            submit="Remove"
+                            tone="danger"
+                            className="contents"
+                            confirm={`Remove organiser access from ${person.email}?`}
+                          >
+                            <input type="hidden" name="profile_id" value={person.id} />
+                            <input type="hidden" name="role" value="participant" />
+                          </ActionForm>
+                        )}
+                      </div>
+
+                      {isOwner || isMe ? (
+                        <p className="serif-it mt-3 text-[0.88rem] leading-relaxed text-muted">
+                          {isOwner
+                            ? "An owner holds every area and cannot be narrowed, so the site can never be locked out of its own settings."
+                            : "You cannot change your own access, for the same reason you cannot change your own role."}
+                        </p>
+                      ) : (
+                        <details className="mt-3">
+                          <summary className="label-sm cursor-pointer text-muted hover:text-ink">
+                            What they can reach
+                          </summary>
+
+                          <ActionForm action={setGrants} submit="Save access" tone="ghost">
+                            <input type="hidden" name="profile_id" value={person.id} />
+                            <div className="mt-4 grid gap-2">
+                              {CAPS.map((cap) => (
+                                <label
+                                  key={cap.value}
+                                  className="flex cursor-pointer items-start gap-3 rounded-[var(--r-md)] bg-white px-4 py-3"
+                                >
+                                  <input
+                                    type="checkbox"
+                                    name="cap"
+                                    value={cap.value}
+                                    defaultChecked={
+                                      grant ? grant.caps.includes(cap.value) : true
+                                    }
+                                    className="mt-1 h-4 w-4 shrink-0 accent-[var(--teal)]"
+                                  />
+                                  <span>
+                                    <span className="label block text-ink">{cap.label}</span>
+                                    <span className="mt-0.5 block text-[0.84rem] leading-snug text-muted">
+                                      {cap.note}
+                                    </span>
+                                  </span>
+                                </label>
+                              ))}
+                            </div>
+                          </ActionForm>
+
+                          {grant ? (
+                            <div className="mt-2">
+                              <ActionForm
+                                action={clearGrants}
+                                submit="Give them the whole console"
+                                tone="ghost"
+                              >
+                                <input type="hidden" name="profile_id" value={person.id} />
+                              </ActionForm>
+                            </div>
+                          ) : null}
+                        </details>
+                      )}
+                    </li>
+                  );
+                })}
               </ul>
 
               <div className="mt-7 border-t border-ink/10 pt-6">
@@ -391,6 +495,7 @@ export default async function AdminPage() {
                 </ActionForm>
               </div>
             </Panel>
+            ) : null}
 
             <Panel eyebrow="Record" title="Recent actions">
               {audit.length ? (

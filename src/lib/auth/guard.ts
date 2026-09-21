@@ -19,15 +19,28 @@ import { homeFor, viewerFrom, type Role, type Viewer } from "./session";
 export const getViewer = cache(async (): Promise<Viewer | null> => {
   const supabase = await createClient();
 
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) return null;
+  /*
+   * getClaims rather than getUser, which this used to call.
+   *
+   * getUser asks the auth server whether the token is real, over the network,
+   * and the proxy has already asked the same question a moment earlier on the
+   * same request. Two round trips to Mumbai before a page had read a single
+   * row is most of why the organiser console felt slow.
+   *
+   * This is not a weakening. The project signs its tokens with ES256, so the
+   * signature is checked here against the project's published public key,
+   * cached after the first request. A tampered token fails. What is dropped is
+   * the trip, not the verification, and the role is read from the profile row
+   * below either way rather than from anything the token claims.
+   */
+  const { data: verified } = await supabase.auth.getClaims();
+  const userId = verified?.claims?.sub;
+  if (!userId) return null;
 
   const { data: profile } = await supabase
     .from("profiles")
     .select("*")
-    .eq("id", user.id)
+    .eq("id", userId)
     .single();
 
   // No profile means the sign-up trigger has not landed yet, which is a blink

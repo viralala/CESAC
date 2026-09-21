@@ -1,12 +1,10 @@
 "use client";
 
 import Link from "next/link";
-import { useActionState, useId, useState, useTransition } from "react";
+import { useActionState, useId } from "react";
 
 import {
   changePartner,
-  confirmEventRazorpayPayment,
-  createEventRazorpayOrder,
   enterEvent,
   withdrawEntry,
   type EventState,
@@ -14,7 +12,7 @@ import {
 import { Chip, Notice, Row } from "@/components/console/shell";
 import { rupees } from "@/lib/console/options";
 import type { DeptEvent, MyRegistration } from "@/lib/data/dept-events";
-import { loadCheckout, openCheckout } from "@/lib/razorpay/checkout";
+import { REGISTER, REGISTER_SLUG, REGISTRATION_IS_LIVE } from "@/lib/data/event";
 
 const STATE: Record<string, { label: string; tone: "lime" | "muted" | "ink" }> = {
   open: { label: "Entries open", tone: "lime" },
@@ -24,8 +22,7 @@ const STATE: Record<string, { label: string; tone: "lime" | "muted" | "ink" }> =
 
 const PAID: Record<string, { label: string; tone: "lime" | "teal" | "muted" | "red" }> = {
   verified: { label: "Paid", tone: "lime" },
-  // Nothing the student console does produces this any more. It survives on
-  // entries an organiser recorded by hand, so it still needs a label.
+  // A student recorded a payment and an organiser has not checked it off yet.
   submitted: { label: "Waiting on an organiser", tone: "teal" },
   pending: { label: "Fee outstanding", tone: "muted" },
   rejected: { label: "Payment not accepted", tone: "red" },
@@ -48,16 +45,13 @@ const PAID: Record<string, { label: string; tone: "lime" | "teal" | "muted" | "r
 export function EventBoard({
   events,
   registrations,
-  online,
   meId,
 }: {
   events: DeptEvent[];
   registrations: MyRegistration[];
-  /** Whether the server holds Razorpay keys. Without them there is no way to pay. */
-  online: boolean;
   /**
    * An entry has two sides and they are not the same. The one who signed up
-   * owes the fee and sees the box for it; the partner they named sees the
+   * owes the fee and sees the note about it; the partner they named sees the
    * entry and their partner's name, and nothing to fill in.
    */
   meId: string;
@@ -111,8 +105,10 @@ export function EventBoard({
               </p>
             ) : null}
 
-            {mine ? (
-              <Entered registration={mine} event={event} online={online} meId={meId} />
+            {event.slug === REGISTER_SLUG ? (
+              <OnTheForm entered={Boolean(mine)} />
+            ) : mine ? (
+              <Entered registration={mine} event={event} meId={meId} />
             ) : event.state === "open" ? (
               <EnterForm event={event} action={action} pending={pending} />
             ) : (
@@ -179,26 +175,26 @@ function EnterForm({
 /**
  * The state of an entry that exists, and the fee if there is one.
  *
- * The payment box only appears once the entry does, because a fee for
- * something nobody has entered is a number with nothing behind it.
+ * It reports the fee and never collects it. There is no checkout on this site
+ * any more: a gateway charged a percentage of every entry to do a job a UPI
+ * code does for nothing, so what is left is an organiser marking off what
+ * arrived.
  */
 function Entered({
   registration,
   event,
-  online,
   meId,
 }: {
   registration: MyRegistration;
   event: DeptEvent;
-  online: boolean;
   meId: string;
 }) {
   const mine = registration.student_id === meId;
   const paid = PAID[registration.payment_status] ?? PAID.pending;
 
-  // Only the one who signed up can record the payment, which the database
-  // enforces too. Showing the partner a form that will be refused would be a
-  // way of blaming them for somebody else's outstanding fee.
+  // Only the one who signed up owes the fee. Telling the partner about an
+  // outstanding amount they cannot settle would be a way of blaming them for
+  // somebody else's.
   const owes = mine && event.fee_inr > 0 && registration.payment_status !== "verified";
 
   // The other one, from wherever you are standing.
@@ -236,7 +232,10 @@ function Entered({
       </dl>
 
       {owes ? (
-        <PayNow registration={registration} event={event} online={online} />
+        <p className="serif-it mt-6 rounded-[var(--r-md)] bg-white px-5 py-4 text-[0.95rem] leading-relaxed text-muted">
+          Your entry is held. The {rupees(event.fee_inr)} is settled with an organiser, who marks
+          it off here once it is in. Nothing on this site takes a card.
+        </p>
       ) : !mine && event.fee_inr > 0 && registration.payment_status !== "verified" ? (
         <p className="serif-it mt-6 text-[0.95rem] leading-relaxed text-muted">
           The fee is theirs to pay, and they record it from their own console.
@@ -249,103 +248,49 @@ function Entered({
 }
 
 /**
- * The fee, and the only way to pay it.
+ * The events this site does not take entries for.
  *
- * There is no reference box and no "I have paid" button any more, because
- * there is nothing for a student to assert. They pay in the Razorpay window,
- * the server checks the signature against a secret the browser never sees,
- * and the entry is confirmed by that. An organiser is not in the loop, which
- * is the point: the old flow left every entry sitting at "waiting on an
- * organiser" until somebody read a bank statement.
+ * Attack on Token is registered and paid for on a form, so the console's job
+ * here is to hand the student over and get out of the way. It deliberately
+ * does not offer an entry of its own: two ways in means two lists, and the one
+ * an organiser is not reading is the one a team will have used.
  */
-function PayNow({
-  registration,
-  event,
-  online,
-}: {
-  registration: MyRegistration;
-  event: DeptEvent;
-  online: boolean;
-}) {
-  const [state, setState] = useState<EventState>({});
-  const [busy, start] = useTransition();
-
-  if (!online) {
-    return (
-      <p className="serif-it mt-6 rounded-[var(--r-md)] bg-white px-5 py-4 text-[0.95rem] leading-relaxed text-muted">
-        Paying online is not switched on yet. Your entry is held either way, so hold on to it and
-        the button appears here once the committee turns the counter on.
-      </p>
-    );
-  }
-
-  function pay() {
-    start(async () => {
-      setState({});
-
-      const order = await createEventRazorpayOrder(registration.id);
-      if (order.error || !order.orderId || !order.keyId) {
-        setState({ error: order.error ?? "Could not open the checkout." });
-        return;
-      }
-
-      const ready = await loadCheckout();
-      if (!ready) {
-        setState({ error: "The payment window could not load. Check your connection and try again." });
-        return;
-      }
-
-      openCheckout({
-        keyId: order.keyId,
-        orderId: order.orderId,
-        amount: order.amount ?? Math.round(event.fee_inr * 100),
-        name: "CESAC",
-        description: `Entry for ${event.name}`,
-        prefill: {},
-        upiFirst: true,
-        onPaid: (response) => {
-          setState({ notice: "Checking that payment." });
-          void confirmEventRazorpayPayment({
-            orderId: response.razorpay_order_id,
-            paymentId: response.razorpay_payment_id,
-            signature: response.razorpay_signature,
-          }).then(setState);
-        },
-        onFailed: (message) => setState({ error: message }),
-        onDismissed: () =>
-          setState({
-            notice: "You closed the payment window, so nothing was charged. Your entry is still held.",
-          }),
-      });
-    });
-  }
-
+function OnTheForm({ entered }: { entered: boolean }) {
   return (
-    <div className="mt-6">
-      <button
-        type="button"
-        onClick={pay}
-        disabled={busy}
-        className="pill pill-lime justify-self-start disabled:cursor-progress disabled:opacity-70"
-      >
-        {busy ? "Opening" : `Pay ${rupees(event.fee_inr)}`}
-      </button>
-
-      <p className="serif-it mt-3 text-[0.9rem] leading-relaxed text-muted">
-        Scan the UPI QR in the window, or use a card. Your entry is confirmed the moment it goes
-        through, with nobody to wait on.
+    <div className="mt-5 border-t border-ink/10 pt-5">
+      <p className="label text-teal">Entries are on a form</p>
+      <p className="serif-it mt-2.5 text-[0.98rem] leading-relaxed text-muted">
+        This one does not run through the console. Both of you go on one form, and the
+        {" "}
+        {rupees(REGISTER.amountInr)} is paid on the form itself, by scanning the UPI code beside
+        the box that asks for the reference. That is the whole of it.
       </p>
 
-      {state.error ? (
-        <div className="mt-4">
-          <Notice tone="error">{state.error}</Notice>
-        </div>
+      {entered ? (
+        <p className="serif-it mt-4 rounded-[var(--r-md)] bg-white px-5 py-4 text-[0.95rem] leading-relaxed text-muted">
+          There is an entry recorded against your account here from before the form existed. It is
+          not the list the committee works from any more, so fill the form in as well and your
+          team is counted.
+        </p>
       ) : null}
-      {state.notice ? (
-        <div className="mt-4">
-          <Notice tone="ok">{state.notice}</Notice>
-        </div>
-      ) : null}
+
+      <div className="mt-5 flex flex-wrap items-center gap-3">
+        {REGISTRATION_IS_LIVE ? (
+          <a
+            href={REGISTER.formUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="pill pill-lime"
+          >
+            Register here
+          </a>
+        ) : (
+          <span className="pill pointer-events-none opacity-60">Form not open yet</span>
+        )}
+        <Link href="/events/attack-on-token" className="pill pill-ghost">
+          Read about the event
+        </Link>
+      </div>
     </div>
   );
 }

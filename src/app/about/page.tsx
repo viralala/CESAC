@@ -6,7 +6,7 @@ import { Reveal } from "@/components/aot/reveal";
 import { PageHead } from "@/components/sections/page-head";
 import { SiteFooter } from "@/components/site/footer";
 import { CESAC, DOES } from "@/lib/data/cesac";
-import { FACULTY, STUDENT_LEADERSHIP, TEAM_TOTAL, VERTICALS } from "@/lib/data/committee";
+import { getCopy, getRoster, rosterTotal } from "@/lib/data/site";
 
 export const metadata: Metadata = {
   title: "About",
@@ -18,7 +18,13 @@ export const metadata: Metadata = {
 const POPS = ["var(--azure)", "var(--violet)", "var(--lime)", "var(--pink)"];
 const ON_POPS = ["var(--ink)", "var(--white)", "var(--ink)", "var(--white)"];
 
-export default function AboutPage() {
+export default async function AboutPage() {
+  const [groups, t] = await Promise.all([getRoster(), getCopy()]);
+
+  const faculty = groups.find((g) => g.id === "faculty")?.people ?? [];
+  const studentLeadership = groups.find((g) => g.id === "student-leadership")?.people ?? [];
+  const verticals = groups.filter((g) => g.kind === "vertical");
+
   return (
     <>
       <PageHead
@@ -30,7 +36,7 @@ export default function AboutPage() {
             is
           </>
         }
-        lede={CESAC.what}
+        lede={t("home.what")}
       />
 
       <section className="bg-cream pb-20 pt-4 sm:pb-24">
@@ -42,7 +48,10 @@ export default function AboutPage() {
                 { t: "Full name", v: CESAC.name },
                 { t: "Department", v: CESAC.department },
                 { t: "Institute", v: CESAC.institute },
-                { t: "Members", v: `${TEAM_TOTAL} across ${VERTICALS.length} verticals` },
+                {
+                  t: "Members",
+                  v: `${rosterTotal(groups)} across ${verticals.length} verticals`,
+                },
               ].map((f) => (
                 <div key={f.t} className="card h-full p-6">
                   <dt className="label-sm text-muted">{f.t}</dt>
@@ -71,12 +80,12 @@ export default function AboutPage() {
           <Reveal className="mt-16">
             <h2 className="d-tall text-[clamp(2rem,5vw,3.4rem)] text-ink">The four verticals</h2>
             <p className="mt-4 max-w-[58ch] text-[0.975rem] leading-relaxed text-muted">
-              {CESAC.structure}
+              {t("home.structure")}
             </p>
           </Reveal>
 
           <div className="mt-8 grid gap-3 lg:grid-cols-2">
-            {VERTICALS.map((v, i) => (
+            {verticals.map((v, i) => (
               <Reveal key={v.id} delay={i * 70}>
                 <article className="card flex h-full flex-col p-7">
                   <div className="flex items-start justify-between gap-4">
@@ -84,14 +93,14 @@ export default function AboutPage() {
                       className="grid h-10 w-10 place-items-center rounded-full text-[0.85rem] font-extrabold"
                       style={{ background: POPS[i], color: ON_POPS[i] }}
                     >
-                      {v.index}
+                      {v.indexLabel}
                     </span>
                     <span className="jp text-sm text-muted">{v.jp}</span>
                   </div>
-                  <h3 className="d-tall mt-5 text-[1.8rem] text-ink">{v.name}</h3>
+                  <h3 className="d-tall mt-5 text-[1.8rem] text-ink">{v.title}</h3>
                   <p className="mt-2 text-[0.9375rem] leading-relaxed text-ink/75">{v.remit}</p>
                   <p className="label-sm mt-6 border-t border-ink/10 pt-5 text-muted">
-                    {v.members.length} members
+                    {v.people.length} members
                   </p>
                 </article>
               </Reveal>
@@ -103,8 +112,11 @@ export default function AboutPage() {
               <div className="card h-full p-7 sm:p-9">
                 <Label>Faculty leadership</Label>
                 <ul className="mt-5 grid gap-3">
-                  {FACULTY.map((p) => (
-                    <li key={p.name} className="rounded-[var(--r-md)] bg-cream px-5 py-4">
+                  {faculty.map((p) => (
+                    <li
+                      key={p.id ?? p.name}
+                      className="rounded-[var(--r-md)] bg-cream px-5 py-4"
+                    >
                       <p className="d-tall text-[1.2rem] leading-tight text-ink">{p.name}</p>
                       <p className="label-sm mt-2 text-muted">{p.role}</p>
                     </li>
@@ -115,8 +127,11 @@ export default function AboutPage() {
               <div className="card h-full p-7 sm:p-9">
                 <Label>Student leadership</Label>
                 <ul className="mt-5 grid gap-3">
-                  {STUDENT_LEADERSHIP.map((p) => (
-                    <li key={p.name} className="rounded-[var(--r-md)] bg-cream px-5 py-4">
+                  {studentLeadership.map((p) => (
+                    <li
+                      key={p.id ?? p.name}
+                      className="rounded-[var(--r-md)] bg-cream px-5 py-4"
+                    >
                       <p className="d-tall text-[1.2rem] leading-tight text-ink">{p.name}</p>
                       <p className="label-sm mt-2 text-muted">{p.role}</p>
                     </li>

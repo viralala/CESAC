@@ -4,6 +4,68 @@ A shared list. Add anything you want built; I will do the same as things come
 up. Tick a box when the feature is live on `cesac-azure.vercel.app`, not when
 the code is written.
 
+---
+
+## What landed on 21 September 2026
+
+A large change, and the short version is that **the console can now change the
+site without a deploy**. Seven things:
+
+1. **Students file publications, not only certificates.** The four layouts from
+   `Formats.xlsx` (journal, conference, book, book chapter) are on the same
+   page as the hackathon certificate, each asking for what its own layout asks
+   for. Every hackathon and publication now also carries a **level**
+   (international, national, state, zonal, institute) and a **date**.
+
+2. **Four optional files per record**: the certificate, a photo of the prize, a
+   photo of the student at the event, and the photo with the HOD. All optional,
+   including the certificate, because a journal paper has none. Each is its own
+   upload, because a Vercel function will not take four of them in one request.
+
+3. **Participation is worth 40, not 10**, and the level is added on top. A
+   national hackathon somebody entered and did not place in is 70. The whole
+   scale is a table now, edited on `/admin/site/points`, and moving a number
+   re-scores the department on the next request.
+
+4. **The front page names students.** `/admin/site/showcase` sets the
+   categories up: top of the board, best winning student, most published, best
+   outgoing student, and anything else you want. A category either ranks itself
+   from what students have uploaded, or is one you name people for by hand,
+   which is the only way to say something like best outgoing student. A student
+   can switch themselves off it from their own console.
+
+5. **The roster is editable.** `/admin/site/roster`. Names, titles, ranks,
+   order, and whole blocks. Dr. Aarti Agarkar is Asst Head-Admin Computer
+   Engineering, set there rather than in the source.
+
+6. **The console is quick.** Three changes, and the one that matters most is
+   not code: the Vercel functions ran in Washington DC against a database in
+   Mumbai, which is a quarter of a second on every query. `vercel.json` pins
+   them to `bom1`. The auth check also stopped asking the auth server twice per
+   request, and the console bar moved into a layout so a click keeps the chrome
+   and swaps only the middle. **The region change only takes effect on the next
+   deploy.**
+
+7. **Organisers have roles that mean something.** Seven areas: events,
+   payments, records, questions, people, content, settings. An organiser with
+   nothing set holds all of them, which is how everybody started, and ticking
+   boxes on `/admin` narrows them. It is enforced by Postgres, not by the
+   screen: a narrowed organiser calling the endpoint by hand is refused by
+   `admin_can()`.
+
+Everything is in `supabase/migrations/20260921_student_records_and_console.sql`,
+which is idempotent and was applied to the live project as seven migrations.
+
+**Not done, and worth knowing:**
+
+- Turning a record down still does not take its points off the board. That was
+  already on the list below and is still true.
+- A student's email still cannot be changed from the console.
+- The ranking board itself still has no CSV. The records table does, in five
+  shapes.
+
+---
+
 **Registration for Attack on Token is open.** Opened 19 September 2026 from the
 new control on the Entries page. HR Final Boss is still locked. Two things
 about it are worth knowing before the first student asks:
@@ -101,9 +163,15 @@ the case it says so.
       sits at the top of the list every morning. A `rejected` column would say
       it more plainly and is a migration.
 
-- [ ] **Reject or delete a certificate.** A duplicate, a file for somebody
-      else's event, a screenshot of nothing. Deleting the row is easy; it also
-      has to delete the file from Drive, or the folder fills with orphans.
+- [x] **Reject or delete a certificate.** Live since 21 September, the red
+      **Delete** on each card. The Drive files go to the **bin** rather than
+      being destroyed: a record removed by the wrong person is recoverable for
+      thirty days, and a console button should not be able to destroy anything.
+      The files go first and the row second, because the file ids are on the
+      row; a file that will not trash does not block the delete, and the audit
+      entry records what the record was.
+
+      A student can also delete their own, until an organiser has verified it.
 
 - [ ] **Decide whether unverified certificates count.** A switch, defaulting to
       counting them, so the board can be tightened up once there are enough
@@ -117,6 +185,10 @@ the case it says so.
       one student at a time is the wrong shape; issuing them from the entry
       list is the right one.
 
+- [x] **Publications, not only certificates.** Live since 21 September. The
+      four layouts from `Formats.xlsx`, the level, the date, and the three
+      optional photos. See the section at the top of this file.
+
 - [x] **Export.** Live since 19 September, the button at the bottom of the
       certificates page. The whole table with the student, their class and
       PRN, the state, who verified it and the Drive link.
@@ -126,6 +198,14 @@ the case it says so.
       client component and an object URL to do. Every field is quoted rather
       than only the ones that need it, and a value starting `=`, `+`, `-` or
       `@` is prefixed, because Excel runs those as formulas.
+
+      **Five shapes since 21 September.** The wide one is everything on one
+      sheet. `?sheet=journal`, `?sheet=conference`, `?sheet=book` and
+      `?sheet=book_chapter` are the columns of `Formats.xlsx`, in its order and
+      its wording, typos included, so a block pastes into the workbook the
+      office already keeps. An unknown sheet name is answered with a sentence
+      rather than quietly handed the wide one, because a file that is not the
+      shape somebody asked for gets pasted before anybody notices.
 
       Still to do: the ranking board itself as CSV.
 
@@ -355,8 +435,9 @@ them from the student directory, or in the dashboard.
       - **It is not `authMethods()`**, which wraps its own fetch and falls
         back to no social buttons.
       - **It is not the fonts.** `next/font/google` downloads at build time.
-      - The other raw fetches in the codebase are Razorpay and Google Drive,
-        and neither runs on any of those four routes.
+      - The other raw fetch in the codebase is Google Drive, which does not
+        run on any of those four routes. (There was a Razorpay fetch here too
+        when this was written; the gateway has since been removed.)
 
       Worth knowing before picking it up again: the `.rsc` suffix means these
       were client-side navigations rather than fresh page loads, and **it was

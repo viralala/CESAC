@@ -54,10 +54,10 @@ export type MyRegistration = Registration & {
 export const getMyRegistrations = cache(async (): Promise<MyRegistration[]> => {
   const supabase = await createClient();
 
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) return [];
+  // getClaims rather than getUser. See the note in lib/auth/guard.ts.
+  const { data: verified } = await supabase.auth.getClaims();
+  const userId = verified?.claims?.sub;
+  if (!userId) return [];
 
   const people = "id, full_name, email";
 
@@ -68,7 +68,7 @@ export const getMyRegistrations = cache(async (): Promise<MyRegistration[]> => {
        student:profiles!event_registrations_student_id_fkey(${people}),
        partner:profiles!event_registrations_partner_id_fkey(${people})`,
     )
-    .or(`student_id.eq.${user.id},partner_id.eq.${user.id}`)
+    .or(`student_id.eq.${userId},partner_id.eq.${userId}`)
     .eq("status", "registered");
 
   return (data ?? []) as MyRegistration[];

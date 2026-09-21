@@ -18,15 +18,15 @@ export type Query = Tables<"queries">;
 export const getMyQueries = cache(async (): Promise<Query[]> => {
   const supabase = await createClient();
 
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) return [];
+  // getClaims rather than getUser. See the note in lib/auth/guard.ts.
+  const { data: verified } = await supabase.auth.getClaims();
+  const userId = verified?.claims?.sub;
+  if (!userId) return [];
 
   const { data } = await supabase
     .from("queries")
     .select("*")
-    .eq("author_id", user.id)
+    .eq("author_id", userId)
     .order("created_at", { ascending: false });
 
   return data ?? [];

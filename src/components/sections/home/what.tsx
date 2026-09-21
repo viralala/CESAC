@@ -4,7 +4,7 @@ import { Container, Label, SectionHead } from "@/components/aot/bits";
 import { Reveal } from "@/components/aot/reveal";
 import { Ribbon } from "@/components/sections/ribbon";
 import { CESAC, DOES, RIBBON_WORDS } from "@/lib/data/cesac";
-import { TEAM_TOTAL, VERTICALS } from "@/lib/data/committee";
+import { getCopy, getRoster, rosterTotal } from "@/lib/data/site";
 
 const POP: Record<string, string> = {
   azure: "var(--azure)",
@@ -28,7 +28,11 @@ const ON_POP: Record<string, string> = {
  * of curving it: a band that occupies part of the page reads as an object on
  * the page instead of a divider between two halves of it.
  */
-export function HomeWhat() {
+export async function HomeWhat() {
+  const [groups, t] = await Promise.all([getRoster(), getCopy()]);
+  const members = rosterTotal(groups);
+  const verticals = groups.filter((g) => g.kind === "vertical").length;
+
   return (
     <section id="what" className="scroll-mt-24 bg-cream py-20 sm:py-24">
       <Container>
@@ -42,7 +46,7 @@ export function HomeWhat() {
                 department, for it
               </>
             }
-            aside={CESAC.structure}
+            aside={t("home.structure")}
           />
         </Reveal>
 
@@ -69,13 +73,11 @@ export function HomeWhat() {
               <dl className="mt-10 grid grid-cols-2 gap-5 border-t border-ink/10 pt-7">
                 <div>
                   <dt className="label-sm text-muted">Members</dt>
-                  <dd className="d-wide mt-2 text-3xl leading-none text-teal">{TEAM_TOTAL}</dd>
+                  <dd className="d-wide mt-2 text-3xl leading-none text-teal">{members}</dd>
                 </div>
                 <div>
                   <dt className="label-sm text-muted">Verticals</dt>
-                  <dd className="d-wide mt-2 text-3xl leading-none text-teal">
-                    {VERTICALS.length}
-                  </dd>
+                  <dd className="d-wide mt-2 text-3xl leading-none text-teal">{verticals}</dd>
                 </div>
                 <div className="col-span-2">
                   <dt className="label-sm text-muted">Department</dt>

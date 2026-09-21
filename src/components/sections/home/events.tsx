@@ -5,8 +5,11 @@ import { Arrow, Container, Label, SectionHead } from "@/components/aot/bits";
 import { ParallaxLayer, ParallaxScene } from "@/components/aot/parallax";
 import { Reveal } from "@/components/aot/reveal";
 import { Sticker } from "@/components/aot/stickers";
+import { RegisterButton } from "@/components/sections/event/register-button";
 import { EVENTS } from "@/lib/data/cesac";
+import { REGISTER_SLUG } from "@/lib/data/event";
 import { badgeFor, getEventBadges } from "@/lib/data/event-status";
+import { getCopy } from "@/lib/data/site";
 
 /**
  * The events board.
@@ -20,7 +23,7 @@ import { badgeFor, getEventBadges } from "@/lib/data/event-status";
  */
 export async function HomeEvents() {
   const [feature, ...rest] = EVENTS;
-  const badges = await getEventBadges();
+  const [badges, t] = await Promise.all([getEventBadges(), getCopy()]);
   const featureBadge = feature ? badgeFor(feature, badges) : null;
 
   return (
@@ -28,9 +31,9 @@ export async function HomeEvents() {
       <Container className="relative">
         <Reveal>
           <SectionHead
-            eyebrow="What we run"
-            title="Events"
-            aside="Competitions, workshops and department activities, planned and run by students."
+            eyebrow={t("home.events.eyebrow")}
+            title={t("home.events.title")}
+            aside={t("home.events.aside")}
           />
         </Reveal>
 
@@ -70,9 +73,20 @@ export async function HomeEvents() {
                       Open the event
                       <Arrow />
                     </Link>
-                    <Link href="/signin" className="pill pill-ghost-light">
-                      Sign in
-                    </Link>
+                    {/* The way in, where there is one. Attack on Token takes
+                        its teams on a form rather than through the console, so
+                        the second button is that form and not a sign-in box
+                        that leads nowhere near it. */}
+                    {feature.slug === REGISTER_SLUG ? (
+                      <RegisterButton
+                        tone="ghost-light"
+                        fallbackHref={`${feature.href}#register`}
+                      />
+                    ) : (
+                      <Link href="/signin" className="pill pill-ghost-light">
+                        Sign in
+                      </Link>
+                    )}
                   </div>
                 </div>
 
@@ -143,8 +157,7 @@ export async function HomeEvents() {
         ) : (
           <Reveal className="mt-4">
             <p className="rounded-[var(--r-lg)] bg-cream-2 px-7 py-6 text-[0.95rem] text-muted">
-              Nothing else is on the calendar yet. New events are posted here as they are
-              confirmed.
+              {t("home.events.empty")}
             </p>
           </Reveal>
         )}

@@ -23,7 +23,10 @@ export function ConsoleBar({
   nav,
 }: {
   viewer: Viewer;
-  area: string;
+  /** A node, not a string: the organiser console passes a client component
+   *  that reads the path, because the bar lives in a layout now and a layout
+   *  does not re-render on navigation. */
+  area: ReactNode;
   nav: readonly { href: string; label: string }[];
 }) {
   const isAdmin = viewer.isAdmin;

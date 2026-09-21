@@ -41,11 +41,29 @@ export async function updateSession(request: NextRequest) {
     },
   });
 
-  // getUser, not getSession: this one asks the auth server whether the token
-  // is real, which is the whole point of doing it here.
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  /*
+   * getClaims, not getUser and not getSession.
+   *
+   * All three answer "is this session real". getSession answers it by trusting
+   * the cookie, which is no answer at all. getUser answers it by asking the
+   * auth server, which is a network round trip on **every single request**,
+   * and this proxy runs on every request that is not a static asset.
+   *
+   * getClaims verifies the token's signature itself. This project signs with
+   * ES256, an asymmetric key, so the public half is enough to check it and the
+   * library fetches that key set once and caches it. A forged or tampered
+   * token fails the signature check exactly as it would at the auth server;
+   * what is skipped is the trip, not the check. It still refreshes a session
+   * that is about to expire, which is the proxy's other job.
+   *
+   * The site is served from Mumbai and its functions ran in Washington DC
+   * until 21 September 2026, so this round trip and the second one in
+   * getViewer were together most of a second on every console page before the
+   * page had asked the database anything at all. vercel.json now pins the
+   * functions to bom1 as well; both changes are about the same problem.
+   */
+  const { data } = await supabase.auth.getClaims();
+  const claims = data?.claims ?? null;
 
-  return { response, user };
+  return { response, user: claims ? { id: claims.sub, email: claims.email } : null };
 }

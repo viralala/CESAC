@@ -2,10 +2,10 @@ import type { Metadata } from "next";
 import Link from "next/link";
 
 import { Container, Label } from "@/components/aot/bits";
-import { Chip, ConsoleBar, Empty, Panel, Stat, type ChipTone } from "@/components/console/shell";
+import { Chip, Empty, Panel, Stat, type ChipTone } from "@/components/console/shell";
 import { requireAdmin } from "@/lib/auth/guard";
+import { requireCap } from "@/lib/auth/caps";
 import { getPasswordHold, searchStudents, type StudentForOrganiser } from "@/lib/data/students";
-import { ADMIN_NAV } from "../nav";
 
 export const metadata: Metadata = {
   title: "Students",
@@ -55,7 +55,8 @@ function classAndPrn(student: StudentForOrganiser): string {
  * for the same reason.
  */
 export default async function AdminStudentsPage(props: PageProps<"/admin/students">) {
-  const viewer = await requireAdmin();
+  await requireAdmin();
+  await requireCap("people");
   const { q, page } = await props.searchParams;
 
   const asked = typeof q === "string" ? q.trim() : "";
@@ -73,8 +74,6 @@ export default async function AdminStudentsPage(props: PageProps<"/admin/student
 
   return (
     <>
-      <ConsoleBar viewer={viewer} area="Students" nav={ADMIN_NAV} />
-
       <div className="washi grain min-h-[100svh] py-12 sm:py-16">
         <Container>
           <header className="max-w-[52ch]">

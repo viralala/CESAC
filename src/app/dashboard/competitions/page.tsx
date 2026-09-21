@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 
-import { acceptInvitation, emsRazorpayConfigured, rejectInvitation } from "@/app/actions/ems-team";
+import { acceptInvitation, rejectInvitation } from "@/app/actions/ems-team";
 import { ActionForm } from "@/components/console/action-form";
 import { EmsEventCard } from "@/components/console/ems-event-card";
 import { Empty, Panel } from "@/components/console/shell";
@@ -23,17 +23,16 @@ export const metadata: Metadata = {
  * The team events.
  *
  * Separate from /dashboard/events, which is the department calendar: a solo
- * or pair entry against a listed event, paid by UPI, signed off by an
- * organiser. This page is the other kind of thing, where a team of up to
- * eight forms first, people accept, and the seat is claimed and paid for in
- * one move. Keeping them apart means neither flow has to grow a branch for
- * the other.
+ * or pair entry against a listed event. This page is the other kind of thing,
+ * where a team of up to eight forms first, people accept, and then the leader
+ * claims a seat. Keeping them apart means neither flow has to grow a branch
+ * for the other.
  *
  * Only events the student can actually act on are listed. A draft is
  * invisible, and one that has been and gone is not a decision.
  */
 export default async function CompetitionsPage() {
-  const viewer = await requireParticipant();
+  await requireParticipant();
 
   // An unexposed schema and a term with no events look identical from here,
   // so ask once and say which it is. A student cannot fix it, but being told
@@ -52,10 +51,9 @@ export default async function CompetitionsPage() {
     .map((event) => event.my_team_id)
     .filter((id): id is string => Boolean(id));
 
-  const [registrations, rosters, onlineEnabled] = await Promise.all([
+  const [registrations, rosters] = await Promise.all([
     getRegistrationsForTeams(teamIds),
     Promise.all(teamIds.map((id) => getTeamRoster(id))),
-    emsRazorpayConfigured(),
   ]);
 
   const rosterFor = new Map(teamIds.map((id, index) => [id, rosters[index]]));
@@ -124,7 +122,7 @@ export default async function CompetitionsPage() {
         <p className="serif-it -mt-1 mb-6 text-[1.02rem] leading-relaxed text-muted">
           Team events. You make a team, invite your people by their CESAC email, and register once
           enough of them have accepted. A seat is held from the moment you claim it, so nobody can
-          take it while you are paying.
+          take it while the fee is being settled.
         </p>
 
         {!ready ? (
@@ -147,8 +145,6 @@ export default async function CompetitionsPage() {
                 registration={
                   event.my_team_id ? (registrationFor.get(event.my_team_id) ?? null) : null
                 }
-                viewer={{ name: viewer.name, email: viewer.email }}
-                onlineEnabled={onlineEnabled}
               />
             ))}
           </ul>

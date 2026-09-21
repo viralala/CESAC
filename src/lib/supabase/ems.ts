@@ -1,7 +1,6 @@
 import "server-only";
 
 import { createServerClient } from "@supabase/ssr";
-import { createClient as createSupabaseClient } from "@supabase/supabase-js";
 import { cookies } from "next/headers";
 import { cache } from "react";
 
@@ -40,29 +39,6 @@ export async function createEmsClient() {
         }
       },
     },
-  });
-}
-
-/**
- * The service role client, for the one thing a signed-in session must never
- * be allowed to do: mark a payment paid.
- *
- * ems.confirm_razorpay_payment refuses anything that is not the service role,
- * so this is the only way to call it, and it is called only after the server
- * has checked the Razorpay signature itself.
- *
- * No session, no cookies, no token refresh: this client is not a user. It
- * returns null rather than throwing when the key is absent, so a deploy
- * without Razorpay configured degrades to "online payment is off" instead of
- * crashing a route.
- */
-export function createEmsServiceClient() {
-  const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
-  if (!key) return null;
-
-  return createSupabaseClient<EmsDatabase, "ems">(SUPABASE_URL, key, {
-    db: { schema: "ems" },
-    auth: { persistSession: false, autoRefreshToken: false },
   });
 }
 

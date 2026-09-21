@@ -2,15 +2,14 @@ import Link from "next/link";
 
 import { Arrow, Container, Label, SectionHead } from "@/components/aot/bits";
 import { Reveal } from "@/components/aot/reveal";
-import {
-  BOARD,
-  FACULTY,
-  STUDENT_LEADERSHIP,
-  TEAM_TOTAL,
-  VERTICALS,
-} from "@/lib/data/committee";
+import { getRoster, rosterTotal, type RosterGroup } from "@/lib/data/site";
 
 const POPS = ["var(--azure)", "var(--violet)", "var(--lime)", "var(--pink)"];
+
+/** One block by id, or an empty one, so a deleted block renders nothing. */
+function block(groups: RosterGroup[], id: string): RosterGroup["people"] {
+  return groups.find((g) => g.id === id)?.people ?? [];
+}
 
 /**
  * The team, in preview.
@@ -19,7 +18,14 @@ const POPS = ["var(--azure)", "var(--violet)", "var(--lime)", "var(--pink)"];
  * accountable for this". The 38-name roster is a page of its own, linked at the
  * bottom, rather than four screens of scrolling on the way to the events.
  */
-export function HomeTeam() {
+export async function HomeTeam() {
+  const groups = await getRoster();
+
+  const faculty = block(groups, "faculty");
+  const studentLeadership = block(groups, "student-leadership");
+  const board = block(groups, "board");
+  const verticals = groups.filter((g) => g.kind === "vertical");
+
   return (
     <section id="team" className="scroll-mt-24 bg-cream py-20 sm:py-24">
       <Container>
@@ -36,9 +42,9 @@ export function HomeTeam() {
             <div className="card h-full p-7">
               <Label>Faculty leadership</Label>
               <ul className="mt-5 grid gap-3">
-                {FACULTY.map((p) => (
+                {faculty.map((p) => (
                   <li
-                    key={p.name}
+                    key={p.id ?? p.name}
                     className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1 rounded-[var(--r-md)] bg-cream px-5 py-4"
                   >
                     <span className="d-tall text-[1.2rem] leading-tight text-ink">{p.name}</span>
@@ -50,9 +56,9 @@ export function HomeTeam() {
               <div className="mt-8 border-t border-ink/10 pt-7">
                 <Label>Student leadership</Label>
                 <ul className="mt-5 grid gap-3">
-                  {STUDENT_LEADERSHIP.map((p) => (
+                  {studentLeadership.map((p) => (
                     <li
-                      key={p.name}
+                      key={p.id ?? p.name}
                       className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1 rounded-[var(--r-md)] bg-cream px-5 py-4"
                     >
                       <span className="d-tall text-[1.2rem] leading-tight text-ink">{p.name}</span>
@@ -68,20 +74,20 @@ export function HomeTeam() {
             <div className="card h-full p-7">
               <Label>Board of executives</Label>
               <ul className="mt-5 flex flex-wrap gap-2">
-                {BOARD.map((name) => (
+                {board.map((person) => (
                   <li
-                    key={name}
+                    key={person.id ?? person.name}
                     className="rounded-full bg-cream px-4 py-2 text-[0.8125rem] font-semibold text-ink"
                   >
-                    {name}
+                    {person.name}
                   </li>
                 ))}
               </ul>
 
               <div className="mt-8 grid gap-x-6 gap-y-4 border-t border-ink/10 pt-7 sm:grid-cols-2">
-                {VERTICALS.map((v, i) => (
+                {verticals.map((v, i) => (
                   <div key={v.id} className="border-t-2 pt-3" style={{ borderColor: POPS[i] }}>
-                    <h3 className="d-tall text-[1.05rem] leading-tight text-ink">{v.name}</h3>
+                    <h3 className="d-tall text-[1.05rem] leading-tight text-ink">{v.title}</h3>
                     <p className="mt-1 text-[0.8125rem] leading-snug text-muted">{v.remit}</p>
                   </div>
                 ))}
@@ -96,7 +102,9 @@ export function HomeTeam() {
             className="group flex flex-wrap items-center justify-between gap-5 rounded-[var(--r-xl)] bg-cream-2 px-8 py-7 transition-colors hover:bg-cream-3"
           >
             <span>
-              <span className="d-tall text-[1.6rem] text-ink">All {TEAM_TOTAL} members</span>
+              <span className="d-tall text-[1.6rem] text-ink">
+                All {rosterTotal(groups)} members
+              </span>
               <span className="serif-it mt-1 block text-[0.95rem] text-muted">
                 Faculty, board, associates and every vertical.
               </span>

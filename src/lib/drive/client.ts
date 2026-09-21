@@ -407,3 +407,29 @@ export async function uploadToFolder(
     link: uploaded.webViewLink ?? `https://drive.google.com/file/d/${uploaded.id}/view`,
   };
 }
+
+/**
+ * Move a file to the Drive trash.
+ *
+ * Trashed rather than deleted outright. A record taken off the board is
+ * usually a duplicate or a mistake, and occasionally it is the wrong record
+ * removed by the wrong person; the bin gives thirty days to notice. It also
+ * means this call cannot destroy anything, which matters because the thing
+ * calling it is a button on a console.
+ *
+ * A file that is already gone is not an error. Google answers 404 for a file
+ * somebody removed by hand, and the caller's next move either way is to drop
+ * the row that pointed at it.
+ */
+export async function trashFile(creds: DriveCredentials, fileId: string): Promise<void> {
+  try {
+    await call<DriveFile>(creds, `${API}/files/${encodeURIComponent(fileId)}?${ALL_DRIVES}`, {
+      method: "PATCH",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ trashed: true }),
+    });
+  } catch (error) {
+    if (error instanceof DriveError && error.detail.includes("notFound")) return;
+    throw error;
+  }
+}

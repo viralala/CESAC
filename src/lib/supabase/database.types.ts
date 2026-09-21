@@ -4,13 +4,20 @@
  * Regenerate after every migration so the app cannot drift from the database:
  *   npm run db:types
  *
- * One exception, 19 September 2026: admin_set_entry_status,
+ * Two exceptions. 19 September 2026: admin_set_entry_status,
  * admin_set_event_state, admin_upsert_dept_event and
  * admin_verify_event_payment and dept_event_states were written in by hand,
  * because generating needs `supabase login` and only the account holder can
  * do that. They match
  * the live signatures, so the next regeneration produces the same lines and
  * this note can go.
+ *
+ * 21 September 2026, for the same reason: everything the student-records
+ * migrations added. The five new tables (certificate_files, scoring,
+ * roster_groups, roster_people, site_text, showcase_categories,
+ * showcase_picks, admin_grants), the columns they added to certificates,
+ * profiles and settings, the two new enums, and the admin_* and showcase_board
+ * functions behind the console.
  */
 export type Json = string | number | boolean | null | { [key: string]: Json | undefined } | Json[];
 
@@ -91,49 +98,118 @@ export type Database = {
       };
       certificates: {
         Row: {
+          chapter_name: string | null;
+          e_journal: boolean | null;
+          edition: string | null;
+          entered_by: string | null;
+          happened_on: string | null;
+          impact_factor: number | null;
+          indexing: string | null;
+          is_edited: boolean | null;
+          isbn_issn: string | null;
+          kind: Database["public"]["Enums"]["achievement_kind"];
+          level: Database["public"]["Enums"]["achievement_level"] | null;
+          location: string | null;
+          page_numbers: string | null;
+          peer_reviewed: boolean | null;
+          place_of_publication: string | null;
+          primary_author: string | null;
+          publication_year: number | null;
+          publisher: string | null;
+          quartile: string | null;
+          secondary_authors: string | null;
+          specialization: string | null;
+          venue_name: string | null;
+          volume: string | null;
           contribution: Database["public"]["Enums"]["certificate_contribution"];
           created_at: string;
-          drive_file_id: string;
-          drive_link: string;
+          drive_file_id: string | null;
+          drive_link: string | null;
           event_name: string;
-          file_name: string;
+          file_name: string | null;
           id: string;
-          mime_type: string;
+          mime_type: string | null;
           owner_id: string;
           prize_amount_inr: number | null;
-          size_bytes: number;
+          size_bytes: number | null;
           verified: boolean;
           verified_at: string | null;
           verified_by: string | null;
         };
         Insert: {
+          chapter_name?: string | null;
+          e_journal?: boolean | null;
+          edition?: string | null;
+          entered_by?: string | null;
+          happened_on?: string | null;
+          impact_factor?: number | null;
+          indexing?: string | null;
+          is_edited?: boolean | null;
+          isbn_issn?: string | null;
+          kind?: Database["public"]["Enums"]["achievement_kind"];
+          level?: Database["public"]["Enums"]["achievement_level"] | null;
+          location?: string | null;
+          page_numbers?: string | null;
+          peer_reviewed?: boolean | null;
+          place_of_publication?: string | null;
+          primary_author?: string | null;
+          publication_year?: number | null;
+          publisher?: string | null;
+          quartile?: string | null;
+          secondary_authors?: string | null;
+          specialization?: string | null;
+          venue_name?: string | null;
+          volume?: string | null;
           contribution?: Database["public"]["Enums"]["certificate_contribution"];
           created_at?: string;
-          drive_file_id: string;
-          drive_link: string;
+          drive_file_id?: string | null;
+          drive_link?: string | null;
           event_name: string;
-          file_name: string;
+          file_name?: string | null;
           id?: string;
-          mime_type: string;
+          mime_type?: string | null;
           owner_id: string;
           prize_amount_inr?: number | null;
-          size_bytes: number;
+          size_bytes?: number | null;
           verified?: boolean;
           verified_at?: string | null;
           verified_by?: string | null;
         };
         Update: {
+          chapter_name?: string | null;
+          e_journal?: boolean | null;
+          edition?: string | null;
+          entered_by?: string | null;
+          happened_on?: string | null;
+          impact_factor?: number | null;
+          indexing?: string | null;
+          is_edited?: boolean | null;
+          isbn_issn?: string | null;
+          kind?: Database["public"]["Enums"]["achievement_kind"];
+          level?: Database["public"]["Enums"]["achievement_level"] | null;
+          location?: string | null;
+          page_numbers?: string | null;
+          peer_reviewed?: boolean | null;
+          place_of_publication?: string | null;
+          primary_author?: string | null;
+          publication_year?: number | null;
+          publisher?: string | null;
+          quartile?: string | null;
+          secondary_authors?: string | null;
+          specialization?: string | null;
+          venue_name?: string | null;
+          volume?: string | null;
           contribution?: Database["public"]["Enums"]["certificate_contribution"];
           created_at?: string;
-          drive_file_id?: string;
-          drive_link?: string;
+          drive_file_id?: string | null;
+          drive_link?: string | null;
           event_name?: string;
-          file_name?: string;
+          file_name?: string | null;
           id?: string;
-          mime_type?: string;
+          mime_type?: string | null;
           owner_id?: string;
           prize_amount_inr?: number | null;
-          size_bytes?: number;
+          size_bytes?: number | null;
           verified?: boolean;
           verified_at?: string | null;
           verified_by?: string | null;
@@ -154,6 +230,294 @@ export type Database = {
             referencedColumns: ["id"];
           },
         ];
+      };
+      admin_grants: {
+        Row: {
+          caps: string[];
+          granted_by: string | null;
+          note: string | null;
+          profile_id: string;
+          updated_at: string;
+        };
+        Insert: {
+          caps?: string[];
+          granted_by?: string | null;
+          note?: string | null;
+          profile_id: string;
+          updated_at?: string;
+        };
+        Update: {
+          caps?: string[];
+          granted_by?: string | null;
+          note?: string | null;
+          profile_id?: string;
+          updated_at?: string;
+        };
+        Relationships: [];
+      };
+      certificate_files: {
+        Row: {
+          certificate_id: string;
+          created_at: string;
+          drive_file_id: string;
+          drive_link: string;
+          file_name: string;
+          id: string;
+          mime_type: string;
+          owner_id: string;
+          size_bytes: number;
+          slot: string;
+        };
+        Insert: {
+          certificate_id: string;
+          created_at?: string;
+          drive_file_id: string;
+          drive_link: string;
+          file_name: string;
+          id?: string;
+          mime_type: string;
+          owner_id: string;
+          size_bytes: number;
+          slot: string;
+        };
+        Update: {
+          certificate_id?: string;
+          created_at?: string;
+          drive_file_id?: string;
+          drive_link?: string;
+          file_name?: string;
+          id?: string;
+          mime_type?: string;
+          owner_id?: string;
+          size_bytes?: number;
+          slot?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "certificate_files_certificate_id_fkey";
+            columns: ["certificate_id"];
+            isOneToOne: false;
+            referencedRelation: "certificates";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      roster_groups: {
+        Row: {
+          accent: string | null;
+          id: string;
+          index_label: string | null;
+          jp: string | null;
+          kind: string;
+          position: number;
+          remit: string | null;
+          title: string;
+          updated_at: string;
+          visible: boolean;
+        };
+        Insert: {
+          accent?: string | null;
+          id: string;
+          index_label?: string | null;
+          jp?: string | null;
+          kind: string;
+          position?: number;
+          remit?: string | null;
+          title: string;
+          updated_at?: string;
+          visible?: boolean;
+        };
+        Update: {
+          accent?: string | null;
+          id?: string;
+          index_label?: string | null;
+          jp?: string | null;
+          kind?: string;
+          position?: number;
+          remit?: string | null;
+          title?: string;
+          updated_at?: string;
+          visible?: boolean;
+        };
+        Relationships: [];
+      };
+      roster_people: {
+        Row: {
+          group_id: string;
+          id: string;
+          name: string;
+          position: number;
+          rank: string | null;
+          role: string | null;
+          updated_at: string;
+          visible: boolean;
+        };
+        Insert: {
+          group_id: string;
+          id?: string;
+          name: string;
+          position?: number;
+          rank?: string | null;
+          role?: string | null;
+          updated_at?: string;
+          visible?: boolean;
+        };
+        Update: {
+          group_id?: string;
+          id?: string;
+          name?: string;
+          position?: number;
+          rank?: string | null;
+          role?: string | null;
+          updated_at?: string;
+          visible?: boolean;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "roster_people_group_id_fkey";
+            columns: ["group_id"];
+            isOneToOne: false;
+            referencedRelation: "roster_groups";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      scoring: {
+        Row: {
+          band: string;
+          hint: string | null;
+          key: string;
+          label: string;
+          points: number;
+          position: number;
+          updated_at: string;
+          updated_by: string | null;
+        };
+        Insert: {
+          band: string;
+          hint?: string | null;
+          key: string;
+          label: string;
+          points?: number;
+          position?: number;
+          updated_at?: string;
+          updated_by?: string | null;
+        };
+        Update: {
+          band?: string;
+          hint?: string | null;
+          key?: string;
+          label?: string;
+          points?: number;
+          position?: number;
+          updated_at?: string;
+          updated_by?: string | null;
+        };
+        Relationships: [];
+      };
+      showcase_categories: {
+        Row: {
+          blurb: string;
+          id: string;
+          metric: string;
+          position: number;
+          slots: number;
+          title: string;
+          updated_at: string;
+          updated_by: string | null;
+          visible: boolean;
+        };
+        Insert: {
+          blurb?: string;
+          id: string;
+          metric: string;
+          position?: number;
+          slots?: number;
+          title: string;
+          updated_at?: string;
+          updated_by?: string | null;
+          visible?: boolean;
+        };
+        Update: {
+          blurb?: string;
+          id?: string;
+          metric?: string;
+          position?: number;
+          slots?: number;
+          title?: string;
+          updated_at?: string;
+          updated_by?: string | null;
+          visible?: boolean;
+        };
+        Relationships: [];
+      };
+      showcase_picks: {
+        Row: {
+          category_id: string;
+          created_at: string;
+          note: string | null;
+          position: number;
+          student_id: string;
+        };
+        Insert: {
+          category_id: string;
+          created_at?: string;
+          note?: string | null;
+          position?: number;
+          student_id: string;
+        };
+        Update: {
+          category_id?: string;
+          created_at?: string;
+          note?: string | null;
+          position?: number;
+          student_id?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "showcase_picks_student_id_fkey";
+            columns: ["student_id"];
+            isOneToOne: false;
+            referencedRelation: "profiles";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      site_text: {
+        Row: {
+          hint: string | null;
+          key: string;
+          label: string;
+          multiline: boolean;
+          position: number;
+          section: string;
+          updated_at: string;
+          updated_by: string | null;
+          value: string;
+        };
+        Insert: {
+          hint?: string | null;
+          key: string;
+          label: string;
+          multiline?: boolean;
+          position?: number;
+          section?: string;
+          updated_at?: string;
+          updated_by?: string | null;
+          value?: string;
+        };
+        Update: {
+          hint?: string | null;
+          key?: string;
+          label?: string;
+          multiline?: boolean;
+          position?: number;
+          section?: string;
+          updated_at?: string;
+          updated_by?: string | null;
+          value?: string;
+        };
+        Relationships: [];
       };
       chapters: {
         Row: {
@@ -482,6 +846,7 @@ export type Database = {
           phone: string | null;
           prn: string | null;
           role: Database["public"]["Enums"]["app_role"];
+          showcase_opt_out: boolean;
           student_class: string | null;
           updated_at: string;
           year: string | null;
@@ -498,6 +863,7 @@ export type Database = {
           phone?: string | null;
           prn?: string | null;
           role?: Database["public"]["Enums"]["app_role"];
+          showcase_opt_out?: boolean;
           student_class?: string | null;
           updated_at?: string;
           year?: string | null;
@@ -514,6 +880,7 @@ export type Database = {
           phone?: string | null;
           prn?: string | null;
           role?: Database["public"]["Enums"]["app_role"];
+          showcase_opt_out?: boolean;
           student_class?: string | null;
           updated_at?: string;
           year?: string | null;
@@ -648,6 +1015,7 @@ export type Database = {
           online_payment: boolean;
           registration_open: boolean;
           seats_cap: number;
+          showcase_public: boolean;
           updated_at: string;
           updated_by: string | null;
           upi_id: string | null;
@@ -661,6 +1029,7 @@ export type Database = {
           online_payment?: boolean;
           registration_open?: boolean;
           seats_cap?: number;
+          showcase_public?: boolean;
           updated_at?: string;
           updated_by?: string | null;
           upi_id?: string | null;
@@ -674,6 +1043,7 @@ export type Database = {
           online_payment?: boolean;
           registration_open?: boolean;
           seats_cap?: number;
+          showcase_public?: boolean;
           updated_at?: string;
           updated_by?: string | null;
           upi_id?: string | null;
@@ -986,6 +1356,95 @@ export type Database = {
         Args: { p_reason?: string; p_team_id: string; p_verified: boolean };
         Returns: undefined;
       };
+      achievement_points: {
+        Args: {
+          p_contribution: Database["public"]["Enums"]["certificate_contribution"] | null;
+          p_kind: Database["public"]["Enums"]["achievement_kind"];
+          p_level: Database["public"]["Enums"]["achievement_level"] | null;
+        };
+        Returns: number;
+      };
+      admin_can: { Args: { p_cap: string }; Returns: boolean };
+      admin_caps_all: { Args: never; Returns: string[] };
+      admin_clear_grants: { Args: { p_profile_id: string }; Returns: undefined };
+      admin_delete_certificate: { Args: { p_id: string }; Returns: undefined };
+      admin_delete_roster_group: { Args: { p_id: string }; Returns: undefined };
+      admin_delete_roster_person: { Args: { p_id: string }; Returns: undefined };
+      admin_delete_showcase_category: { Args: { p_id: string }; Returns: undefined };
+      admin_remove_showcase_pick: {
+        Args: { p_category_id: string; p_student_id: string };
+        Returns: undefined;
+      };
+      admin_set_grants: {
+        Args: { p_caps: string[]; p_note?: string; p_profile_id: string };
+        Returns: undefined;
+      };
+      admin_set_points: { Args: { p_key: string; p_points: number }; Returns: undefined };
+      admin_set_showcase_pick: {
+        Args: {
+          p_category_id: string;
+          p_note?: string;
+          p_position?: number;
+          p_student_id: string;
+        };
+        Returns: undefined;
+      };
+      admin_set_site_text: { Args: { p_key: string; p_value: string }; Returns: undefined };
+      admin_upsert_roster_group: {
+        Args: {
+          p_accent?: string;
+          p_id: string;
+          p_index_label?: string;
+          p_jp?: string;
+          p_kind: string;
+          p_position?: number;
+          p_remit?: string;
+          p_title: string;
+          p_visible?: boolean;
+        };
+        Returns: string;
+      };
+      admin_upsert_roster_person: {
+        Args: {
+          p_group_id: string;
+          p_id: string | null;
+          p_name: string;
+          p_position?: number;
+          p_rank?: string;
+          p_role?: string;
+          p_visible?: boolean;
+        };
+        Returns: string;
+      };
+      admin_upsert_showcase_category: {
+        Args: {
+          p_blurb: string;
+          p_id: string;
+          p_metric: string;
+          p_position?: number;
+          p_slots?: number;
+          p_title: string;
+          p_visible?: boolean;
+        };
+        Returns: string;
+      };
+      my_admin_caps: { Args: never; Returns: string[] };
+      showcase_board: {
+        Args: never;
+        Returns: {
+          category_blurb: string;
+          category_id: string;
+          category_position: number;
+          category_title: string;
+          metric: string;
+          name: string;
+          note: string | null;
+          place: number;
+          student_id: string;
+          value: number;
+          year: string | null;
+        }[];
+      };
       audit: {
         Args: {
           p_action: string;
@@ -1091,6 +1550,14 @@ export type Database = {
       withdraw_event_entry: { Args: { p_registration_id: string }; Returns: undefined };
     };
     Enums: {
+      achievement_kind: "event" | "journal" | "conference" | "book" | "book_chapter";
+      achievement_level:
+        | "international"
+        | "national"
+        | "state"
+        | "zonal"
+        | "institute"
+        | "other";
       app_role: "participant" | "admin" | "owner";
       certificate_contribution: "participation" | "third" | "second" | "first";
       chapter_state: "locked" | "open" | "closed" | "graded";
@@ -1226,6 +1693,15 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
+      achievement_kind: ["event", "journal", "conference", "book", "book_chapter"],
+      achievement_level: [
+        "international",
+        "national",
+        "state",
+        "zonal",
+        "institute",
+        "other",
+      ],
       app_role: ["participant", "admin", "owner"],
       certificate_contribution: ["participation", "third", "second", "first"],
       chapter_state: ["locked", "open", "closed", "graded"],

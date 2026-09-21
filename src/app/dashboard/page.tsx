@@ -6,6 +6,7 @@ import { Chip, Empty, Notice, Panel, Row } from "@/components/console/shell";
 import { StandingSummary } from "@/components/console/standing";
 import { requireParticipant } from "@/lib/auth/guard";
 import { CONTRIBUTION_LABEL } from "@/lib/console/options";
+import { KIND_LABEL, LEVEL_LABEL } from "@/lib/console/records";
 import { getMyCertificates } from "@/lib/data/certificates";
 import { getSettings } from "@/lib/data/console";
 import { getDeptEvents, getMyRegistrations } from "@/lib/data/dept-events";
@@ -124,7 +125,7 @@ export default async function ConsolePage() {
       <div className="mt-6 grid gap-6 lg:grid-cols-[1.15fr_1fr]">
         <Panel
           eyebrow="Your record"
-          title="Certificates"
+          title="Hackathons and publications"
           aside={
             <Link href="/dashboard/certificates" className="text-teal hover:underline">
               {certificates.length ? "All of them" : "Add one"}
@@ -133,8 +134,9 @@ export default async function ConsolePage() {
         >
           {certificates.length === 0 ? (
             <Empty>
-              Nothing on your record yet. Every certificate you add counts towards your ranking,
-              from any event and not only ours.
+              Nothing on your record yet. Hackathons, competitions, journal papers, conference
+              papers, books and book chapters all go here, from anywhere and not only our own
+              events, and every one of them counts towards your ranking.
             </Empty>
           ) : (
             <ul className="grid gap-0">
@@ -145,7 +147,13 @@ export default async function ConsolePage() {
                 >
                   <span className="min-w-0 text-[1.02rem] text-ink">{certificate.event_name}</span>
                   <span className="label-sm text-muted">
-                    {CONTRIBUTION_LABEL[certificate.contribution] ?? "Participation"} {"·"}{" "}
+                    {/* A publication has no place, so it is named by what it
+                        is. A hackathon is named by what they came away with. */}
+                    {certificate.kind === "event"
+                      ? (CONTRIBUTION_LABEL[certificate.contribution] ?? "Participation")
+                      : (KIND_LABEL[certificate.kind] ?? "Publication")}{" "}
+                    {"·"}{" "}
+                    {certificate.level ? `${LEVEL_LABEL[certificate.level]} · ` : ""}
                     {when(certificate.created_at)}
                   </span>
                 </li>

@@ -58,3 +58,6 @@ import-report.csv
 # Agent worktrees. Temporary checkouts, not part of the project.
 .claude/worktrees/
 backfill-report.csv
+
+# The Supabase CLI drops a version-check cache here when it runs.
+supabase/.temp/

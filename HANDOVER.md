@@ -203,39 +203,77 @@ any of it.
 - **Leaderboard published.** Off. Off means each team sees only its own score.
   On means everybody sees the whole board. Turn it on when you want the room to
   see it.
-- **Razorpay checkout.** Off, and it does nothing until item 6 is done.
+---
+
+## 6. The registration form and the UPI code
+
+There is no payment gateway. There was one, and it charged 2% of every ₹125 to
+do a job a UPI code does for nothing, so it was taken out in full: no keys, no
+checkout window, no card details anywhere near this site.
+
+Attack on Token is registered on a form instead, and the fee is paid straight
+into a UPI account.
+
+1. **Build the form.** Open `scripts/attack-on-token-form.gs`, paste the whole
+   file into a new project at script.google.com, and run
+   `buildAttackOnTokenForm`. It writes every question, puts the QR on the
+   payment page, refuses any address that is not on `vit.edu`, and opens a
+   Google Sheet that fills up as teams register. Full instructions are in the
+   top of that file.
+2. **Paste the link it prints** into `REGISTER.formUrl` in
+   `src/lib/data/event.ts`, and redeploy. That single line is the whole of the
+   switch, and the line is marked.
+3. **Set the colours by hand.** Apps Script cannot touch a form's theme, so
+   open the form, click the paint palette, and use the two hex codes listed at
+   the bottom of the script. Skipping this leaves you a working form in
+   Google's purple.
+
+Until that constant has an address in it, every register button on the event
+page says the form is not open yet and scrolls to the instructions instead of
+opening a dead link. Nothing else has to be switched on.
+
+The UPI id, the payee name and the amount sit in the same constant. The QR
+image is `public/aot/upi-qr.jpg`, and it is deliberately on no page at all: a
+payment code on a public page invites somebody to pay without registering,
+which leaves money nobody can attribute to a team. The form reads the image
+from that address, so leave the file where it is. If the account changes,
+change the constant and that file together.
+
+Because the payment happens in the payer's own banking app, nothing confirms it
+automatically. The transaction reference on the form is what an organiser
+checks against the account.
 
 ---
 
-## 6. Razorpay, optional
+## 6a. The deploy region. Do this with the next deploy, not later.
 
-The online payment path is fully built and inert until you add keys. Teams can
-pay by UPI and record the reference regardless, which is why this is optional.
+Added 21 September 2026, and it is the single biggest thing that makes the
+organiser console slow.
 
-1. Sign up at https://razorpay.com and complete KYC. This needs a real entity
-   and a bank account: a college committee usually needs the department or the
-   student council to do it. **This is the slow part**, allow several days.
-2. From the Razorpay dashboard, **Settings → API Keys → Generate Key**.
-3. In Vercel, open the `cesac` project → **Settings → Environment Variables**,
-   and add both for Production:
+Supabase is in **Mumbai**. The Vercel functions were running in **Washington
+DC**, which is the Hobby default, so every query the site made crossed the
+Pacific and came back: roughly a quarter of a second, each way, for each query,
+before the page had rendered anything. A console page that asks the database
+six things was spending well over a second on nothing but distance.
 
-| Name | Value |
-| --- | --- |
-| `RAZORPAY_KEY_ID` | `rzp_live_…` or `rzp_test_…` |
-| `RAZORPAY_KEY_SECRET` | the secret half |
+`vercel.json` now pins them to `bom1`, which is Mumbai:
 
-4. Redeploy.
-5. Turn **Razorpay checkout** on in the organiser console.
+```json
+{ "regions": ["bom1"] }
+```
 
-Test it with the test keys first. `rzp_test_…` keys take Razorpay's test cards
-and move no real money.
+**It takes effect on the next deployment and not before.** Nothing in the
+database or the running site changes until then. There is nothing to switch on
+in the dashboard; the file is enough. If you later see the region reported as
+something else, check that `vercel.json` made it into the deployment: the
+header `x-vercel-id` on any response reads `bom1::iad1::...` when it is wrong
+and `bom1::bom1::...` or just `bom1::...` when it is right.
 
-Worth knowing: even a successful Razorpay payment is marked **submitted**, not
-verified. An organiser still confirms it against the Razorpay dashboard. That is
-what you asked for, and it is also the honest thing to do, because the
-confirmation currently comes back through the browser rather than through a
-Razorpay webhook. If you want that to become automatic later, the missing piece
-is a webhook endpoint and a webhook secret.
+Two code changes went with it, and both are already live in the repository: the
+session check stopped asking Supabase's auth server twice on every request and
+verifies the token locally instead, and the organiser console's bar moved into
+a layout so clicking a nav link keeps the chrome on screen instead of tearing
+the whole page down.
 
 ---
 
@@ -243,8 +281,9 @@ is a webhook endpoint and a webhook secret.
 
 - **Read `/privacy`.** I rewrote it in the same commit, because the old one said
   the site set no cookies and had no backend, and both became false. It now
-  names Supabase, the three login providers and Razorpay. Check that you are
-  comfortable with what it says, and get the department to look at it.
+  names Supabase, the three login providers and the company hosting the
+  registration form. Check that you are comfortable with what it says, and get
+  the department to look at it.
 - **Decide about the music track.** Still not cleared for public performance.
   That was already on the list and has not changed.
 - **Try the whole flow yourself once**, with two accounts, on the live site.
@@ -291,7 +330,8 @@ Said plainly so nobody discovers it on the day.
   Nothing runs those tests. Organisers score Chapter II by hand like the other
   two, and the leaderboard updates from those scores. Building the runner is a
   separate project.
-- **Automatic Razorpay confirmation.** Covered in item 6.
+- **Automatic payment confirmation.** Covered in item 6. A UPI code cannot
+  tell the site that money arrived, so an organiser checks the reference.
 - **Email notifications.** Nobody is emailed when their payment is verified or a
   chapter opens. They see it when they next load the console. Use the
   announcement banner for anything time-critical.

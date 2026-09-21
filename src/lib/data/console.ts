@@ -36,6 +36,7 @@ export const getSettings = cache(async (): Promise<Settings> => {
       seats_cap: 80,
       entry_fee_inr: 125,
       leaderboard_public: false,
+      showcase_public: false,
       online_payment: false,
       upi_id: null,
       upi_payee_name: null,

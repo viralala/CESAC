@@ -11,13 +11,13 @@ import {
 import { Container, Label } from "@/components/aot/bits";
 import { ActionForm } from "@/components/console/action-form";
 import { EmsEventForm } from "@/components/console/ems-event-form";
-import { Chip, ConsoleBar, Empty, Panel, Stat } from "@/components/console/shell";
+import { Chip, Empty, Panel, Stat } from "@/components/console/shell";
 import { PendingFields } from "@/components/console/pending-fields";
 import { getEvent, getOrganisers, getRegistrations } from "@/lib/data/ems";
+import { requireCap } from "@/lib/auth/caps";
 import { isEventOrganiser, requireEmsAdmin } from "@/lib/ems/access";
 import { formatDateTime, formatINR } from "@/lib/ems/time";
 import type { RegistrationStatus } from "@/lib/supabase/ems.types";
-import { ADMIN_NAV } from "../../nav";
 
 export const metadata: Metadata = {
   title: "Entries",
@@ -55,7 +55,8 @@ const STATUS_WORDS: Record<RegistrationStatus, string> = {
  */
 export default async function EventEntriesPage({ params }: PageProps<"/admin/events/[eventId]">) {
   const { eventId } = await params;
-  const { viewer, isCommittee, isTeacher } = await requireEmsAdmin();
+  const { isCommittee, isTeacher } = await requireEmsAdmin();
+  await requireCap("events");
 
   const event = await getEvent(eventId);
   if (!event) notFound();
@@ -77,8 +78,6 @@ export default async function EventEntriesPage({ params }: PageProps<"/admin/eve
 
   return (
     <>
-      <ConsoleBar viewer={viewer} area="Event system" nav={ADMIN_NAV} />
-
       <div className="washi grain min-h-[100svh] py-12 sm:py-16">
         <Container>
           <Link href="/admin/events" className="label text-teal hover:underline">
@@ -137,8 +136,11 @@ export default async function EventEntriesPage({ params }: PageProps<"/admin/eve
                           </p>
                           <p className="label-sm mt-1 truncate text-muted">{row.leader_email}</p>
                           {row.razorpay_payment_id ? (
+                            /* Left over from the gateway this site used to
+                               run. Nothing writes it any more, and the rows
+                               that carry one are still worth showing. */
                             <p className="label-sm mt-1 text-muted">
-                              Razorpay {row.razorpay_payment_id}
+                              Payment {row.razorpay_payment_id}
                               {row.paid_at ? ` · ${formatDateTime(row.paid_at)}` : ""}
                             </p>
                           ) : null}

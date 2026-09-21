@@ -4,11 +4,11 @@ import Link from "next/link";
 import { markPaidOffline, restoreTeam, verifyPayment } from "@/app/actions/admin";
 import { Container, Label } from "@/components/aot/bits";
 import { ActionForm } from "@/components/console/action-form";
-import { Chip, ConsoleBar, Empty, Panel, Row } from "@/components/console/shell";
+import { Chip, Empty, Panel, Row } from "@/components/console/shell";
 import { requireAdmin } from "@/lib/auth/guard";
+import { requireCap } from "@/lib/auth/caps";
 import { getAdminOverview, getSettings, type TeamWithPeople } from "@/lib/data/console";
 import { getEventEntries, type Entry } from "@/lib/data/dept-events";
-import { ADMIN_NAV } from "../nav";
 
 export const metadata: Metadata = {
   title: "Teams",
@@ -32,7 +32,8 @@ export const metadata: Metadata = {
  * perfectly well entered above.
  */
 export default async function AdminTeamsPage() {
-  const viewer = await requireAdmin();
+  await requireAdmin();
+  await requireCap("events");
   const [{ teams, counts }, settings, entries] = await Promise.all([
     getAdminOverview(),
     getSettings(),
@@ -55,8 +56,6 @@ export default async function AdminTeamsPage() {
 
   return (
     <>
-      <ConsoleBar viewer={viewer} area="Organiser console" nav={ADMIN_NAV} />
-
       <div className="washi grain min-h-[100svh] py-12 sm:py-16">
         <Container>
           <header className="max-w-[46ch]">
@@ -102,9 +101,8 @@ export default async function AdminTeamsPage() {
             {waiting.length === 0 ? (
               <div className="mt-5">
                 <Empty>
-                  Nothing to verify. A team appears here when it records a payment, whether that
-                  came through Razorpay or by hand, and stays until an organiser confirms it
-                  against the account.
+                  Nothing to verify. A team appears here when it records a payment, and stays
+                  until an organiser confirms it against the account.
                 </Empty>
               </div>
             ) : (
@@ -257,7 +255,6 @@ function TeamCard({ team, highlight = false }: { team: TeamWithPeople; highlight
                   >
                     <option value="cash">At the desk</option>
                     <option value="upi">UPI</option>
-                    <option value="razorpay">Razorpay</option>
                     <option value="waived">Waived</option>
                   </select>
                 </div>

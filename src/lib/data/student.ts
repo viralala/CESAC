@@ -17,12 +17,14 @@ export type Profile = Tables<"profiles">;
 export const getMyProfile = cache(async (): Promise<Profile | null> => {
   const supabase = await createClient();
 
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) return null;
+  // getClaims, for the reason spelled out in lib/auth/guard.ts: the signature
+  // is checked locally against the project's own public key rather than by a
+  // round trip that the proxy has already made on this request.
+  const { data: verified } = await supabase.auth.getClaims();
+  const userId = verified?.claims?.sub;
+  if (!userId) return null;
 
-  const { data } = await supabase.from("profiles").select("*").eq("id", user.id).single();
+  const { data } = await supabase.from("profiles").select("*").eq("id", userId).single();
   return data ?? null;
 });
 

@@ -17,7 +17,7 @@ import {
 } from "@/lib/data/console";
 import { getDeptEvents, getMyRegistrations, type MyRegistration } from "@/lib/data/dept-events";
 import { handInFor } from "@/lib/data/hand-ins";
-import { EVENT } from "@/lib/data/event";
+import { EVENT, REGISTER, REGISTRATION_IS_LIVE } from "@/lib/data/event";
 
 export const metadata: Metadata = {
   title: "Attack on Token",
@@ -272,57 +272,46 @@ export default async function AttackOnTokenConsole() {
 /**
  * The entry fee, as this console sees it.
  *
- * It reports and never collects. The fee belongs to the entry on the events
- * page, which is where a student enters and where the Razorpay checkout
- * lives; this panel exists so somebody who lands here first is told where to
- * go rather than being handed a second way to pay the same money.
+ * It reports and never collects, and now it does not even hold the entry.
+ * Attack on Token is registered on a form and paid straight into a UPI
+ * account, so the only useful thing this panel can do is send somebody who
+ * landed here first to the place that actually takes them.
  */
 function EntryFee({ entry, fee }: { entry: MyRegistration | null; fee: number }) {
   const paid = entry?.payment_status === "verified";
-  const submitted = entry?.payment_status === "submitted";
 
   return (
     <Panel
       eyebrow="Entry"
       title={`₹${fee} per team`}
-      aside={
-        <Chip tone={paid ? "lime" : submitted ? "teal" : "muted"}>
-          {paid ? "Paid" : submitted ? "Waiting on an organiser" : "Not paid"}
-        </Chip>
-      }
+      aside={<Chip tone={paid ? "lime" : "muted"}>{paid ? "Paid" : "On the form"}</Chip>}
     >
       {paid ? (
         <p className="serif-it text-[1.02rem] leading-relaxed text-muted">
           Paid and confirmed. Nothing else is owed.
         </p>
-      ) : submitted ? (
-        <p className="serif-it text-[1.02rem] leading-relaxed text-muted">
-          You recorded a payment before the checkout existed, so an organiser is still matching it
-          against the account. You do not need to pay again.
-        </p>
-      ) : entry ? (
-        <>
-          <p className="serif-it text-[1.02rem] leading-relaxed text-muted">
-            You are entered and the fee is still outstanding. Pay it on the events page: scan the
-            UPI code in the window, or use a card, and your entry is confirmed on the spot with
-            nobody to wait on.
-          </p>
-          <p className="label mt-6">
-            <Link href="/dashboard/events" className="text-teal hover:underline">
-              Pay the entry fee
-            </Link>
-          </p>
-        </>
       ) : (
         <>
           <p className="serif-it text-[1.02rem] leading-relaxed text-muted">
-            You have not entered Attack on Token yet. Entering and paying both happen on the events
-            page, and a team here is separate from that.
+            Entries for this one are collected on a form, not here. Both of you go on one form,
+            and the ₹{fee} is paid on the form itself by scanning the UPI code on it. There is no
+            card checkout on this site.
           </p>
           <p className="label mt-6">
-            <Link href="/dashboard/events" className="text-teal hover:underline">
-              Enter the event
-            </Link>
+            {REGISTRATION_IS_LIVE ? (
+              <a
+                href={REGISTER.formUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-teal hover:underline"
+              >
+                Open the registration form
+              </a>
+            ) : (
+              <Link href="/events/attack-on-token#register" className="text-teal hover:underline">
+                How to register
+              </Link>
+            )}
           </p>
         </>
       )}

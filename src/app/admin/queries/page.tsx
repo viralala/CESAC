@@ -2,12 +2,12 @@ import type { Metadata } from "next";
 
 import { Container, Label } from "@/components/aot/bits";
 import { AnswerBox } from "@/components/console/answer-box";
-import { Chip, ConsoleBar, Empty, Panel, Stat } from "@/components/console/shell";
+import { Chip, Empty, Panel, Stat } from "@/components/console/shell";
 import { requireAdmin } from "@/lib/auth/guard";
+import { requireCap } from "@/lib/auth/caps";
 import { TOPIC_LABEL } from "@/lib/console/options";
 import { EVENT } from "@/lib/data/event";
 import { getQueryQueue, type QueryForOrganiser } from "@/lib/data/queries";
-import { ADMIN_NAV } from "../nav";
 
 export const metadata: Metadata = {
   title: "Questions",
@@ -74,7 +74,8 @@ function askerLine(person: QueryForOrganiser["author"]): string {
  * on the row rather than by anything here.
  */
 export default async function QueriesPage() {
-  const viewer = await requireAdmin();
+  await requireAdmin();
+  await requireCap("queries");
   const queries = await getQueryQueue();
 
   // getQueryQueue returns oldest first, which is the order the waiting list
@@ -94,8 +95,6 @@ export default async function QueriesPage() {
 
   return (
     <>
-      <ConsoleBar viewer={viewer} area="Questions" nav={ADMIN_NAV} />
-
       <div className="washi grain min-h-[100svh] py-12 sm:py-16">
         <Container>
           <header className="max-w-[52ch]">

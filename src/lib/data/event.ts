@@ -90,11 +90,64 @@ export const CHAPTERS: readonly Chapter[] = [
   },
 ];
 
-/** How a team gets in. Three steps, no prose. */
+/**
+ * Registration, and the one place its address lives.
+ *
+ * Entries and the entry fee are both taken on the form, and neither is taken
+ * here. There is no payment gateway in front of it: a gateway charges a
+ * percentage of every team's ₹125 to do a job a UPI code already does for
+ * nothing.
+ *
+ * The QR code is deliberately not on this site. A payment code on a public
+ * page invites somebody to pay without registering, which leaves ₹125 nobody
+ * can attribute to a team, so it lives on the form beside the box that asks
+ * for the reference. The image is served from `public/aot/upi-qr.jpg`, which
+ * is where the form reads it from, so that file stays put.
+ *
+ * `formUrl` is the switch. Empty means the form is not live yet, and every
+ * button on the event page says so rather than opening a dead link.
+ */
+export const REGISTER = {
+  /**
+   * PASTE THE FORM ADDRESS HERE. This one line is the whole of moving the
+   * event onto a different form; nothing else on the site has to change.
+   *
+   * Use the address a student opens: a `forms.gle/...` link, or one ending in
+   * `/viewform`. Never one ending in `/edit`, which would hand every student
+   * the keys to the form itself.
+   *
+   * `scripts/attack-on-token-form.gs` builds the Google Forms version and
+   * prints the address to paste when it finishes.
+   */
+  formUrl: "https://forms.gle/4yjh8qajJS8iixM47",
+  amountInr: 125,
+  /**
+   * Not rendered anywhere. Kept here because the form carries these and the
+   * two should not be allowed to drift apart without somebody noticing.
+   */
+  upi: {
+    id: "viralnotviral@oksbi",
+    payee: "Viral Not Viral",
+    qr: "/aot/upi-qr.jpg",
+  },
+} as const;
+
+/** Whether the form address has actually been filled in. */
+export const REGISTRATION_IS_LIVE: boolean = REGISTER.formUrl.length > 0;
+
+/**
+ * The one event whose entries are collected on the form rather than in the
+ * console. The console reads this so it hands a student to the form instead
+ * of opening a second way in that nobody is reading the other end of.
+ */
+export const REGISTER_SLUG = "attack-on-token";
+
+/** How a team gets in. Four steps, no prose. */
 export const ENTRY = [
-  { step: "01", title: "Find a partner", note: "Teams are exactly two." },
-  { step: "02", title: "Register the duo", note: "₹125 per team, ₹62.50 a head." },
-  { step: "03", title: "Show up on Day 1", note: "All 80 teams start at Chapter I." },
+  { step: "01", title: "Find a partner", note: "Teams are exactly two, both on VIT addresses." },
+  { step: "02", title: "Fill the form", note: "Both names, both emails, one WhatsApp number." },
+  { step: "03", title: "Pay ₹125", note: "The UPI code is on the form. Keep the reference." },
+  { step: "04", title: "Show up on Day 1", note: "All 80 teams start at Chapter I." },
 ] as const;
 
 export const AWARDS = [

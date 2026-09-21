@@ -2,9 +2,10 @@ import type { Metadata, Viewport } from "next";
 
 import { SiteFooter } from "@/components/site/footer";
 import { EventChapters } from "@/components/sections/event/chapters";
-import { EventEnlist } from "@/components/sections/event/enlist";
 import { EventHero } from "@/components/sections/event/hero";
 import { EventPrizes } from "@/components/sections/event/prizes";
+import { EventRegister } from "@/components/sections/event/register";
+import { RegisterStrip } from "@/components/sections/event/register-button";
 import { EventVitals } from "@/components/sections/event/vitals";
 import { Ribbon } from "@/components/sections/ribbon";
 import { EVENT } from "@/lib/data/event";
@@ -35,6 +36,12 @@ const WORDS = [
  * what is this, can we enter, what are the three rounds, what do we win,
  * how do we sign up.
  *
+ * A reader makes up their mind at different points, so the way in is offered
+ * at each of them rather than only at the bottom: after the four vitals, after
+ * the chapters, and after the prizes, with the full panel last. They are all
+ * the same button to the same form, and the strips are one line each, so the
+ * repetition costs a scroll rather than a second pitch.
+ *
  * The production plan (staffing, AV, grading pipeline, pre-launch gates) is
  * internal and is deliberately not here.
  */
@@ -43,6 +50,7 @@ export default function AttackOnTokenPage() {
     <>
       <EventHero />
       <EventVitals />
+      <RegisterStrip line="Two people, ₹125, one form. That is the whole of getting in." />
       <section className="bg-cream py-6 sm:py-10">
         <div className="mx-auto w-full max-w-[1280px] px-5 sm:px-8">
           <div className="mx-auto w-full max-w-[720px]">
@@ -51,8 +59,10 @@ export default function AttackOnTokenPage() {
         </div>
       </section>
       <EventChapters />
+      <RegisterStrip line="Three chapters, and every team starts at the first one." />
       <EventPrizes />
-      <EventEnlist />
+      <RegisterStrip line="Six awards, 80 teams, and entries close when the last seat goes." />
+      <EventRegister />
       <SiteFooter />
     </>
   );

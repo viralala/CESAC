@@ -191,12 +191,11 @@ Audited, and the policy page is written against what is actually deployed:
   session cookies, named `sb-…`, HttpOnly and SameSite=Lax. Strictly necessary:
   they exist only because someone asked to sign in.
 - Third parties, each named on the privacy page and each contacted only when
-  someone chooses it: **Supabase** holds the accounts and the data, **Google /
-  GitHub / Facebook** only if a visitor presses that button, and **Razorpay**
-  only when a team presses pay, and only if the keys are set.
-- Card and UPI details never touch this site. Razorpay's own window collects
-  them; we store the order and payment identifiers so an organiser can find the
-  payment, and nothing else.
+  someone chooses it: **Supabase** holds the accounts and the data, and
+  **Google / GitHub / Facebook** only if a visitor presses that button.
+- There is no payment gateway. The entry fee is paid by scanning a UPI code in
+  the payer's own banking app, so no card or UPI detail touches this site, and
+  the only thing stored is the transaction reference somebody types in.
 - Three keys in `localStorage` and nothing else: `cesac.consent` (the notice's
   answer, stored there because setting a cookie in order to ask about cookies is
   absurd) and `cesac.music` / `cesac.music.volume` (whether the event page's
@@ -223,9 +222,28 @@ participants on `/dashboard`, organisers on `/admin`.
 | Clients | `src/lib/supabase/{client,server,proxy}.ts` | Browser, per-request server, and the proxy's refreshing client. |
 | Types | `src/lib/supabase/database.types.ts` | Generated from the live schema. `npm run db:types` after every migration. |
 | Guards | `src/lib/auth/guard.ts` | `requireParticipant()` / `requireAdmin()`. The authoritative check, run per page, memoised per request. |
-| Actions | `src/app/actions/{auth,team,submissions,admin}.ts` | Every mutation, grouped by what it touches. |
+| Capabilities | `src/lib/auth/caps.ts` | Which areas of the console this organiser may write in. A menu; the lock is `admin_can()` in Postgres. |
+| Actions | `src/app/actions/{auth,team,submissions,admin,console-content}.ts` | Every mutation, grouped by what it touches. |
 | Callback | `src/app/auth/callback/route.ts` | Where OAuth, email confirmation and password resets come back to. |
 | Proxy | `src/proxy.ts` | Refreshes the session, then bounces the obvious cases. Optimistic, never trusted. |
+
+**Organiser roles**
+
+There were two roles that meant anything, participant and "everything", and a
+committee of seven all held "everything". A **capability** is a named area of
+the console, and there are seven: events, payments, records, questions, people,
+content and settings. An organiser with no row in `admin_grants` holds all of
+them, which is what made this safe to switch on under a live committee: nobody
+lost anything on the day it ran, and adding a grant row is how you take
+something away afterwards. An owner is never narrowed, so the site cannot be
+locked out of its own settings.
+
+It is enforced in Postgres and not on screen. `admin_can(cap)` guards each
+`admin_*` function and each write policy, so a narrowed organiser who calls the
+endpoint by hand is refused by the database. `/admin` hides the panels and the
+nav hides the pages, and both are a courtesy on top of that.
+`public.is_admin()` is untouched and still means "may open the console at all";
+26 policies depend on it.
 
 **The security model, in one paragraph**
 
@@ -253,18 +271,22 @@ console. `viral.1251070777@vit.edu` is seeded.
 **What organisers control**
 
 Registration open or shut, the seat cap, the entry fee, the UPI ID, an
-announcement banner, whether the leaderboard is published, and whether the
-Razorpay button appears. Per chapter: open, close, mark graded, score each
-hand-in, and apply the cut. Every one of those writes a row to `audit_log` with
-who did it.
+announcement banner, and whether the leaderboard is published. Per chapter:
+open, close, mark graded, score each hand-in, and apply the cut. Every one of
+those writes a row to `audit_log` with who did it.
 
 **The entry fee**
 
-Two routes in, one way out. A team pays by UPI or at the desk and records the
-reference, or pays through Razorpay if the keys are set and the switch is on.
-Either way the payment lands on `submitted` and an **organiser** marks it
-verified. The site never verifies its own payment. A team is registered, and
-gets a seat, once it has two people and a verified payment.
+One route in, one way out. There is no payment gateway on this site: Attack on
+Token takes its entries on a form and its fee on a UPI code, and a team records
+the transaction reference as it registers. An **organiser** marks the payment
+verified against the account. The site never verifies its own payment. A team
+is registered, and gets a seat, once it has two people and a verified payment.
+
+The form address lives in one constant, `REGISTER.formUrl` in
+`src/lib/data/event.ts`, alongside the UPI id and the QR code the event page
+shows. Leave it empty and every button on the event page says the form is not
+open yet rather than opening a dead link.
 
 **Chapter II really locks**
 
@@ -281,7 +303,7 @@ and what they have done, and it is the same six tabs for everybody:
 | Tab | Route | What is there |
 | --- | --- | --- |
 | Overview | `/dashboard` | Name, class, PRN, standing, and a count of everything else. Says what is blank rather than hiding it. |
-| Certificates | `/dashboard/certificates` | The record, and the form that adds to it. |
+| My record | `/dashboard/certificates` | Hackathons and publications, the form that adds to them, and the four optional files against each. |
 | Ranking | `/dashboard/ranking` | Where the student stands, the top ten, and what each place is worth. |
 | Events | `/dashboard/events` | Every event, its state, and the one decision: whether to enter. |
 | Questions | `/dashboard/queries` | Ask the committee something; the answer arrives in the same place. |
@@ -321,12 +343,27 @@ with `auth.users`, so the rule holds whatever writes the row.
 
 **Ranking**
 
-Points come from `certificate_points()` in the database, one rule in one place:
-100 for a first, 75 for a second, 50 for a third, 10 for taking part. A student
-can only read their own profile, so the board is a `security definer` function
-that returns a name, a year and two counts and nothing else. Anybody who has
-uploaded nothing has no position, and the page says so rather than inventing
-one. Certificates count whether or not an organiser has verified them yet,
+A record scores a **base plus a level**. The base is what the student came away
+with for a hackathon, or what kind of publication it is for a paper. The level
+is how far it reached: international, national, state, zonal or institute.
+
+Every one of those numbers is a row in `public.scoring`, edited from
+`/admin/site/points`, and `achievement_points()` is the single rule the board
+is built from. Nothing is stored against a record, so moving a number
+re-scores the whole department on the next request, which that page says out
+loud before the form.
+
+**Participation is deliberately generous.** It was 10 against a first prize's
+100, which reads as "your turning up is a rounding error" and is the opposite
+of what a board meant to move people to enter things should say. It is 40 now,
+so a national hackathon somebody entered and did not place in scores 70 rather
+than 10. A first prize at an international one is 150. A journal paper at
+national level is 120.
+
+A student can only read their own profile, so the board is a `security definer`
+function that returns a name, a year and two counts and nothing else. Anybody
+who has uploaded nothing has no position, and the page says so rather than
+inventing one. Records count whether or not an organiser has verified them yet,
 which the ranking page states out loud.
 
 ## 🎓 Importing the roster
@@ -412,20 +449,43 @@ Worth switching on at the same time: **Authentication → Policies → leaked
 password protection**, which checks new passwords against HaveIBeenPwned. It is
 off by default, and about to matter for a lot of people at once.
 
-## 📜 Certificates and Google Drive
+## 📜 Student records and Google Drive
 
-Students upload their own certificates from the console. The files go to
-Google Drive, not to this app's storage, so the department keeps one copy
-rather than two that drift apart. Postgres holds the claim: whose it is, which
-event it was for, what they came away with, what they won if anything, and the
-Drive file id and link.
+Students file their own record from the console. The files go to Google Drive,
+not to this app's storage, so the department keeps one copy rather than two
+that drift apart. Postgres holds the claim: whose it is, what it was, how far
+it reached, when it happened, and the Drive links.
 
-That last part is what makes the ranking possible. A row here is not a file
-with a name; it is participation, or a third, second or first, with a prize
-amount where there was one. A prize against "participation" is refused by a
-check constraint, because a board built on contradictions is worth nothing.
-Uploads start unverified, and an organiser marking them checked is still to
-build.
+A row is not a file with a name. It is a claim about something a student did,
+and there are **five shapes it can take**:
+
+| Kind | What it is | The sheet it files to |
+| --- | --- | --- |
+| `event` | A hackathon, a competition, a paper presentation, a workshop | The certificate itself |
+| `journal` | A paper in a journal | Journal Publications |
+| `conference` | A paper in conference proceedings | Conference Publications |
+| `book` | A book written or edited | Book Publications |
+| `book_chapter` | A chapter in somebody's book | Book Chapter Publications |
+
+The four publication layouts are transcribed from **`Formats.xlsx`**, the
+workbook the department already files on, and
+`/admin/certificates/export?sheet=journal` and its three siblings hand back
+exactly that sheet's columns, in its order and its wording, so a block pastes
+straight in. Three of its columns are never asked of a student because the site
+already knows them: the department, the serial number and "Data entered by".
+
+**Every file is optional, including the certificate.** A journal paper has no
+certificate, and a form that insisted on one would simply keep publications off
+the site. Against each record there are four slots, all optional: the
+certificate or paper, a photo of the prize, a photo of the student at the
+event, and the photo taken with the HOD. Each is uploaded on its own request,
+because a Vercel function refuses any body over 4.5MB and four files at the
+size this site accepts do not fit in one.
+
+A prize amount against "participation" is refused by a check constraint,
+because a board built on contradictions is worth nothing. Records start
+unverified; `/admin/certificates` is the queue that settles them, and a student
+may correct or delete their own until somebody has.
 
 Uploads are validated by their **contents**, not their filename. The type a
 browser reports comes from the extension and is trivial to change, so
@@ -433,6 +493,13 @@ browser reports comes from the extension and is trivial to change, so
 real PDF, PNG or JPEG, up to 4MB. Each student gets a subfolder named after
 their email, made on their first upload and remembered on their profile.
 `certificates_read_own` means a student sees their own and nobody else's.
+
+A student may edit and delete their own record, and neither is possible once an
+organiser has verified it. `guard_certificate_verification` refuses the three
+columns that are not theirs to set, so the update policy that lets them fix a
+typo cannot be turned into a way of verifying themselves. Deleting a record
+sends its Drive files to the bin rather than destroying them, which gives
+thirty days to notice the wrong one went.
 
 **Why 4MB, and not more**
 
@@ -653,7 +720,7 @@ official wording.
 - [x] Privacy policy, terms, cookie notice
 - [x] Accounts: email and password, Google, GitHub, Facebook
 - [x] Registration: teams of two, join codes, seats against the cap
-- [x] Entry fee: offline references and Razorpay, both verified by an organiser
+- [x] Entry fee: a UPI code and a reference, verified by an organiser
 - [x] Chapter hand-ins with uploads, and Chapter II's hard lock
 - [x] Grading, the weighted leaderboard, and the cut
 - [x] Organiser console: switches, payments, chapter control, roles, audit log

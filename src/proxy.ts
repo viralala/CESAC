@@ -33,8 +33,26 @@ export async function proxy(request: NextRequest) {
     return keepCookies(NextResponse.redirect(to), response);
   }
 
-  // Signed in and standing at the gate. The consoles sort out which one.
-  if (user && isGate) {
+  /*
+   * Signed in and standing at the gate. The consoles sort out which one.
+   *
+   * Not when the address carries `next`. That parameter is written by one
+   * thing only, toGate() in lib/auth/guard.ts, which is a page saying "this
+   * session got as far as me and is not usable". Bouncing that request back to
+   * the console sends it to the same page, which sends it here again, and the
+   * two of them ping-pong until the browser gives up.
+   *
+   * The disagreement is real and not a mistake on either side. The proxy asks
+   * whether the token is valid; the page asks whether there is a profile
+   * behind it. Those come apart in two places: the blink after an OAuth
+   * sign-up before the trigger has made the row, and the hour after an account
+   * is deleted while its token is still in date. The second of those is new,
+   * because verifying the token here rather than asking the auth server means
+   * a deleted account still presents a token that checks out.
+   *
+   * So the page wins, which is right: it is the one that looked.
+   */
+  if (user && isGate && !request.nextUrl.searchParams.has("next")) {
     const to = request.nextUrl.clone();
     to.pathname = "/dashboard";
     to.search = "";

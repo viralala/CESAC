@@ -10,11 +10,11 @@ import {
 import { Container, Label } from "@/components/aot/bits";
 import { ActionForm } from "@/components/console/action-form";
 import { PendingFields } from "@/components/console/pending-fields";
-import { Chip, ConsoleBar, Empty, Panel, Stat } from "@/components/console/shell";
+import { Chip, Empty, Panel, Stat } from "@/components/console/shell";
 import { requireAdmin } from "@/lib/auth/guard";
+import { requireCap } from "@/lib/auth/caps";
 import { getDeptEvents, getEventEntries, type Entry } from "@/lib/data/dept-events";
 import { EVENT } from "@/lib/data/event";
-import { ADMIN_NAV } from "../nav";
 
 export const metadata: Metadata = {
   title: "Entries",
@@ -61,7 +61,8 @@ function personLine(p: Entry["student"]): string {
  * day has a record of who made it.
  */
 export default async function EntriesPage() {
-  const viewer = await requireAdmin();
+  await requireAdmin();
+  await requireCap("events");
   const [events, entries] = await Promise.all([getDeptEvents(), getEventEntries()]);
 
   const live = entries.filter((e) => e.status === "registered");
@@ -70,8 +71,6 @@ export default async function EntriesPage() {
 
   return (
     <>
-      <ConsoleBar viewer={viewer} area="Entries" nav={ADMIN_NAV} />
-
       <div className="washi grain min-h-[100svh] py-12 sm:py-16">
         <Container>
           <header className="max-w-[52ch]">

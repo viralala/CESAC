@@ -17,10 +17,16 @@ export type Contribution = Enums<"certificate_contribution">;
 /**
  * What a student came away with from an event.
  *
- * What each one is worth is the database's business: certificate_points() is
- * the single rule, and the ranking is built from it. SCALE below restates
- * those numbers for the reader; if the two ever disagree, the database is
- * right and SCALE is a bug.
+ * What each one is worth is the database's business, and since 21 September
+ * 2026 it is a row in `public.scoring` that the committee edits from the
+ * console rather than a number in this file. There used to be a SCALE constant
+ * here restating them; it was deleted rather than kept in step, because a
+ * console printing 10 for participation while the board awards 40 is worse
+ * than one that has to ask the database. `getScale()` in lib/data/site.ts is
+ * the read.
+ *
+ * A publication has no place, so these apply to events only. The five record
+ * layouts are in ./records.ts.
  */
 export const CONTRIBUTIONS: readonly { value: Contribution; label: string }[] = [
   { value: "participation", label: "Participation" },
@@ -32,14 +38,6 @@ export const CONTRIBUTIONS: readonly { value: Contribution; label: string }[] = 
 export const CONTRIBUTION_LABEL: Record<string, string> = Object.fromEntries(
   CONTRIBUTIONS.map((c) => [c.value, c.label]),
 );
-
-/** Printed so a student can work out their own total rather than trust ours. */
-export const SCALE = [
-  { label: "First prize", points: 100 },
-  { label: "Second prize", points: 75 },
-  { label: "Third prize", points: 50 },
-  { label: "Participation", points: 10 },
-] as const;
 
 /** What a question can be about. The database stores the slug. */
 export const TOPICS = [
@@ -75,8 +73,12 @@ export const TOPIC_LABEL: Record<string, string> = Object.fromEntries(
  */
 export const CANNED_ANSWERS: readonly { label: string; text: string }[] = [
   {
-    label: "Certificate counted",
-    text: "Thanks for uploading it. Your certificate is on your record and the ranking already counts it, so there is nothing further for you to do.",
+    label: "Record counted",
+    text: "Thanks for uploading it. It is on your record and the ranking already counts it, so there is nothing further for you to do.",
+  },
+  {
+    label: "Publications go here too",
+    text: "Journal papers, conference papers, books and book chapters all go on the same page as your certificates. Pick what kind of thing it is at the top of the form and it will ask for what that kind needs. A publication does not need a file attached to it.",
   },
   {
     label: "Fee being checked",

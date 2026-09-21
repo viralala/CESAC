@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 
 import { requireAdmin } from "@/lib/auth/guard";
+import { driveCredentials, trashFile } from "@/lib/drive/client";
 import { createClient } from "@/lib/supabase/server";
 import type { Enums } from "@/lib/supabase/database.types";
 
@@ -454,6 +455,60 @@ export async function reviewCertificate(
  * possible here: every entry points at this column, and moving it would
  * orphan them.
  */
+/**
+ * Take a student's record off the board entirely.
+ *
+ * For the duplicate somebody uploaded twice, the screenshot of nothing, and
+ * the certificate for an event that turns out to be somebody else's. Turning a
+ * record down leaves it on the ranking, which is the honest behaviour for a
+ * disputed claim; this is for a row that should never have existed.
+ *
+ * The Drive files go to the bin first, and only then the row. The other order
+ * loses the ability to find them: the ids are on the row. A file that fails to
+ * trash does not stop the delete, because a row nobody can remove is a worse
+ * problem than a file in a folder, and the audit entry records what it was.
+ */
+export async function deleteCertificate(
+  _state: AdminState,
+  formData: FormData,
+): Promise<AdminState> {
+  const id = String(formData.get("certificate_id") ?? "");
+  if (!id) return { error: "That record is not on the page any more. Reload it." };
+
+  await requireAdmin();
+  const supabase = await createClient();
+
+  const { data: record } = await supabase
+    .from("certificates")
+    .select("id, event_name, drive_file_id, files:certificate_files(drive_file_id)")
+    .eq("id", id)
+    .maybeSingle();
+
+  if (!record) return { error: "That record is not there any more. Reload the page." };
+
+  const creds = driveCredentials();
+  if (creds) {
+    const ids = [
+      record.drive_file_id,
+      ...(record.files ?? []).map((f: { drive_file_id: string }) => f.drive_file_id),
+    ].filter((fileId): fileId is string => Boolean(fileId));
+
+    await Promise.all(ids.map((fileId) => trashFile(creds, fileId).catch(() => {})));
+  }
+
+  const { error } = await supabase.rpc("admin_delete_certificate", { p_id: id });
+
+  revalidatePath("/admin/certificates");
+  revalidatePath("/dashboard/certificates");
+  revalidatePath("/dashboard/ranking");
+  revalidatePath("/");
+
+  return say(
+    error,
+    `${record.event_name} deleted. Its files are in the Drive bin for thirty days.`,
+  );
+}
+
 export async function saveDeptEvent(_state: AdminState, formData: FormData): Promise<AdminState> {
   const slug = String(formData.get("slug") ?? "").trim().toLowerCase();
   const name = String(formData.get("name") ?? "").trim();
@@ -504,7 +559,7 @@ export async function updateSettings(_state: AdminState, formData: FormData): Pr
     .update({
       registration_open: formData.get("registration_open") === "on",
       leaderboard_public: formData.get("leaderboard_public") === "on",
-      online_payment: formData.get("online_payment") === "on",
+      showcase_public: formData.get("showcase_public") === "on",
       seats_cap: seats,
       entry_fee_inr: fee,
       upi_id: String(formData.get("upi_id") ?? "").trim() || null,
@@ -515,6 +570,7 @@ export async function updateSettings(_state: AdminState, formData: FormData): Pr
     .eq("id", 1);
 
   revalidatePath("/admin");
+  revalidatePath("/admin/site/showcase");
   revalidatePath("/dashboard");
   revalidatePath("/events/attack-on-token");
   revalidatePath("/");
