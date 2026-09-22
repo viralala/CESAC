@@ -50,3 +50,37 @@ export const getRecordsToCheck = cache(async (): Promise<RecordToCheck[]> => {
     files: (row.files ?? []) as VerifiableFile[],
   })) as unknown as RecordToCheck[];
 });
+
+export type QuestionToAnswer = Tables<"queries"> & {
+  author: Pick<
+    Tables<"profiles">,
+    "id" | "full_name" | "email" | "prn" | "student_class" | "year"
+  > | null;
+};
+
+/**
+ * Every question anybody has asked, oldest first.
+ *
+ * Oldest first is the feature rather than a preference. A student may have
+ * five questions waiting at once and no more, so a queue worked from the new
+ * end leaves the earliest askers sitting on all five of their slots, unable to
+ * ask anything further and with no way of knowing why.
+ *
+ * No `answerer` join, unlike the organiser's read of the same table. That
+ * column points at a committee profile and a verifier's read policy stops at
+ * students, so asking for it would return a row of nulls. Whoever answered is
+ * in the audit log, which is where a question about who said what belongs.
+ */
+export const getQuestionsToAnswer = cache(async (): Promise<QuestionToAnswer[]> => {
+  const supabase = await createClient();
+
+  const { data } = await supabase
+    .from("queries")
+    .select(
+      `*,
+       author:profiles!queries_author_id_fkey(id, full_name, email, prn, student_class, year)`,
+    )
+    .order("created_at", { ascending: true });
+
+  return (data ?? []) as unknown as QuestionToAnswer[];
+});

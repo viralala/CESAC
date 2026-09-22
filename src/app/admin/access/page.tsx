@@ -58,14 +58,15 @@ export default async function AccessPage() {
           <h1 className="d-tall mt-4 text-[clamp(2.4rem,6vw,3.8rem)] text-ink">Access</h1>
           <p className="serif-it mt-4 text-[1.08rem] leading-relaxed text-muted">
             Three kinds of login. An organiser opens this console and can be narrowed to named
-            areas of it. A verifier gets one page, the queue of records waiting to be checked, and
-            nothing else on the site. The allowlist is for somebody who has no account yet.
+            areas of it. A verifier gets one page: the records waiting to be checked and the
+            questions waiting for an answer, and nothing else on the site. The allowlist is for
+            somebody who has no account yet.
           </p>
         </header>
 
         <div className="mt-8 grid grid-cols-2 gap-4 sm:grid-cols-4">
           <Stat value={organisers.length} label="Organisers" note="Can open the console" />
-          <Stat value={checkers.length} label="Verifiers" note="Check records only" />
+          <Stat value={checkers.length} label="Verifiers" note="Records and questions" />
           <Stat value={grantFor.size} label="Narrowed" note="Held to some areas" />
           <Stat value={allowlist.data?.length ?? 0} label="Allowlisted" note="Organiser on sign-in" />
         </div>
@@ -79,11 +80,17 @@ export default async function AccessPage() {
           >
             <p className="serif-it text-[0.98rem] leading-relaxed text-muted">
               A verifier signs in at the same door as everybody else and lands on{" "}
-              <span className="font-mono text-[0.9rem] text-ink">/verify</span>: every record a
-              student has filed, what it claims, and the files behind it, with a button to verify
-              it or turn it down. They cannot open this console, read the audit log, see a payment,
-              edit the site or change anything at all about a record other than whether it is
-              checked. That is refused by the database rather than merely hidden from them.
+              <span className="font-mono text-[0.9rem] text-ink">/verify</span>, which holds two
+              lists. Every record a student has filed, with the files behind it and a button to
+              verify it or turn it down; and every question students have asked, with the same
+              answer box and the same standard replies this console uses. The two belong together
+              because most of what arrives on that desk is somebody asking whether their
+              certificate has been counted yet.
+            </p>
+            <p className="serif-it mt-4 text-[0.98rem] leading-relaxed text-muted">
+              They cannot open this console, read the audit log, see a payment, edit the site or
+              change anything at all about a record other than whether it is checked. That is
+              refused by the database rather than merely hidden from them.
             </p>
 
             {checkers.length ? (

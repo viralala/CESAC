@@ -248,17 +248,27 @@ nav hides the pages, and both are a courtesy on top of that.
 **The verifier**
 
 A fourth role since 22 September 2026, and deliberately not a narrowed
-organiser. A verifier signs in at the same door and lands on `/verify`: every
-record a student has filed, everything it claims, links to the files, and a
-button to verify it or turn it down. That is the whole of their console.
+organiser. A verifier signs in at the same door and lands on `/verify`, which
+holds two lists: every record a student has filed, with the files behind it and
+a button to verify it or turn it down, and every question students have asked,
+with the same answer box the organiser desk uses. That is the whole of their
+console. The two lists belong together because most of what arrives on the
+questions desk is somebody asking whether their certificate has been counted.
 
 The reason it is a role and not a capability is that `is_admin()` is false for
 them. Twenty-six policies are written against that function, so a verifier is
 outside every one of them without anybody remembering to add a branch, and an
-organiser cannot widen them by ticking a box. What they can reach is three
+organiser cannot widen them by ticking a box. What they can reach is four
 `select` policies of their own; what they can change is `verify_record()` and
-nothing else, which `guard_certificate_verification` enforces by comparing the
-row before and after with the three verification columns taken out.
+`answer_question()` and nothing else. The first is enforced by
+`guard_certificate_verification`, which compares the row before and after with
+the three verification columns taken out; the second by there being no update
+policy on `queries` for them at all, so the function is the only door.
+
+Both functions take an organiser too, and the organiser console calls them.
+One thing behind two screens is what keeps the two from drifting apart, and it
+is also how the audit entry stopped being skippable: neither decision used to
+be written down.
 
 Organisers make one under `/admin/access` by typing an email and a password.
 The account is created in the database by `admin_create_verifier`, which writes

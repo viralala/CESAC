@@ -13,7 +13,8 @@
  *
  * This regeneration also carries the verifier: the fourth value on app_role,
  * and verify_record, admin_create_verifier, admin_set_verifier_password,
- * admin_remove_verifier, admin_verifiers and is_verifier.
+ * admin_remove_verifier, admin_verifiers and is_verifier, and answer_question,
+ * which both consoles write a reply through.
  */
 export type Json =
   | string
@@ -1519,6 +1520,10 @@ export type Database = {
       }
       admin_verify_payment: {
         Args: { p_reason?: string; p_team_id: string; p_verified: boolean }
+        Returns: undefined
+      }
+      answer_question: {
+        Args: { p_answer: string; p_query_id: string }
         Returns: undefined
       }
       audit: {

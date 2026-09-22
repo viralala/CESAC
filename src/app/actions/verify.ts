@@ -59,3 +59,48 @@ export async function reviewRecord(
           : "Back in the queue, with no decision on it.",
   };
 }
+
+/**
+ * Answer a question, or correct an answer already sent.
+ *
+ * The same arrangement as reviewRecord above, and for the same reason: one
+ * function in the database that checks whether the caller is a verifier or an
+ * organiser holding Questions, writes the answer and writes the audit entry
+ * together. Two screens cannot drift apart if there is only one thing behind
+ * them.
+ *
+ * Sending the same question again overwrites. That is the only way to correct
+ * an answer that was wrong: a student cannot edit their side of a thread and
+ * neither can we, so a replacement has to go in place rather than arrive as a
+ * second message contradicting the first.
+ */
+export async function answerQuestion(
+  _state: VerifyState,
+  formData: FormData,
+): Promise<VerifyState> {
+  const viewer = await getViewer();
+  if (!viewer) return { error: "Sign in again." };
+
+  const id = String(formData.get("query_id") ?? "").trim();
+  const answer = String(formData.get("answer") ?? "").trim().slice(0, 4000);
+
+  if (!id) return { error: "That question is not on the page any more. Reload it." };
+  if (answer.length < 2) return { error: "Write the answer first." };
+
+  const supabase = await createClient();
+  const { error } = await supabase.rpc("answer_question", {
+    p_query_id: id,
+    p_answer: answer,
+  });
+
+  if (error) return { error: error.message.replace(/^.*?:\s*/, "") };
+
+  // The count of what is waiting is on the student's front page as well as on
+  // their questions page, so both are rebuilt.
+  revalidatePath("/verify");
+  revalidatePath("/admin/queries");
+  revalidatePath("/dashboard/queries");
+  revalidatePath("/dashboard");
+
+  return { notice: "Answered. It is on their console now." };
+}

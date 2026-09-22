@@ -224,8 +224,8 @@ export default async function AdminPage({ searchParams }: PageProps<"/admin">) {
                 ? "One record is waiting on a check."
                 : `${snapshot.waiting} records are waiting on a check.`}{" "}
               {snapshot.verifiers > 0
-                ? `${snapshot.verifiers === 1 ? "The verifier has" : `The ${snapshot.verifiers} verifiers have`} their own queue at /verify.`
-                : "Nobody holds a verifier login yet. Add one under Access and they get a console with only that queue on it."}
+                ? `${snapshot.verifiers === 1 ? "The verifier works" : `The ${snapshot.verifiers} verifiers work`} the same queue at /verify, and the questions desk with it.`
+                : "Nobody holds a verifier login yet. Add one under Access and they get a console with the records queue and the questions desk on it, and nothing else."}
             </Notice>
           </div>
         ) : null}

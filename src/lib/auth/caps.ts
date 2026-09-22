@@ -35,7 +35,11 @@ export const CAPS = [
     label: "Student records",
     note: "Check certificates and publications, turn one down, delete one, export the lot.",
   },
-  { value: "queries", label: "Questions", note: "Answer what students ask on their console." },
+  {
+    value: "queries",
+    label: "Questions",
+    note: "Answer what students ask on their console. Verifiers hold this one without holding the console.",
+  },
   {
     value: "people",
     label: "People and access",

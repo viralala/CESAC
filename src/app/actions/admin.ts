@@ -295,66 +295,21 @@ export async function setEntryStatus(_state: AdminState, formData: FormData): Pr
 }
 
 /**
- * Answer a student's question.
+ * Answering a question moved out of this file on 22 September 2026.
  *
- * The one action on this page, and unlike its neighbours it is a plain update
- * rather than a security definer function. There is nothing here for one to
- * do: the admin update policy on `queries` is the whole rule, there is no
- * second table to keep in step, and a function would only be a second copy of
- * a check Postgres is already making on the row.
- *
- * `answered_by` is the viewer rather than anything the form sent, because who
- * answered is not the browser's to say. Sending the same question again
- * simply overwrites, which is the only way an organiser has of correcting an
- * answer they got wrong: the student cannot edit their side of a thread and
- * neither can we, so a wrong answer has to be replaceable in place.
+ * It lives in src/app/actions/verify.ts now, next to reviewRecord, because
+ * verifiers answer questions too and an action that begins with requireAdmin
+ * cannot be shared with a role that is deliberately not an admin. The write
+ * itself is `public.answer_question`, which decides for itself whether the
+ * caller may answer and records who did in the same statement.
  */
-export async function answerQuery(_state: AdminState, formData: FormData): Promise<AdminState> {
-  const id = String(formData.get("query_id") ?? "");
-  const answer = String(formData.get("answer") ?? "")
-    .trim()
-    .slice(0, 4000);
 
-  if (!id) return { error: "That question is not on the page any more. Reload it." };
-  if (answer.length < 2) return { error: "Write the answer first." };
-
-  const viewer = await requireAdmin();
-  const supabase = await createClient();
-
-  // Selecting the row back is not for the value, it is the only way to tell
-  // the two outcomes apart. An update that row level security refuses matches
-  // nothing and comes back from PostgREST as a success with no error, so
-  // without this the organiser would be told the student had their answer
-  // when in fact nothing was written.
-  const { data, error } = await supabase
-    .from("queries")
-    .update({
-      answer,
-      answered_by: viewer.id,
-      answered_at: new Date().toISOString(),
-      status: "answered",
-    })
-    .eq("id", id)
-    .select("id");
-
-  // Both consoles, because the count of what is waiting is on the student's
-  // front page as well as on their questions page.
-  revalidatePath("/admin/queries");
-  revalidatePath("/dashboard/queries");
-  revalidatePath("/dashboard");
-
-  if (!error && !data?.length) {
-    return { error: "Nothing was written, so nothing has changed. Reload the page and try again." };
-  }
-
-  return say(error, "Answered. It is on their console now.");
-}
 
 /**
  * Verify a certificate, turn one down, or put one back in the queue.
  *
  * A plain update rather than a security definer function, for the same
- * reason answerQuery above is one: the admin update policy on `certificates`
+ * reason answering a question was one: the admin update policy on `certificates`
  * is the whole rule, there is no second table to keep in step, and a
  * function would only be a second copy of a check Postgres already makes on
  * the row. `verified_by` is the viewer and never anything the form sent,

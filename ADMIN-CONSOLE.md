@@ -20,11 +20,17 @@ Nine things, the day before the department showcase.
 2. **Verifiers.** A fourth role, and not a narrowed organiser: `is_admin()` is
    false for them, so the 26 policies built on it keep them out with no branch
    of their own. They sign in at the same door and land on **`/verify`**, which
-   is every record a student has filed, everything it claims, links to the
-   files, and Verify / Turn it down. They cannot open the console, read the
-   audit log, see a payment, edit the site, or change anything about a record
-   except whether it is checked; a trigger compares the row before and after
-   with the three verification columns taken out and refuses the rest.
+   holds two lists: every record a student has filed, with the files behind it
+   and Verify / Turn it down; and every question students have asked, with the
+   same answer box and standard replies the organiser desk uses. The two
+   belong together because most of what arrives on that desk is somebody
+   asking whether their certificate has been counted.
+
+   They cannot open the console, read the audit log, see a payment, edit the
+   site, or change anything about a record except whether it is checked. A
+   trigger compares the row before and after with the three verification
+   columns taken out and refuses the rest, and there is no update policy on
+   `queries` for them at all: `answer_question` is the only way in.
 
    An organiser makes one under **Access** by typing an email and a password.
    The account is built in the database, by `admin_create_verifier`, because
@@ -64,6 +70,17 @@ Nine things, the day before the department showcase.
    and the last few things anybody changed.
 
 9. **The footer credits the person who built it**, with GitHub and LinkedIn.
+
+10. **Records and questions are lists you can work, not walls.** Both consoles
+    show one line per row that opens on click, with the decision buttons
+    staying on the folded line so a queue can be worked without opening
+    anything. Each list filters by category, and each chip carries the count it
+    would leave, worked out against whatever else is already filtered. Whole
+    lists fold to their header, and the settled ones start folded.
+
+11. **Twenty-five sample questions**, from the same invented students, fourteen
+    of them already answered. They come off with the same delete as the
+    records.
 
 **Also:** an organiser verifying a record now goes through the same
 `verify_record` function the verifier console uses, so it is written to the

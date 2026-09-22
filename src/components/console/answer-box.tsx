@@ -2,13 +2,18 @@
 
 import { useId, useRef } from "react";
 
-import { answerQuery } from "@/app/actions/admin";
+import { answerQuestion } from "@/app/actions/verify";
 import { ActionForm } from "@/components/console/action-form";
 import { PendingFields } from "@/components/console/pending-fields";
 import { CANNED_ANSWERS } from "@/lib/console/options";
 
 /**
  * The answer box, with the standard replies sitting under it.
+ *
+ * Used by the organiser's desk and the verifier's alike. The action behind it
+ * is answerQuestion, which is one `security definer` function in the database
+ * that decides whether the caller may answer at all, so this component needs
+ * no opinion about which of them is holding it.
  *
  * A client component for one reason: the canned replies have to reach the
  * textarea, and that is a click handler. Everything else is the console's
@@ -45,7 +50,7 @@ export function AnswerBox({ queryId, answer }: { queryId: string; answer: string
 
   return (
     <ActionForm
-      action={answerQuery}
+      action={answerQuestion}
       submit={answer ? "Save the correction" : "Send the answer"}
       pendingLabel="Sending"
       tone="lime"
