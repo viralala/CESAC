@@ -19,6 +19,14 @@ export type Viewer = {
   /** True for both 'admin' and 'owner'. The console does not distinguish. */
   isAdmin: boolean;
   /**
+   * True for the role that checks student records and does nothing else.
+   *
+   * Deliberately not a kind of organiser. A verifier fails `isAdmin`, which
+   * is the test 26 row level security policies turn on, so nothing an
+   * organiser can reach opens to them because somebody forgot a branch.
+   */
+  isVerifier: boolean;
+  /**
    * True while the account still holds the password it was imported with,
    * which is the student's own email address. Every guarded page refuses to
    * render until this is false.
@@ -34,11 +42,20 @@ export function viewerFrom(profile: Profile): Viewer {
     role: profile.role,
     avatarUrl: profile.avatar_url,
     isAdmin: profile.role === "admin" || profile.role === "owner",
+    isVerifier: profile.role === "verifier",
     mustChangePassword: profile.must_change_password,
   };
 }
 
-/** Where a role belongs after signing in. */
+/**
+ * Where a role belongs after signing in.
+ *
+ * The one place that decides. Sign-in, the OAuth callback, the password screen
+ * and every guard read this rather than each having an opinion, which is why
+ * adding the verifier was one line rather than five.
+ */
 export function homeFor(role: Role): string {
-  return role === "participant" ? "/dashboard" : "/admin";
+  if (role === "participant") return "/dashboard";
+  if (role === "verifier") return "/verify";
+  return "/admin";
 }

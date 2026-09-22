@@ -63,9 +63,13 @@ const ACCEPT = ".pdf,.jpg,.jpeg,.png,application/pdf,image/jpeg,image/png";
  * department files publications on four more layouts and wanted them here
  * rather than on a spreadsheet somebody emails around.
  *
- * Every file on a record is optional, including the certificate. That is not
- * laxness: a journal paper has no certificate, and a form that insisted on one
- * would simply keep publications off the site.
+ * A new record has to arrive with something attached. The committee asked for
+ * that on 22 September and the reason is the one that matters: a row nobody
+ * can check is a row nobody can count, and the queue was filling with claims
+ * that had no proof behind them. One file is the bar, not four. For a
+ * hackathon it is the certificate; for a paper it is the paper, or a
+ * screenshot of the listing, or the acceptance mail. The three photo slots on
+ * a saved record stay optional and always will.
  */
 export function CertificateRecord({
   certificates,
@@ -665,13 +669,17 @@ function RecordForm({
       {configured ? (
         <div>
           <label htmlFor={`${uid}-file`} className="label block text-ink">
-            The certificate, if there is one
+            Proof, and this one is needed
           </label>
           <input
             id={`${uid}-file`}
             name="file"
             type="file"
             accept={ACCEPT}
+            // Not merely an attribute the browser enforces. saveRecord refuses
+            // a new record with nothing attached, because a form is a
+            // courtesy and a server action is the rule.
+            required={!record}
             // Caught here, in the browser, because a file over the limit is
             // refused by the server before the action runs and there is no way
             // to answer it with a sentence at that point.
@@ -689,9 +697,10 @@ function RecordForm({
             className="field mt-2.5 file:mr-4 file:rounded-full file:border-0 file:bg-ink file:px-4 file:py-1.5 file:text-cream"
           />
           <p className="serif-it mt-2 text-[0.85rem] leading-relaxed text-muted">
-            PDF, JPG or PNG, up to {MAX_CERTIFICATE_LABEL}. Optional, and a publication usually
-            has none. The prize, the event and the photo with the HOD are added from the record
-            once it is saved.
+            PDF, JPG or PNG, up to {MAX_CERTIFICATE_LABEL}. One file has to come with every
+            record: the certificate for an event, and for a paper the paper itself, the
+            acceptance mail or a photo of the listing. The prize, the event and the photo with
+            the HOD are added from the record once it is saved, and those stay optional.
           </p>
           {oversize ? (
             <div className="mt-3">

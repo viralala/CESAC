@@ -1,13 +1,15 @@
 /** The organiser console's own nav, shared by every page inside it. */
 export const ADMIN_NAV = [
   { href: "/admin", label: "Command", cap: null },
-  { href: "/admin/entries", label: "Entries", cap: "events" },
-  { href: "/admin/queries", label: "Questions", cap: "queries" },
-  { href: "/admin/teams", label: "Teams", cap: "events" },
-  { href: "/admin/events", label: "Event system", cap: "events" },
   { href: "/admin/certificates", label: "Records", cap: "records" },
   { href: "/admin/students", label: "Students", cap: "people" },
+  { href: "/admin/queries", label: "Questions", cap: "queries" },
+  { href: "/admin/entries", label: "Entries", cap: "events" },
+  { href: "/admin/teams", label: "Teams", cap: "events" },
+  { href: "/admin/events", label: "Event system", cap: "events" },
   { href: "/admin/site", label: "Site", cap: "content" },
+  { href: "/admin/access", label: "Access", cap: "people" },
+  { href: "/admin/controls", label: "Controls", cap: "settings" },
   { href: "/people", label: "Roster", cap: null },
 ] as const;
 

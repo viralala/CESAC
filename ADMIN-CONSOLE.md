@@ -6,6 +6,72 @@ the code is written.
 
 ---
 
+## What landed on 22 September 2026
+
+Nine things, the day before the department showcase.
+
+1. **A record has to come with proof.** A student adding anything now attaches
+   one file, whatever kind of record it is: the certificate for an event, and
+   for a paper the paper, the acceptance mail or a photo of the listing. The
+   three photo slots on a saved record stay optional. The rule is in
+   `saveRecord`, not on the table, because an organiser filing a row on a
+   student's behalf should not be blocked and the sample data has no files.
+
+2. **Verifiers.** A fourth role, and not a narrowed organiser: `is_admin()` is
+   false for them, so the 26 policies built on it keep them out with no branch
+   of their own. They sign in at the same door and land on **`/verify`**, which
+   is every record a student has filed, everything it claims, links to the
+   files, and Verify / Turn it down. They cannot open the console, read the
+   audit log, see a payment, edit the site, or change anything about a record
+   except whether it is checked; a trigger compares the row before and after
+   with the three verification columns taken out and refuses the rest.
+
+   An organiser makes one under **Access** by typing an email and a password.
+   The account is built in the database, by `admin_create_verifier`, because
+   this deployment has no service role key and is not getting one.
+
+3. **Three demo logins**, all on `cesac-demo-2026`: `demo.admin@vit.edu`,
+   `demo.student@vit.edu`, `demo.verifier@vit.edu`.
+
+4. **Every student account is back to the day it was imported.** No records, no
+   uploaded photos, every participant on their own email as a password with the
+   change-password gate armed again. Organiser passwords were deliberately not
+   touched. The three records that existed were snapshotted first and the Drive
+   files behind them were left alone, not binned.
+
+5. **The sign-in page says what the password is**, in three numbered steps
+   above the form rather than in a hint under the password box, which was being
+   read after the first failed attempt rather than before it.
+
+6. **Fifty sample records**, across twenty invented students, all carrying a
+   `sample.` email prefix. Invented rather than real, because fabricated
+   hackathon wins under the name of an actual student are a thing a demo is not
+   allowed to do. To take the whole set away afterwards:
+
+   ```sql
+   delete from auth.users where email like 'sample.%@vit.edu';
+   ```
+
+   The records, the showcase picks and the profiles all go on the cascade.
+
+7. **`/admin` is a board, not a wall of switches.** Cards for everywhere the
+   console goes, each with the live number behind it. The switches moved to
+   **`/admin/controls`** and the organiser list to **`/admin/access`**.
+
+8. **The command page reads the site back to you** underneath the board: the
+   points scale as the database actually holds it, who the front page is
+   naming in each category, the top of the ranking, what each event is doing,
+   and the last few things anybody changed.
+
+9. **The footer credits the person who built it**, with GitHub and LinkedIn.
+
+**Also:** an organiser verifying a record now goes through the same
+`verify_record` function the verifier console uses, so it is written to the
+audit log. It never was before, which made the one console decision with a
+student's name against it the one decision with no record of who made it.
+
+---
+
 ## What landed on 21 September 2026
 
 A large change, and the short version is that **the console can now change the

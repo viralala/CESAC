@@ -245,6 +245,28 @@ nav hides the pages, and both are a courtesy on top of that.
 `public.is_admin()` is untouched and still means "may open the console at all";
 26 policies depend on it.
 
+**The verifier**
+
+A fourth role since 22 September 2026, and deliberately not a narrowed
+organiser. A verifier signs in at the same door and lands on `/verify`: every
+record a student has filed, everything it claims, links to the files, and a
+button to verify it or turn it down. That is the whole of their console.
+
+The reason it is a role and not a capability is that `is_admin()` is false for
+them. Twenty-six policies are written against that function, so a verifier is
+outside every one of them without anybody remembering to add a branch, and an
+organiser cannot widen them by ticking a box. What they can reach is three
+`select` policies of their own; what they can change is `verify_record()` and
+nothing else, which `guard_certificate_verification` enforces by comparing the
+row before and after with the three verification columns taken out.
+
+Organisers make one under `/admin/access` by typing an email and a password.
+The account is created in the database by `admin_create_verifier`, which writes
+`auth.users`, the matching identity and the profile role in one statement, and
+checks `admin_can('people')` before any of it. That is done there rather than
+through Supabase's admin API because the admin API needs the service role key
+and this deployment has never carried one; see the paragraph below.
+
 **The security model, in one paragraph**
 
 The deployed site holds no service role key. Organiser powers ride on the

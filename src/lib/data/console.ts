@@ -246,3 +246,118 @@ export const getEventStats = cache(async (): Promise<EventStats> => {
     }
   );
 });
+
+/**
+ * Every number the command page prints, counted in one pass.
+ *
+ * Head requests with an exact count, so Postgres counts the rows and sends
+ * none of them. The console used to read all 1,871 profile rows to find out
+ * how many were students, which is a megabyte crossing the wire to produce a
+ * single integer, and that was noticeable on a page that does it on every
+ * load.
+ *
+ * Every figure is counted at request time and nothing is cached. Where a
+ * thing has genuinely not happened yet the card says so rather than showing a
+ * zero dressed up as a result.
+ */
+export type ConsoleSnapshot = {
+  students: number;
+  organisers: number;
+  verifiers: number;
+  records: number;
+  waiting: number;
+  verified: number;
+  turnedDown: number;
+  withFile: number;
+  openQuestions: number;
+  questions: number;
+  entries: number;
+  teams: number;
+  rosterPeople: number;
+  showcaseCategories: number;
+  deptEvents: number;
+};
+
+export const getConsoleSnapshot = cache(async (): Promise<ConsoleSnapshot> => {
+  const supabase = await createClient();
+
+  // head: true asks PostgREST for the count and none of the rows. Written out
+  // one line each rather than through a helper, because the builder is typed
+  // per table and a helper generic enough to take all nine would have to be
+  // typed as `never` to compile, which is a cast wearing a hat.
+  const only = (result: { count: number | null }) => result.count ?? 0;
+
+  const [
+    students,
+    organisers,
+    verifiers,
+    records,
+    verified,
+    turnedDown,
+    withFile,
+    openQuestions,
+    questions,
+    entries,
+    teams,
+    rosterPeople,
+    showcaseCategories,
+    deptEvents,
+  ] = await Promise.all([
+    supabase.from("profiles").select("*", { count: "exact", head: true }).eq("role", "participant").then(only),
+    supabase.from("profiles").select("*", { count: "exact", head: true }).in("role", ["admin", "owner"]).then(only),
+    supabase.from("profiles").select("*", { count: "exact", head: true }).eq("role", "verifier").then(only),
+    supabase.from("certificates").select("*", { count: "exact", head: true }).then(only),
+    supabase.from("certificates").select("*", { count: "exact", head: true }).eq("verified", true).then(only),
+    supabase.from("certificates").select("*", { count: "exact", head: true }).eq("verified", false).not("verified_at", "is", null).then(only),
+    supabase.from("certificates").select("*", { count: "exact", head: true }).not("drive_file_id", "is", null).then(only),
+    supabase.from("queries").select("*", { count: "exact", head: true }).eq("status", "open").then(only),
+    supabase.from("queries").select("*", { count: "exact", head: true }).then(only),
+    supabase.from("event_registrations").select("*", { count: "exact", head: true }).eq("status", "registered").then(only),
+    supabase.from("teams").select("*", { count: "exact", head: true }).then(only),
+    supabase.from("roster_people").select("*", { count: "exact", head: true }).eq("visible", true).then(only),
+    supabase.from("showcase_categories").select("*", { count: "exact", head: true }).eq("visible", true).then(only),
+    supabase.from("dept_events").select("*", { count: "exact", head: true }).then(only),
+  ]);
+
+  return {
+    students,
+    organisers,
+    verifiers,
+    records,
+    waiting: records - verified - turnedDown,
+    verified,
+    turnedDown,
+    withFile,
+    openQuestions,
+    questions,
+    entries,
+    teams,
+    rosterPeople,
+    showcaseCategories,
+    deptEvents,
+  };
+});
+
+/** The top of the ranking, for the command page. Counted by the database. */
+export type BoardRow = {
+  place: number;
+  student_id: string;
+  name: string;
+  year: string | null;
+  points: number;
+  certificates: number;
+};
+
+export const getTopOfBoard = cache(async (limit = 8): Promise<BoardRow[]> => {
+  const supabase = await createClient();
+  const { data } = await supabase.rpc("ranking_board", { p_limit: limit });
+
+  return (data ?? []).map((row) => ({
+    place: Number(row.place),
+    student_id: row.student_id,
+    name: row.name,
+    year: row.year,
+    points: Number(row.points),
+    certificates: Number(row.certificates),
+  }));
+});

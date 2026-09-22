@@ -1,552 +1,497 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 
-import {
-  addOrganiserEmail,
-  applyCut,
-  removeOrganiserEmail,
-  setChapterState,
-  setRole,
-  updateSettings,
-} from "@/app/actions/admin";
-import { clearGrants, setGrants } from "@/app/actions/console-content";
 import { Container, Label } from "@/components/aot/bits";
-import { ActionForm } from "@/components/console/action-form";
-import { Chip, Empty, Notice, Panel, Stat } from "@/components/console/shell";
+import { Chip, Empty, Notice, Panel, Stat, Tile, type TileTone } from "@/components/console/shell";
 import { requireAdmin } from "@/lib/auth/guard";
-import { CAPS, CAP_LABEL, getMyCaps } from "@/lib/auth/caps";
-import { createClient } from "@/lib/supabase/server";
+import { CAP_LABEL, getMyCaps } from "@/lib/auth/caps";
+import { LEVEL_LABEL } from "@/lib/console/records";
+import { stamp } from "@/lib/console/record-view";
 import {
-  getAdminOverview,
   getAuditLog,
-  getChapters,
-  getOrganisers,
+  getConsoleSnapshot,
   getSettings,
+  getTopOfBoard,
 } from "@/lib/data/console";
-import { EVENT } from "@/lib/data/event";
+import { getDeptEvents } from "@/lib/data/dept-events";
+import { METRIC_LABEL, getScale, getShowcase, metricUnit } from "@/lib/data/site";
+import { CESAC } from "@/lib/data/cesac";
 
 export const metadata: Metadata = {
-  title: "Organiser console",
+  title: "Command",
   robots: { index: false, follow: false },
 };
 
-const CHAPTER_STATES = [
-  { value: "locked", label: "Lock" },
-  { value: "open", label: "Open" },
-  { value: "closed", label: "Close" },
-  { value: "graded", label: "Mark graded" },
-] as const;
+/**
+ * Every place the console can go, and what it is for.
+ *
+ * A list rather than markup, because which of these an organiser sees depends
+ * on what they hold and the filter should be one line. `cap: null` is on for
+ * anybody who can open the console at all.
+ */
+type Destination = {
+  href: string;
+  cap: string | null;
+  eyebrow: string;
+  title: string;
+  blurb: string;
+  tone: TileTone;
+};
+
+const DESTINATIONS: readonly Destination[] = [
+  {
+    href: "/admin/certificates",
+    cap: "records",
+    eyebrow: "The work",
+    title: "Student records",
+    blurb:
+      "Every certificate, paper, book and chapter students have filed. Check them, turn one down, delete a duplicate, export the lot for the office workbook.",
+    tone: "teal",
+  },
+  {
+    href: "/admin/students",
+    cap: "people",
+    eyebrow: "The department",
+    title: "Students",
+    blurb:
+      "The whole roll, searchable by name, class or PRN. Who has signed in, who is still on their first password, and what each one has filed.",
+    tone: "azure",
+  },
+  {
+    href: "/admin/queries",
+    cap: "queries",
+    eyebrow: "Asked of us",
+    title: "Questions",
+    blurb: "What students have asked from their own console, and the answer they get back.",
+    tone: "violet",
+  },
+  {
+    href: "/admin/site",
+    cap: "content",
+    eyebrow: "The public pages",
+    title: "Site content",
+    blurb:
+      "The words on the front page, the roster and its titles, the points scale, and who the front page names. Nothing here needs a deploy.",
+    tone: "lime",
+  },
+  {
+    href: "/admin/access",
+    cap: "people",
+    eyebrow: "Who can do what",
+    title: "Access",
+    blurb:
+      "Organisers and what each one can reach, the verifiers who check records, and the allowlist that makes somebody an organiser the moment they sign in.",
+    tone: "pink",
+  },
+  {
+    href: "/admin/controls",
+    cap: "settings",
+    eyebrow: "Switches",
+    title: "Event controls",
+    blurb:
+      "Registration, the published leaderboard, the front page showcase, the seat cap, the fee, the UPI details, the announcement, and the chapter run of show.",
+    tone: "ink",
+  },
+  {
+    href: "/admin/entries",
+    cap: "events",
+    eyebrow: "Event day",
+    title: "Entries",
+    blurb: "Who has entered which department event, and the fee against each entry.",
+    tone: "teal",
+  },
+  {
+    href: "/admin/teams",
+    cap: "events",
+    eyebrow: "Event day",
+    title: "Teams and payments",
+    blurb: "Attack on Token teams, their seats, and the payments waiting on a check.",
+    tone: "azure",
+  },
+  {
+    href: "/admin/events",
+    cap: "events",
+    eyebrow: "Event day",
+    title: "Event system",
+    blurb: "Open and close department events, edit what the public page says about each one.",
+    tone: "violet",
+  },
+];
+
+/** The number printed on each card, where there is one worth printing. */
+function tileValue(
+  href: string,
+  s: Awaited<ReturnType<typeof getConsoleSnapshot>>,
+): { value?: number | string; note?: string } {
+  switch (href) {
+    case "/admin/certificates":
+      return { value: s.waiting, note: s.waiting === 1 ? "to check" : "to check" };
+    case "/admin/students":
+      return { value: s.students, note: "on the roll" };
+    case "/admin/queries":
+      return { value: s.openQuestions, note: "open" };
+    case "/admin/site":
+      return { value: s.rosterPeople, note: "on the roster" };
+    case "/admin/access":
+      return { value: s.organisers + s.verifiers, note: "with a login" };
+    case "/admin/entries":
+      return { value: s.entries, note: "entries" };
+    case "/admin/teams":
+      return { value: s.teams, note: "teams" };
+    case "/admin/events":
+      return { value: s.deptEvents, note: "events" };
+    default:
+      return {};
+  }
+}
 
 /**
- * The organiser console.
+ * The command page.
  *
- * Every number on this page is counted from the database at request time.
- * Where a thing has genuinely not happened yet, the panel says so instead of
- * showing a zero dressed up as a result.
+ * It used to be the controls themselves: five panels of switches, the chapter
+ * cuts, the organiser list and the audit log, all stacked on the page an
+ * organiser lands on. That is the wrong shape for a landing. Somebody opening
+ * the console wants to go somewhere, and wants to know how the department is
+ * doing on the way past.
+ *
+ * So it is two halves now. The board at the top is where to go, with the
+ * number behind each card so the reason to click is on the card. Everything
+ * under it is the state of the site, read at request time: the scale that
+ * scores the board, who the front page is naming, what the events are doing,
+ * and the last few things anybody changed. The switches moved to
+ * /admin/controls and the organiser list to /admin/access, both of which are
+ * cards on the board.
+ *
+ * Every number here is counted from the database on this request. Where a
+ * thing has not happened yet the panel says so, rather than showing a zero
+ * dressed up as a result.
  */
 export default async function AdminPage({ searchParams }: PageProps<"/admin">) {
   const viewer = await requireAdmin();
-  const supabase = await createClient();
 
-  const [settings, chapters, overview, organisers, audit, allowlist, grants, myCaps, params] =
+  const [snapshot, settings, scale, showcase, events, audit, board, caps, params] =
     await Promise.all([
+      getConsoleSnapshot(),
       getSettings(),
-      getChapters(),
-      getAdminOverview(),
-      getOrganisers(),
-      getAuditLog(10),
-      supabase.from("admin_emails").select("*").order("created_at"),
-      supabase.from("admin_grants").select("*"),
+      getScale(),
+      getShowcase(),
+      getDeptEvents(),
+      getAuditLog(8),
+      getTopOfBoard(8),
       getMyCaps(),
       searchParams,
     ]);
 
-  const { counts } = overview;
-
-  // A grant row is a narrowing. No row means the whole console, which is why
-  // this is a lookup and not a column on the profile.
-  const grantFor = new Map((grants.data ?? []).map((row) => [row.profile_id, row]));
+  const open = DESTINATIONS.filter((d) => d.cap === null || caps.includes(d.cap));
 
   // Set by requireCap when somebody follows a link to a page they hold
   // nothing on. Named rather than generic, so they can ask for the right thing.
   const denied = typeof params.denied === "string" ? params.denied : null;
 
+  const base = scale.filter((row) => row.band !== "level");
+  const levels = scale.filter((row) => row.band === "level");
+
+  const hour = new Date().toLocaleString("en-IN", { hour: "numeric", hour12: false, timeZone: "Asia/Kolkata" });
+  const greeting = Number(hour) < 12 ? "Morning" : Number(hour) < 17 ? "Afternoon" : "Evening";
+
   return (
-    <>
-      <div className="washi grain min-h-[100svh] py-12 sm:py-16">
-        <Container>
-          <header className="max-w-[46ch]">
-            <Label tone="teal">{EVENT.host}</Label>
-            <h1 className="d-tall mt-4 text-[clamp(2.6rem,7vw,4.5rem)] text-ink">Command</h1>
-            <p className="serif-it mt-4 text-[1.1rem] leading-relaxed text-muted">
-              Signed in as {viewer.name}. Everything here is live: a switch flipped on this page
-              changes what every participant sees on their next request.
-            </p>
-          </header>
+    <div className="washi grain min-h-[100svh] py-12 sm:py-16">
+      <Container>
+        <header className="max-w-[52ch]">
+          <Label tone="teal">{CESAC.abbr} · {CESAC.department}</Label>
+          <h1 className="d-tall mt-4 text-[clamp(2.6rem,7vw,4.5rem)] leading-[0.95] text-ink">
+            {greeting}, {viewer.name.split(" ")[0]}
+          </h1>
+          <p className="serif-it mt-4 text-[1.1rem] leading-relaxed text-muted">
+            Everything on this page is live. Pick where you are going, or read down for how the
+            department is doing.
+          </p>
+        </header>
 
-          {denied ? (
-            <div className="mt-8">
-              <Notice tone="error">
-                {CAP_LABEL[denied] ?? denied} is not one of your areas, so that page sent you back
-                here. Ask whoever set up the committee&rsquo;s access to add it.
-              </Notice>
-            </div>
-          ) : null}
-
-          {!settings.registration_open ? (
-            <div className="mt-8">
-              <Notice tone="error">
-                Registration is closed. Nobody can make a team, though anyone can still make an
-                account. Open it in Event controls below when you are ready to take sign-ups.
-              </Notice>
-            </div>
-          ) : null}
-
-          <div className="mt-8 grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-6">
-            <Stat value={counts.teams} label="Teams" note="Made, any status" />
-            <Stat value={counts.registered} label="Registered" note="Two people, paid" />
-            <Stat value={counts.forming} label="Forming" note="Incomplete" />
-            <Stat
-              value={`${counts.seated}/${settings.seats_cap}`}
-              label="Seats"
-              note="Held against the cap"
-            />
-            <Stat
-              value={counts.awaitingVerification}
-              label="To verify"
-              note="Payments waiting on you"
-            />
-            <Stat value={counts.participants} label="Accounts" note="Participants" />
+        {denied ? (
+          <div className="mt-8">
+            <Notice tone="error">
+              {CAP_LABEL[denied] ?? denied} is not one of your areas, so that page sent you back
+              here. Ask whoever set up the committee&rsquo;s access to add it.
+            </Notice>
           </div>
+        ) : null}
 
-          <div className="mt-6 grid gap-6 lg:grid-cols-[1fr_1.1fr]">
-            {myCaps.includes("settings") ? (
-            <Panel eyebrow="Switches" title="Event controls">
-              <ActionForm action={updateSettings} submit="Save controls" tone="lime">
-                <div className="grid gap-4">
-                  {[
-                    {
-                      name: "registration_open",
-                      label: "Registration open",
-                      note: "Lets participants make and join teams.",
-                      on: settings.registration_open,
-                    },
-                    {
-                      name: "leaderboard_public",
-                      label: "Leaderboard published",
-                      note: "Opens every team's standing to every participant. Off means each team sees only its own.",
-                      on: settings.leaderboard_public,
-                    },
-                    {
-                      name: "showcase_public",
-                      label: "Standouts on the front page",
-                      note: "Names a few students publicly, with their year and one number. Off means the section does not render at all. Set the categories up under Site.",
-                      on: settings.showcase_public,
-                    },
-                  ].map((toggle) => (
-                    <label
-                      key={toggle.name}
-                      className="flex cursor-pointer items-start gap-4 rounded-[var(--r-md)] bg-cream-2 px-5 py-4"
-                    >
-                      <input
-                        type="checkbox"
-                        name={toggle.name}
-                        defaultChecked={toggle.on}
-                        className="mt-1 h-4.5 w-4.5 shrink-0 accent-[var(--teal)]"
-                      />
-                      <span>
-                        <span className="label block text-ink">{toggle.label}</span>
-                        <span className="mt-1 block text-[0.9rem] leading-relaxed text-muted">
-                          {toggle.note}
-                        </span>
-                      </span>
-                    </label>
-                  ))}
-
-                  <div className="grid gap-4 sm:grid-cols-2">
-                    <div>
-                      <label htmlFor="seats_cap" className="label block text-ink">
-                        Seat cap
-                      </label>
-                      <input
-                        id="seats_cap"
-                        name="seats_cap"
-                        type="number"
-                        min={1}
-                        defaultValue={settings.seats_cap}
-                        className="field mt-2.5"
-                      />
-                    </div>
-                    <div>
-                      <label htmlFor="entry_fee_inr" className="label block text-ink">
-                        Entry fee, rupees
-                      </label>
-                      <input
-                        id="entry_fee_inr"
-                        name="entry_fee_inr"
-                        type="number"
-                        min={0}
-                        defaultValue={settings.entry_fee_inr}
-                        className="field mt-2.5"
-                      />
-                    </div>
-                    <div>
-                      <label htmlFor="upi_id" className="label block text-ink">
-                        UPI ID
-                      </label>
-                      <input
-                        id="upi_id"
-                        name="upi_id"
-                        type="text"
-                        defaultValue={settings.upi_id ?? ""}
-                        placeholder="cesac@bank"
-                        className="field mt-2.5"
-                      />
-                    </div>
-                    <div>
-                      <label htmlFor="upi_payee_name" className="label block text-ink">
-                        Payee name
-                      </label>
-                      <input
-                        id="upi_payee_name"
-                        name="upi_payee_name"
-                        type="text"
-                        defaultValue={settings.upi_payee_name ?? ""}
-                        className="field mt-2.5"
-                      />
-                    </div>
-                  </div>
-
-                  <div>
-                    <label htmlFor="announcement" className="label block text-ink">
-                      Announcement
-                    </label>
-                    <textarea
-                      id="announcement"
-                      name="announcement"
-                      rows={3}
-                      maxLength={400}
-                      defaultValue={settings.announcement ?? ""}
-                      placeholder="Shown at the top of every participant console. Leave empty for none."
-                      className="field mt-2.5 min-h-[5rem] resize-y py-3 leading-relaxed"
-                    />
-                  </div>
-                </div>
-              </ActionForm>
-            </Panel>
-            ) : null}
-
-            {myCaps.includes("events") ? (
-            <Panel eyebrow="Run of show" title="Chapter control" aside={EVENT.tagline}>
-              <div className="grid gap-4">
-                {chapters.map((chapter) => (
-                  <div
-                    key={chapter.id}
-                    className="rounded-[var(--r-md)] border-2 border-ink/10 p-6"
-                  >
-                    <div className="flex flex-wrap items-baseline justify-between gap-x-6 gap-y-2">
-                      <div className="flex items-baseline gap-4">
-                        <span className="d-tall text-[2rem] leading-none text-ink">
-                          {chapter.numeral}
-                        </span>
-                        <div>
-                          <h3 className="d-tall text-[1.25rem] text-ink">{chapter.title}</h3>
-                          <p className="label-sm mt-1 text-muted">
-                            {chapter.weight}% of score, cut {chapter.cut_from} to {chapter.cut_to}
-                          </p>
-                        </div>
-                      </div>
-                      <Chip
-                        tone={
-                          chapter.state === "open"
-                            ? "teal"
-                            : chapter.state === "graded"
-                              ? "lime"
-                              : chapter.state === "closed"
-                                ? "ink"
-                                : "muted"
-                        }
-                      >
-                        {chapter.state}
-                      </Chip>
-                    </div>
-
-                    <div className="mt-5 flex flex-wrap items-center gap-2.5">
-                      {CHAPTER_STATES.filter((s) => s.value !== chapter.state).map((s) => (
-                        <ActionForm
-                          key={s.value}
-                          action={setChapterState}
-                          submit={s.label}
-                          tone={s.value === "open" ? "lime" : "ghost"}
-                          className="contents"
-                        >
-                          <input type="hidden" name="chapter_id" value={chapter.id} />
-                          <input type="hidden" name="state" value={s.value} />
-                        </ActionForm>
-                      ))}
-
-                      <Link
-                        href={`/admin/grade/${chapter.id}`}
-                        className="pill pill-ghost mt-4"
-                      >
-                        Grade
-                      </Link>
-                    </div>
-
-                    <div className="mt-5 border-t border-ink/10 pt-5">
-                      <ActionForm
-                        action={applyCut}
-                        submit={`Cut to ${chapter.cut_to} ${chapter.cut_to === 1 ? "team" : "teams"}`}
-                        tone="danger"
-                        confirm={`This marks every team below the top ${chapter.cut_to} as eliminated at ${chapter.title}. Teams can be put back one at a time. Continue?`}
-                      >
-                        <input type="hidden" name="chapter_id" value={chapter.id} />
-                        <p className="serif-it text-[0.9rem] leading-relaxed text-muted">
-                          Ranks the teams still in by their score for this chapter and keeps the
-                          top {chapter.cut_to}. Score everyone first.
-                        </p>
-                      </ActionForm>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </Panel>
-            ) : null}
+        {snapshot.waiting > 0 ? (
+          <div className="mt-8">
+            <Notice tone="ok">
+              {snapshot.waiting === 1
+                ? "One record is waiting on a check."
+                : `${snapshot.waiting} records are waiting on a check.`}{" "}
+              {snapshot.verifiers > 0
+                ? `${snapshot.verifiers === 1 ? "The verifier has" : `The ${snapshot.verifiers} verifiers have`} their own queue at /verify.`
+                : "Nobody holds a verifier login yet. Add one under Access and they get a console with only that queue on it."}
+            </Notice>
           </div>
+        ) : null}
 
-          <div className="mt-6 grid gap-6 lg:grid-cols-[1.1fr_1fr]">
-            {myCaps.includes("people") ? (
-            <Panel
-              eyebrow="Access"
-              title="Organisers"
-              aside={`${counts.organisers} with the role`}
-            >
-              <p className="serif-it text-[0.98rem] leading-relaxed text-muted">
-                An organiser with nothing set below can reach the whole console, which is how
-                every one of them started. Tick the areas somebody should have and they are
-                narrowed to those, in the database and not merely on screen: the pages disappear
-                from their nav and every write behind them is refused by Postgres. An owner is
-                never narrowed.
-              </p>
+        {!settings.registration_open ? (
+          <div className="mt-4">
+            <Notice tone="error">
+              Registration is closed. Nobody can make a team, though anyone can still make an
+              account. Open it under Event controls when you are ready to take sign-ups.
+            </Notice>
+          </div>
+        ) : null}
 
-              <ul className="mt-6 grid gap-3">
-                {organisers.map((person) => {
-                  const grant = grantFor.get(person.id);
-                  const isOwner = person.role === "owner";
-                  const isMe = person.id === viewer.id;
+        {/* ------------------------------------------------------- where to go */}
+        <section className="mt-10">
+          <h2 className="label text-muted">Go to</h2>
+          <div className="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            {open.map((d) => {
+              const { value, note } = tileValue(d.href, snapshot);
+              return (
+                <Tile
+                  key={d.href}
+                  href={d.href}
+                  eyebrow={d.eyebrow}
+                  title={d.title}
+                  blurb={d.blurb}
+                  value={value}
+                  note={note}
+                  tone={d.tone}
+                />
+              );
+            })}
+          </div>
+          {open.length === 0 ? (
+            <Empty>
+              Your account holds none of the console&rsquo;s areas, so there is nothing here to
+              open. Ask whoever set the committee up to give you one.
+            </Empty>
+          ) : null}
+        </section>
 
-                  return (
-                    <li
-                      key={person.id}
-                      className="rounded-[var(--r-md)] bg-cream-2 px-5 py-4"
-                    >
-                      <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
-                        <span className="min-w-0 flex-1">
-                          <span className="label block truncate text-ink">
-                            {person.full_name ?? person.email}
-                          </span>
-                          <span className="label-sm block truncate text-muted">
-                            {person.email}
-                          </span>
-                        </span>
-                        <Chip tone={isOwner ? "ink" : "teal"}>{person.role}</Chip>
-                        <Chip tone={grant ? "muted" : "lime"}>
-                          {isOwner
-                            ? "everything"
-                            : grant
-                              ? `${grant.caps.length} of ${CAPS.length}`
-                              : "everything"}
-                        </Chip>
-                        {isMe ? (
-                          <span className="label-sm text-muted">You</span>
-                        ) : (
-                          <ActionForm
-                            action={setRole}
-                            submit="Remove"
-                            tone="danger"
-                            className="contents"
-                            confirm={`Remove organiser access from ${person.email}?`}
-                          >
-                            <input type="hidden" name="profile_id" value={person.id} />
-                            <input type="hidden" name="role" value="participant" />
-                          </ActionForm>
-                        )}
-                      </div>
+        {/* -------------------------------------------------------- the numbers */}
+        <section className="mt-12">
+          <h2 className="label text-muted">The department, right now</h2>
+          <div className="mt-4 grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-6">
+            <Stat value={snapshot.students} label="Students" note="Accounts on the roll" />
+            <Stat value={snapshot.records} label="Records" note="Filed by students" />
+            <Stat value={snapshot.waiting} label="To check" note="Waiting on somebody" />
+            <Stat value={snapshot.verified} label="Verified" note="Checked and agreed" />
+            <Stat value={snapshot.withFile} label="With proof" note="Carrying a file" />
+            <Stat value={snapshot.rosterPeople} label="Committee" note="On the public roster" />
+          </div>
+        </section>
 
-                      {isOwner || isMe ? (
-                        <p className="serif-it mt-3 text-[0.88rem] leading-relaxed text-muted">
-                          {isOwner
-                            ? "An owner holds every area and cannot be narrowed, so the site can never be locked out of its own settings."
-                            : "You cannot change your own access, for the same reason you cannot change your own role."}
-                        </p>
-                      ) : (
-                        <details className="mt-3">
-                          <summary className="label-sm cursor-pointer text-muted hover:text-ink">
-                            What they can reach
-                          </summary>
-
-                          <ActionForm action={setGrants} submit="Save access" tone="ghost">
-                            <input type="hidden" name="profile_id" value={person.id} />
-                            <div className="mt-4 grid gap-2">
-                              {CAPS.map((cap) => (
-                                <label
-                                  key={cap.value}
-                                  className="flex cursor-pointer items-start gap-3 rounded-[var(--r-md)] bg-white px-4 py-3"
-                                >
-                                  <input
-                                    type="checkbox"
-                                    name="cap"
-                                    value={cap.value}
-                                    defaultChecked={
-                                      grant ? grant.caps.includes(cap.value) : true
-                                    }
-                                    className="mt-1 h-4 w-4 shrink-0 accent-[var(--teal)]"
-                                  />
-                                  <span>
-                                    <span className="label block text-ink">{cap.label}</span>
-                                    <span className="mt-0.5 block text-[0.84rem] leading-snug text-muted">
-                                      {cap.note}
-                                    </span>
-                                  </span>
-                                </label>
-                              ))}
-                            </div>
-                          </ActionForm>
-
-                          {grant ? (
-                            <div className="mt-2">
-                              <ActionForm
-                                action={clearGrants}
-                                submit="Give them the whole console"
-                                tone="ghost"
-                              >
-                                <input type="hidden" name="profile_id" value={person.id} />
-                              </ActionForm>
-                            </div>
-                          ) : null}
-                        </details>
-                      )}
-                    </li>
-                  );
-                })}
-              </ul>
-
-              <div className="mt-7 border-t border-ink/10 pt-6">
-                <p className="label text-ink">Allowlist</p>
-                <p className="serif-it mt-2 text-[0.92rem] leading-relaxed text-muted">
-                  An email here becomes an organiser the moment it signs in, through any provider.
-                  Use it for people who do not have an account yet.
+        {/* --------------------------------------------------------- the details */}
+        <div className="mt-6 grid gap-6 lg:grid-cols-2">
+          <Panel
+            eyebrow="Scoring"
+            title="What a record is worth"
+            aside={caps.includes("content") ? <Link href="/admin/site/points" className="hover:text-teal">Edit</Link> : undefined}
+          >
+            {scale.length ? (
+              <>
+                <p className="serif-it text-[0.98rem] leading-relaxed text-muted">
+                  A record scores its base plus its level. Change a number and the whole
+                  department is scored again on the next request; nothing is stored against a row.
                 </p>
 
-                {allowlist.data?.length ? (
-                  <ul className="mt-4 grid gap-2">
-                    {allowlist.data.map((entry) => (
-                      <li
-                        key={entry.email}
-                        className="flex flex-wrap items-center gap-x-4 gap-y-1 rounded-[var(--r-md)] bg-cream-2 px-5 py-3"
-                      >
-                        <span className="min-w-0 flex-1 truncate text-[0.95rem] text-ink">
-                          {entry.email}
-                        </span>
-                        {entry.note ? (
-                          <span className="label-sm text-muted">{entry.note}</span>
-                        ) : null}
-                        <ActionForm
-                          action={removeOrganiserEmail}
-                          submit="Remove"
-                          tone="danger"
-                          className="contents"
+                <div className="mt-5 grid gap-x-8 gap-y-1 sm:grid-cols-2">
+                  <div>
+                    <p className="label-sm text-teal">Base</p>
+                    <dl className="mt-2">
+                      {base.map((row) => (
+                        <div
+                          key={row.key}
+                          className="flex items-baseline justify-between gap-4 border-b border-ink/10 py-2 last:border-0"
                         >
-                          <input type="hidden" name="email" value={entry.email} />
-                        </ActionForm>
-                      </li>
-                    ))}
-                  </ul>
-                ) : null}
-
-                <ActionForm action={addOrganiserEmail} submit="Add to the allowlist" tone="solid">
-                  <div className="mt-4 grid gap-4 sm:grid-cols-2">
-                    <div>
-                      <label htmlFor="organiser-email" className="label block text-ink">
-                        Email
-                      </label>
-                      <input
-                        id="organiser-email"
-                        name="email"
-                        type="email"
-                        required
-                        placeholder="name@vit.edu"
-                        className="field mt-2.5"
-                      />
-                    </div>
-                    <div>
-                      <label htmlFor="organiser-note" className="label block text-ink">
-                        Note
-                      </label>
-                      <input
-                        id="organiser-note"
-                        name="note"
-                        type="text"
-                        placeholder="Technical vertical"
-                        className="field mt-2.5"
-                      />
-                    </div>
+                          <dt className="text-[0.95rem] text-ink">{row.label}</dt>
+                          <dd className="d-tall text-[1.15rem] text-ink">{row.points}</dd>
+                        </div>
+                      ))}
+                    </dl>
                   </div>
-                </ActionForm>
-              </div>
-            </Panel>
-            ) : null}
+                  <div>
+                    <p className="label-sm text-teal">Level, added on top</p>
+                    <dl className="mt-2">
+                      {levels.map((row) => (
+                        <div
+                          key={row.key}
+                          className="flex items-baseline justify-between gap-4 border-b border-ink/10 py-2 last:border-0"
+                        >
+                          <dt className="text-[0.95rem] text-ink">
+                            {LEVEL_LABEL[row.key.replace("level:", "")] ?? row.label}
+                          </dt>
+                          <dd className="d-tall text-[1.15rem] text-ink">+{row.points}</dd>
+                        </div>
+                      ))}
+                    </dl>
+                  </div>
+                </div>
+              </>
+            ) : (
+              <Empty>
+                The scale could not be read. Nothing is printed from a constant here on purpose: a
+                scale shown from code while the database scores from a table is a console that
+                lies about a student&rsquo;s own total.
+              </Empty>
+            )}
+          </Panel>
 
-            <Panel eyebrow="Record" title="Recent actions">
-              {audit.length ? (
-                <ul className="grid gap-2">
-                  {audit.map((entry) => (
-                    <li
-                      key={entry.id}
-                      className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1 border-b border-ink/10 py-3 last:border-0"
-                    >
-                      <span className="font-mono text-[0.85rem] text-ink">{entry.action}</span>
-                      <span className="label-sm text-muted">
-                        {new Date(entry.created_at).toLocaleString("en-IN", {
-                          dateStyle: "medium",
-                          timeStyle: "short",
-                        })}
+          <Panel
+            eyebrow="The front page"
+            title="Standouts"
+            aside={
+              settings.showcase_public ? (
+                <Chip tone="lime">Showing</Chip>
+              ) : (
+                <Chip tone="muted">Switched off</Chip>
+              )
+            }
+          >
+            {showcase.length ? (
+              <ul className="grid gap-5">
+                {showcase.map((category) => (
+                  <li key={category.id}>
+                    <p className="label text-ink">{category.title}</p>
+                    <p className="label-sm mt-0.5 text-muted">
+                      {METRIC_LABEL[category.metric] ?? category.metric}
+                    </p>
+                    {category.entries.length ? (
+                      <ol className="mt-2 grid gap-1">
+                        {category.entries.map((entry) => (
+                          <li
+                            key={entry.studentId}
+                            className="flex flex-wrap items-baseline justify-between gap-x-4 border-b border-ink/10 py-2 last:border-0"
+                          >
+                            <span className="text-[0.95rem] text-ink">
+                              <span className="label-sm mr-2 text-muted">{entry.place}</span>
+                              {entry.name}
+                              {entry.year ? (
+                                <span className="label-sm ml-2 text-muted">{entry.year}</span>
+                              ) : null}
+                            </span>
+                            <span className="label-sm text-muted">
+                              {category.metric === "manual"
+                                ? (entry.note ?? "Named by the committee")
+                                : `${entry.value} ${metricUnit(category.metric)}`}
+                            </span>
+                          </li>
+                        ))}
+                      </ol>
+                    ) : (
+                      <p className="serif-it mt-2 text-[0.9rem] text-muted">
+                        Nothing in it yet. A ranked category fills itself as students upload; a
+                        chosen one waits for you to name somebody.
+                      </p>
+                    )}
+                  </li>
+                ))}
+              </ul>
+            ) : (
+              <Empty>
+                No category is set up. Make one under Site content and the front page starts
+                naming students; until then that band does not render at all.
+              </Empty>
+            )}
+          </Panel>
+        </div>
+
+        <div className="mt-6 grid gap-6 lg:grid-cols-[1.15fr_1fr]">
+          <Panel eyebrow="Ranking" title="Top of the board" aside={`${snapshot.records} records in all`}>
+            {board.length ? (
+              <ol className="grid">
+                {board.map((row) => (
+                  <li
+                    key={row.student_id}
+                    className="flex flex-wrap items-baseline justify-between gap-x-6 gap-y-1 border-b border-ink/10 py-3 last:border-0"
+                  >
+                    <span className="flex min-w-0 items-baseline gap-3">
+                      <span className="d-tall w-6 shrink-0 text-[1.1rem] text-muted">
+                        {row.place}
                       </span>
-                    </li>
-                  ))}
-                </ul>
-              ) : (
-                <Empty>
-                  Nothing has happened yet. Every payment verified, chapter opened, score set and
-                  cut applied is written here with who did it, so a disputed decision has a record.
-                </Empty>
-              )}
-            </Panel>
-          </div>
+                      <span className="min-w-0">
+                        <span className="block truncate text-[1rem] text-ink">{row.name}</span>
+                        <span className="label-sm block text-muted">
+                          {[row.year, `${row.certificates} ${row.certificates === 1 ? "record" : "records"}`]
+                            .filter(Boolean)
+                            .join(" · ")}
+                        </span>
+                      </span>
+                    </span>
+                    <span className="d-tall text-[1.25rem] text-ink">{row.points}</span>
+                  </li>
+                ))}
+              </ol>
+            ) : (
+              <Empty>
+                Nobody is on the board. It fills as students file records, and a student with
+                nothing filed is left off it rather than listed on nought.
+              </Empty>
+            )}
+          </Panel>
 
-          <div className="mt-6">
-            <Panel eyebrow="Teams" title="Registration and payments" aside={`${counts.teams} teams`}>
-              {counts.teams === 0 ? (
-                <Empty>
-                  No team has been made yet. Teams appear here the moment somebody makes one, with
-                  their payment state and the controls to verify it.
-                </Empty>
-              ) : (
-                <>
-                  <p className="serif-it text-[1rem] leading-relaxed text-muted">
-                    {counts.awaitingVerification > 0
-                      ? `${counts.awaitingVerification} ${counts.awaitingVerification === 1 ? "payment is" : "payments are"} waiting on a check.`
-                      : "No payment is waiting on a check."}
-                  </p>
-                  <Link href="/admin/teams" className="pill pill-lime mt-6">
-                    Open the team list
-                  </Link>
-                </>
-              )}
-            </Panel>
-          </div>
-        </Container>
-      </div>
-    </>
+          <Panel eyebrow="Running" title="Events" aside={`${snapshot.entries} entries`}>
+            {events.length ? (
+              <ul className="grid gap-3">
+                {events.map((event) => (
+                  <li
+                    key={event.slug}
+                    className="rounded-[var(--r-md)] bg-cream-2 px-5 py-4"
+                  >
+                    <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
+                      <span className="label text-ink">{event.name}</span>
+                      <Chip
+                        tone={
+                          event.state === "open" ? "lime" : event.state === "closed" ? "ink" : "muted"
+                        }
+                      >
+                        {event.state}
+                      </Chip>
+                    </div>
+                    <p className="label-sm mt-1 text-muted">
+                      {[
+                        event.when_label,
+                        event.fee_inr ? `₹${event.fee_inr}` : "Free",
+                        event.team_size ? `Teams of ${event.team_size}` : null,
+                      ]
+                        .filter(Boolean)
+                        .join(" · ")}
+                    </p>
+                  </li>
+                ))}
+              </ul>
+            ) : (
+              <Empty>
+                No department event is set up. Add one under Event system and it appears on the
+                public events page.
+              </Empty>
+            )}
+          </Panel>
+        </div>
+
+        <div className="mt-6">
+          <Panel eyebrow="Record" title="Recent actions">
+            {audit.length ? (
+              <ul className="grid">
+                {audit.map((entry) => (
+                  <li
+                    key={entry.id}
+                    className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1 border-b border-ink/10 py-3 last:border-0"
+                  >
+                    <span className="font-mono text-[0.85rem] text-ink">{entry.action}</span>
+                    <span className="label-sm text-muted">{stamp(entry.created_at)}</span>
+                  </li>
+                ))}
+              </ul>
+            ) : (
+              <Empty>
+                Nothing has happened yet. Every record verified, payment checked, chapter opened,
+                score set and cut applied is written here with who did it, so a disputed decision
+                has a record.
+              </Empty>
+            )}
+          </Panel>
+        </div>
+      </Container>
+    </div>
   );
 }

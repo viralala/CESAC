@@ -154,6 +154,44 @@ export function SignInPanel({
                   {copy.lede}
                 </p>
 
+                {/* The department made an account for every student in the
+                    year, so almost nobody arriving here is signing up: they
+                    are signing in to something that already exists and do not
+                    know the password. It is their own address. Said here, in
+                    full, above the form, because the hint under the password
+                    box was being read after the first failed attempt rather
+                    than before it. */}
+                {!isSignUp ? (
+                  <div className="mt-6 rounded-[var(--r-md)] border-2 border-teal/25 bg-teal/[0.06] px-5 py-4">
+                    <p className="label text-ink">If the department made your account</p>
+                    <ol className="mt-3 grid gap-2 text-[0.95rem] leading-relaxed text-ink">
+                      <li className="flex gap-3">
+                        <span aria-hidden className="label-sm shrink-0 text-teal">1</span>
+                        <span>
+                          Your email is your <strong>VIT address</strong>, the one ending{" "}
+                          <span className="font-mono text-[0.9rem]">@vit.edu</span>.
+                        </span>
+                      </li>
+                      <li className="flex gap-3">
+                        <span aria-hidden className="label-sm shrink-0 text-teal">2</span>
+                        <span>
+                          Your password is <strong>that same email address</strong>, typed again.
+                        </span>
+                      </li>
+                      <li className="flex gap-3">
+                        <span aria-hidden className="label-sm shrink-0 text-teal">3</span>
+                        <span>
+                          You are asked to pick a new one straight away, and nothing else on the
+                          site opens until you do. Everyone in your class knows the first one.
+                        </span>
+                      </li>
+                    </ol>
+                    <p className="serif-it mt-3 text-[0.88rem] leading-relaxed text-muted">
+                      Made your own account instead? Sign in with the password you chose.
+                    </p>
+                  </div>
+                ) : null}
+
                 {/* mode toggle, as a segmented pill */}
                 <div
                   role="tablist"

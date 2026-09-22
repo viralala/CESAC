@@ -30,11 +30,16 @@ export function ConsoleBar({
   nav: readonly { href: string; label: string }[];
 }) {
   const isAdmin = viewer.isAdmin;
+  // Three roles, three bars. Dark for organisers, teal for participants, and
+  // the verifier gets the dark one too because what they are doing is the
+  // committee's work rather than their own.
+  const dark = isAdmin || viewer.isVerifier;
+  const role = isAdmin ? "Organiser" : viewer.isVerifier ? "Verifier" : "Participant";
 
   return (
     <header
       className={`sticky top-0 z-50 border-b-2 border-white/10 ${
-        isAdmin ? "washi-deep" : "washi-teal"
+        dark ? "washi-deep" : "washi-teal"
       }`}
     >
       <Container className="flex flex-wrap items-center gap-x-5 gap-y-3 py-3.5">
@@ -54,7 +59,7 @@ export function ConsoleBar({
 
         <span
           className={`label-sm rounded-full px-3 py-1.5 ${
-            isAdmin ? "bg-lime text-ink" : "bg-cream/15 text-cream"
+            dark ? "bg-lime text-ink" : "bg-cream/15 text-cream"
           }`}
         >
           {area}
@@ -75,9 +80,7 @@ export function ConsoleBar({
         <div className="ml-auto flex items-center gap-3">
           <span className="hidden text-right sm:block">
             <span className="label block text-cream">{viewer.name}</span>
-            <span className="label-sm block text-cream/50">
-              {isAdmin ? "Organiser" : "Participant"}
-            </span>
+            <span className="label-sm block text-cream/50">{role}</span>
           </span>
           <form action={signOut}>
             <button
@@ -202,5 +205,94 @@ export function Stat({ value, label, note }: { value: ReactNode; label: string; 
         <p className="mt-1.5 text-center text-[0.85rem] leading-snug text-muted">{note}</p>
       ) : null}
     </div>
+  );
+}
+
+export type TileTone = "teal" | "lime" | "violet" | "azure" | "pink" | "ink";
+
+const TILE_SKIN: Record<TileTone, { edge: string; wash: string; dot: string }> = {
+  teal: { edge: "hover:border-teal", wash: "group-hover:bg-teal/5", dot: "bg-teal" },
+  lime: { edge: "hover:border-lime", wash: "group-hover:bg-lime/15", dot: "bg-lime" },
+  violet: { edge: "hover:border-violet", wash: "group-hover:bg-violet/5", dot: "bg-violet" },
+  azure: { edge: "hover:border-azure", wash: "group-hover:bg-azure/5", dot: "bg-azure" },
+  pink: { edge: "hover:border-pink", wash: "group-hover:bg-pink/5", dot: "bg-pink" },
+  ink: { edge: "hover:border-ink", wash: "group-hover:bg-ink/5", dot: "bg-ink" },
+};
+
+/**
+ * One place to go, as a card the whole of which is the link.
+ *
+ * The command page used to be a wall of panels with the controls in them, and
+ * finding the students list meant reading past the chapter cuts. It is a
+ * board of these now: a card says where it goes, what is behind it and how
+ * many of that thing there are, so the number is the reason to click rather
+ * than something you find out afterwards.
+ *
+ * The whole card is one anchor rather than a div with a link in the corner,
+ * because a target the size of a card can be hit on a phone at a registration
+ * desk and a four-word link cannot.
+ */
+export function Tile({
+  href,
+  eyebrow,
+  title,
+  blurb,
+  value,
+  note,
+  tone = "teal",
+}: {
+  href: string;
+  eyebrow?: string;
+  title: string;
+  blurb: string;
+  /** The live count behind the card. Left out when there is nothing to count. */
+  value?: ReactNode;
+  note?: string;
+  tone?: TileTone;
+}) {
+  const skin = TILE_SKIN[tone];
+
+  return (
+    <Link
+      href={href}
+      className={`group relative flex flex-col overflow-hidden rounded-[var(--r-lg)] border-2 border-ink/12 bg-white p-6 transition-all duration-200 hover:-translate-y-0.5 hover:shadow-[0_14px_40px_-18px_rgba(0,0,0,0.45)] ${skin.edge}`}
+    >
+      <span
+        aria-hidden
+        className={`pointer-events-none absolute inset-0 transition-colors duration-200 ${skin.wash}`}
+      />
+
+      <span className="relative flex items-start justify-between gap-4">
+        <span className="min-w-0">
+          {eyebrow ? (
+            <span className="label-sm flex items-center gap-2 text-muted">
+              <span aria-hidden className={`h-2 w-2 rounded-full ${skin.dot}`} />
+              {eyebrow}
+            </span>
+          ) : null}
+          <span className="d-tall mt-2 block text-[1.5rem] leading-tight text-ink">{title}</span>
+        </span>
+        {value !== undefined ? (
+          <span className="shrink-0 text-right">
+            <span className="d-tall block text-[2rem] leading-none text-ink">{value}</span>
+            {note ? <span className="label-sm mt-1 block text-muted">{note}</span> : null}
+          </span>
+        ) : null}
+      </span>
+
+      <span className="serif-it relative mt-3 block text-[0.95rem] leading-relaxed text-muted">
+        {blurb}
+      </span>
+
+      <span className="label relative mt-5 flex items-center gap-2 text-teal">
+        Open
+        <span
+          aria-hidden
+          className="transition-transform duration-200 group-hover:translate-x-1"
+        >
+          &rarr;
+        </span>
+      </span>
+    </Link>
   );
 }

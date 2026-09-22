@@ -186,9 +186,11 @@ function refresh(): void {
  * src/lib/console/records.ts and this reads the same list the form rendered
  * from, so a field cannot be on the form and unhandled here.
  *
- * The file is optional now, and for a publication it usually does not exist at
- * all. That is the change that made the whole thing possible: the table's five
- * file columns were NOT NULL when it only ever held certificates.
+ * A new record has to arrive with one file on it. The columns themselves stay
+ * nullable, which is what lets an organiser file a row on a student's behalf
+ * and what lets the sample data exist at all, so the rule is here rather than
+ * on the table: a student adding their own record attaches something, or it is
+ * not a record anybody can check.
  *
  * Order matters. The file goes to Drive and the row goes to Postgres, in that
  * order, because an orphaned Drive file is a tidy-up job whereas a row
@@ -325,32 +327,39 @@ export async function saveRecord(
     return { notice: `${title} updated.`, at: Date.now() };
   }
 
-  // A file on the add form is optional, and for a publication there usually is
-  // not one. The other three slots are uploaded from the record's own card
-  // afterwards: a Vercel function refuses any request body over 4.5MB, so four
-  // files cannot travel in one request however the form is written.
+  // One file, and only one, travels with the add form. The other three slots
+  // are uploaded from the saved record afterwards: a Vercel function refuses
+  // any request body over 4.5MB, so four files cannot travel together however
+  // the form is written.
   const file = formData.get("file");
   let uploaded: Awaited<ReturnType<typeof putFile>> | null = null;
 
-  if (file instanceof File && file.size > 0) {
-    const creds = driveCredentials();
-    if (!creds) {
-      return {
-        error: "Uploads are not switched on yet. Save the record without a file for now.",
-      };
-    }
-    try {
-      uploaded = await putFile(creds, viewer, file);
-    } catch (error) {
-      if (error instanceof DriveError) {
-        console.error("drive upload failed", error.message, error.detail);
-        return { error: error.message };
-      }
-      console.error("record upload failed", error);
-      return { error: "The upload did not go through. Try again in a minute." };
-    }
-    if (!uploaded.ok) return { error: uploaded.error };
+  if (!(file instanceof File) || file.size === 0) {
+    return {
+      error:
+        "Attach one file before saving. For an event that is the certificate; for a paper it can be the paper, the acceptance mail or a photo of the listing.",
+    };
   }
+
+  const creds = driveCredentials();
+  if (!creds) {
+    return {
+      error:
+        "Uploads are not switched on yet, and a record needs a file, so this cannot be saved. Tell an organiser.",
+    };
+  }
+
+  try {
+    uploaded = await putFile(creds, viewer, file);
+  } catch (error) {
+    if (error instanceof DriveError) {
+      console.error("drive upload failed", error.message, error.detail);
+      return { error: error.message };
+    }
+    console.error("record upload failed", error);
+    return { error: "The upload did not go through. Try again in a minute." };
+  }
+  if (!uploaded.ok) return { error: uploaded.error };
 
   const { error } = await supabase.from("certificates").insert({
     ...(row as TablesInsert<"certificates">),

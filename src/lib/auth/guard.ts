@@ -4,7 +4,7 @@ import { redirect } from "next/navigation";
 import { cache } from "react";
 
 import { createClient } from "@/lib/supabase/server";
-import { homeFor, viewerFrom, type Role, type Viewer } from "./session";
+import { homeFor, viewerFrom, type Viewer } from "./session";
 
 /**
  * The authoritative check.
@@ -49,8 +49,17 @@ export const getViewer = cache(async (): Promise<Viewer | null> => {
   return profile ? viewerFrom(profile) : null;
 });
 
-function toGate(role: Role, next: string): never {
-  redirect(`/signin?next=${encodeURIComponent(next)}${role === "admin" ? "&role=admin" : ""}`);
+function toGate(want: Want, next: string): never {
+  redirect(`/signin?next=${encodeURIComponent(next)}${want === "admin" ? "&role=admin" : ""}`);
+}
+
+/** The three consoles, as the thing a page asks for. */
+type Want = "participant" | "admin" | "verifier";
+
+function holds(viewer: Viewer, want: Want): boolean {
+  if (want === "admin") return viewer.isAdmin;
+  if (want === "verifier") return viewer.isVerifier;
+  return viewer.role === "participant";
 }
 
 /**
@@ -72,15 +81,22 @@ export function gateUnsetPassword(viewer: Viewer): void {
   if (viewer.mustChangePassword) redirect("/account/password?first=1");
 }
 
-async function requireRole(role: Role, next: string): Promise<Viewer> {
+/**
+ * Somebody is standing at a console. Is it theirs?
+ *
+ * Whoever it is not gets sent to their own, rather than to a wall, because
+ * every one of these three has a home and landing on the right one is more
+ * use than being told which one is wrong. That is also why the wrong-console
+ * case reads `homeFor(viewer.role)` and not a hard-coded path: when the
+ * verifier was added, this function did not have to change.
+ */
+async function requireRole(want: Want, next: string): Promise<Viewer> {
   const viewer = await getViewer();
-  if (!viewer) toGate(role, next);
+  if (!viewer) toGate(want, next);
 
   gateUnsetPassword(viewer);
 
-  const wantsAdmin = role === "admin" || role === "owner";
-  if (wantsAdmin && !viewer.isAdmin) redirect("/dashboard");
-  if (!wantsAdmin && viewer.isAdmin) redirect("/admin");
+  if (!holds(viewer, want)) redirect(homeFor(viewer.role));
 
   return viewer;
 }
@@ -95,6 +111,17 @@ export function requireParticipant(): Promise<Viewer> {
 
 export function requireAdmin(): Promise<Viewer> {
   return requireRole("admin", "/admin");
+}
+
+/**
+ * The record checker's console.
+ *
+ * A verifier is not a narrowed organiser and this is not requireAdmin with a
+ * capability: `isAdmin` is false for them, so every policy and every page
+ * written against `is_admin()` keeps them out with no branch of its own.
+ */
+export function requireVerifier(): Promise<Viewer> {
+  return requireRole("verifier", "/verify");
 }
 
 export { homeFor };

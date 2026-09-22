@@ -398,44 +398,32 @@ export async function reviewCertificate(
     return { error: "A certificate is verified, turned down, or put back in the queue." };
   }
 
-  const viewer = await requireAdmin();
+  await requireAdmin();
   const supabase = await createClient();
 
-  const decided =
-    decision === "reopen"
-      ? { verified: false, verified_by: null, verified_at: null }
-      : {
-          verified: decision === "verify",
-          verified_by: viewer.id,
-          verified_at: new Date().toISOString(),
-        };
-
-  // Selecting the row back is not for the value. An update that row level
-  // security refuses matches nothing and comes back from PostgREST as a
-  // success with no error, so without this an organiser would be told a
-  // certificate had been checked when nothing was written. It earns its keep
-  // here more than anywhere else on the console: the admin update policy on
-  // `certificates` is the one thing about this page that could not be
-  // confirmed by reading the repository, because the base schema is not in
-  // it. If that policy turns out to be missing, this is what says so.
-  const { data, error } = await supabase
-    .from("certificates")
-    .update(decided)
-    .eq("id", id)
-    .select("id");
+  /*
+   * One function in the database, shared with the verifier's console.
+   *
+   * This used to be a direct update through the admin write policy, which
+   * worked and had two problems. Nothing was written to the audit log, so the
+   * one console decision with a student's name against it was the one
+   * decision with no record of who made it. And when verifiers arrived there
+   * were two screens doing the same thing by different routes, which is two
+   * places for the rule to drift. verify_record checks that the caller is a
+   * verifier or an organiser holding Student records, writes the decision and
+   * writes the audit entry, in one statement that cannot half happen.
+   */
+  const { error } = await supabase.rpc("verify_record", {
+    p_certificate_id: id,
+    p_decision: decision,
+  });
 
   // The student's own record carries the verified mark, so their page has to
   // be rebuilt too. The ranking is deliberately not in this list: it counts
   // certificates whatever state they are in, so nothing here changes it.
   revalidatePath("/admin/certificates");
   revalidatePath("/dashboard/certificates");
-
-  if (!error && !data?.length) {
-    return {
-      error:
-        "Nothing was written, so nothing has changed. Either that certificate is gone, or the admin update policy on the table is not letting this through. Reload the page before trying again.",
-    };
-  }
+  revalidatePath("/verify");
 
   return say(
     error,

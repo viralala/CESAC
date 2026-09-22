@@ -24,6 +24,8 @@ export async function proxy(request: NextRequest) {
     pathname.startsWith("/dashboard/") ||
     pathname === "/admin" ||
     pathname.startsWith("/admin/") ||
+    pathname === "/verify" ||
+    pathname.startsWith("/verify/") ||
     pathname.startsWith("/account");
 
   if (!user && isConsole) {

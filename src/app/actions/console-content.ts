@@ -132,7 +132,10 @@ export async function saveRosterPerson(
 
   const supabase = await adminClient();
   const { error } = await supabase.rpc("admin_upsert_roster_person", {
-    p_id: String(formData.get("person_id") ?? "").trim() || null,
+    // Left out entirely for somebody new, rather than sent as null. The
+    // parameter defaults to null in the database and that is the signal to
+    // insert; PostgREST omits a key whose value is undefined.
+    p_id: String(formData.get("person_id") ?? "").trim() || undefined,
     p_group_id: groupId,
     p_name: name,
     p_role: String(formData.get("role") ?? "").trim() || undefined,

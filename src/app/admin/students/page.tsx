@@ -16,6 +16,7 @@ const ROLE_TONE: Record<StudentForOrganiser["role"], ChipTone> = {
   participant: "muted",
   admin: "teal",
   owner: "ink",
+  verifier: "lime",
 };
 
 /** The page asked for in the address bar, or the first one. */

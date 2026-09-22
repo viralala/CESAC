@@ -162,7 +162,7 @@ function Record({ certificate }: { certificate: CertificateForOrganiser }) {
           human(certificate.size_bytes),
           `uploaded ${stamp(certificate.created_at)}`,
         ].join(" · ")
-      : `No certificate attached · added ${stamp(certificate.created_at)}`;
+      : `Nothing attached · added ${stamp(certificate.created_at)}`;
 
   /*
    * The fields this kind of record actually carries.
@@ -370,8 +370,9 @@ export default async function AdminCertificatesPage() {
               Everything students have filed, oldest first: hackathon certificates and the four
               publication layouts from the department sheet. The files are in the department
               Drive and the row here is only the claim made about them, so opening the link is
-              the only thing that actually decides anything. A publication often has no file at
-              all, which is normal and not a missing upload.
+              the only thing that actually decides anything. Since 22 September a student
+              cannot file a record without attaching something, so a row with nothing on it was
+              either typed in here by an organiser or filed before that rule existed.
             </p>
             <p className="serif-it mt-4 text-[1.02rem] leading-relaxed text-muted">
               Nothing on this page moves the ranking. The board counts a certificate from the
