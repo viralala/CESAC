@@ -396,7 +396,11 @@ export default async function AdminPage({ searchParams }: PageProps<"/admin">) {
         </div>
 
         <div className="mt-6 grid gap-6 lg:grid-cols-[1.15fr_1fr]">
-          <Panel eyebrow="Ranking" title="Top of the board" aside={`${snapshot.records} records in all`}>
+          <Panel
+            eyebrow="Ranking"
+            title="Top of the board"
+            aside={`${snapshot.records} ${snapshot.records === 1 ? "record" : "records"} in all`}
+          >
             {board.length ? (
               <ol className="grid">
                 {board.map((row) => (

@@ -32,27 +32,47 @@ const COLUMNS: { title: string; links: [string, string][] }[] = [
   },
 ];
 
-const MAKER_LINKS = [
-  {
-    id: "github" as const,
-    name: "GitHub",
-    label: "Viral Dhoka on GitHub",
-    href: "https://github.com/viralala",
-  },
+/**
+ * The department's own accounts, not the committee's and not a person's.
+ *
+ * These are the two places the Computer Engineering department posts as itself,
+ * so they are the two that belong in a footer that says the site was built by
+ * the department. Anything else a student or a committee runs is a different
+ * kind of link and does not go here.
+ */
+const DEPARTMENT_LINKS = [
   {
     id: "linkedin" as const,
     name: "LinkedIn",
-    label: "Viral Dhoka on LinkedIn",
-    href: "https://www.linkedin.com/in/viral-dhoka-1aa3b4318/",
+    label: "Computer Engineering, VIT Pune, on LinkedIn",
+    href: "https://www.linkedin.com/in/computer-engineering-department-vit-pune/",
+  },
+  {
+    id: "instagram" as const,
+    name: "Instagram",
+    label: "Computer Engineering, VIT Pune, on Instagram",
+    href: "https://www.instagram.com/vitpune_computer_engineering/?hl=en",
   },
 ];
 
 /** Drawn rather than fetched, so the footer blocks on no CDN. */
-function MakerMark({ id }: { id: "github" | "linkedin" }) {
-  if (id === "github") {
+function SocialMark({ id }: { id: "linkedin" | "instagram" }) {
+  if (id === "instagram") {
+    // Drawn from shapes rather than one path, because the mark is three
+    // concentric things and strokes at 16px stay legible where a filled
+    // silhouette of the same glyph turns into a blob.
     return (
-      <svg viewBox="0 0 16 16" className="h-4 w-4 shrink-0" aria-hidden fill="currentColor">
-        <path d="M8 0C3.58 0 0 3.58 0 8a8 8 0 0 0 5.47 7.59c.4.07.55-.17.55-.38l-.01-1.34c-2.23.48-2.7-1.07-2.7-1.07-.36-.93-.89-1.18-.89-1.18-.73-.5.05-.49.05-.49.81.06 1.23.83 1.23.83.72 1.23 1.88.87 2.34.67.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82a7.6 7.6 0 0 1 4 0c1.53-1.03 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.28.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48l-.01 2.2c0 .21.15.46.55.38A8 8 0 0 0 16 8c0-4.42-3.58-8-8-8Z" />
+      <svg
+        viewBox="0 0 16 16"
+        className="h-4 w-4 shrink-0"
+        aria-hidden
+        fill="none"
+        stroke="currentColor"
+        strokeWidth={1.5}
+      >
+        <rect x="1.45" y="1.45" width="13.1" height="13.1" rx="4" />
+        <circle cx="8" cy="8" r="3.1" />
+        <circle cx="11.75" cy="4.3" r="0.9" fill="currentColor" stroke="none" />
       </svg>
     );
   }
@@ -122,21 +142,20 @@ export function SiteFooter() {
             ))}
           </div>
 
-          {/* Who built it.
-              Its own row rather than a line tacked onto the copyright,
-              because it is a different kind of statement: the line above is
-              the committee's, this one is one person's, and running them
-              together would read as the committee claiming the work or the
-              person claiming the committee. */}
+          {/* The department, elsewhere.
+              Its own row rather than a line tacked onto the copyright, because
+              these are the department's accounts and the line below is the
+              committee's: running them together would read as one speaking for
+              the other. */}
           <div className="mt-14 flex flex-col gap-4 border-t border-cream/12 pt-7 sm:flex-row sm:items-center sm:justify-between">
             <p className="text-[0.95rem] leading-relaxed text-cream/70">
-              Made by <span className="text-cream">Viral Dhoka</span>
+              <span className="text-cream">{CESAC.department}</span>, elsewhere
               <span aria-hidden className="mx-2 text-cream/30">·</span>
-              <span className="label-sm text-cream/45">SY CS-L</span>
+              <span className="label-sm text-cream/45">{CESAC.short}</span>
             </p>
 
             <div className="flex items-center gap-2.5">
-              {MAKER_LINKS.map((link) => (
+              {DEPARTMENT_LINKS.map((link) => (
                 <a
                   key={link.href}
                   href={link.href}
@@ -145,7 +164,7 @@ export function SiteFooter() {
                   aria-label={link.label}
                   className="label flex items-center gap-2.5 rounded-full border-2 border-cream/25 px-4 py-2 text-cream/75 transition-colors hover:border-lime hover:bg-lime hover:text-ink"
                 >
-                  <MakerMark id={link.id} />
+                  <SocialMark id={link.id} />
                   {link.name}
                 </a>
               ))}

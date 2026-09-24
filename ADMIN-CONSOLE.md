@@ -6,6 +6,41 @@ the code is written.
 
 ---
 
+## What landed on 24 September 2026
+
+The showcase is over, so two things.
+
+1. **The sample set is gone.** Twenty invented students, their fifty records,
+   their twenty-five questions and the three standouts picks that named them
+   have been deleted from the live database, along with the one record filed
+   against `demo.student@vit.edu`. What is left on the site is real: one record,
+   from the student who filed it, no questions waiting, and the one standouts
+   pick the committee added itself. A copy of everything removed is in
+   `scratchpad/backup/cesac-sample-set-removed-2026-09-24.json`, including the
+   Drive link the demo record pointed at, which was left in place rather than
+   binned.
+
+   **The three demo logins were deliberately kept.** They are test accounts
+   rather than sample data, and they are how anybody checks the three consoles
+   without holding a real committee password. To take those away as well:
+
+   ```sql
+   delete from auth.users where email like 'demo.%@vit.edu';
+   delete from public.admin_emails where email = 'demo.admin@vit.edu';
+   ```
+
+   The seven audit rows about deleted sample records were left alone. An audit
+   log you delete from is not an audit log, and they are a true record of a
+   demo that happened.
+
+2. **The footer carries the department's links, not the author's.** The
+   maker credit and its GitHub and LinkedIn buttons are gone, replaced by the
+   Computer Engineering department's own LinkedIn and Instagram. The repo still
+   names its author in `package.json` and at the bottom of the README, which is
+   authorship of the code rather than a credit on the site.
+
+---
+
 ## What landed on 22 September 2026
 
 Nine things, the day before the department showcase.
@@ -15,7 +50,8 @@ Nine things, the day before the department showcase.
    for a paper the paper, the acceptance mail or a photo of the listing. The
    three photo slots on a saved record stay optional. The rule is in
    `saveRecord`, not on the table, because an organiser filing a row on a
-   student's behalf should not be blocked and the sample data has no files.
+   student's behalf should not be blocked, and because a row that predates the
+   rule should not become unsaveable by it.
 
 2. **Verifiers.** A fourth role, and not a narrowed organiser: `is_admin()` is
    false for them, so the 26 policies built on it keep them out with no branch
@@ -59,6 +95,7 @@ Nine things, the day before the department showcase.
    ```
 
    The records, the showcase picks and the profiles all go on the cascade.
+   **This was run on 24 September 2026; the set is no longer on the site.**
 
 7. **`/admin` is a board, not a wall of switches.** Cards for everywhere the
    console goes, each with the live number behind it. The switches moved to
@@ -70,6 +107,7 @@ Nine things, the day before the department showcase.
    and the last few things anybody changed.
 
 9. **The footer credits the person who built it**, with GitHub and LinkedIn.
+   *Replaced on 24 September by the department's own LinkedIn and Instagram.*
 
 10. **Records and questions are lists you can work, not walls.** Both consoles
     show one line per row that opens on click, with the decision buttons
@@ -80,7 +118,7 @@ Nine things, the day before the department showcase.
 
 11. **Twenty-five sample questions**, from the same invented students, fourteen
     of them already answered. They come off with the same delete as the
-    records.
+    records. *Removed on 24 September, with the rest of the sample set.*
 
 **Also:** an organiser verifying a record now goes through the same
 `verify_record` function the verifier console uses, so it is written to the
