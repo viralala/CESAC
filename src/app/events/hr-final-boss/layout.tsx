@@ -12,10 +12,12 @@ import { LightCursor } from "@/components/hrfb/cursor";
 export default function HrFinalBossLayout({
   children,
 }: LayoutProps<"/events/hr-final-boss">) {
+  // keep-light: the page is blue and white by design, and keeps that in dark
+  // mode rather than having the site's dark palette poured over it.
   return (
-    <>
+    <div className="keep-light">
       {children}
       <LightCursor />
-    </>
+    </div>
   );
 }

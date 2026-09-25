@@ -2,6 +2,7 @@ import "server-only";
 
 import { cache } from "react";
 
+import { avatarUrl } from "@/lib/photos";
 import { createClient } from "@/lib/supabase/server";
 import type { Enums, Tables } from "@/lib/supabase/database.types";
 
@@ -346,6 +347,7 @@ export type BoardRow = {
   year: string | null;
   points: number;
   certificates: number;
+  photo: string | null;
 };
 
 export const getTopOfBoard = cache(async (limit = 8): Promise<BoardRow[]> => {
@@ -359,5 +361,6 @@ export const getTopOfBoard = cache(async (limit = 8): Promise<BoardRow[]> => {
     year: row.year,
     points: Number(row.points),
     certificates: Number(row.certificates),
+    photo: avatarUrl(row.photo),
   }));
 });

@@ -3,6 +3,7 @@ import Link from "next/link";
 
 import { Container, Label } from "@/components/aot/bits";
 import { Chip, Empty, Notice, Panel, Stat, Tile, type TileTone } from "@/components/console/shell";
+import { Avatar } from "@/components/site/avatar";
 import { requireAdmin } from "@/lib/auth/guard";
 import { CAP_LABEL, getMyCaps } from "@/lib/auth/caps";
 import { LEVEL_LABEL } from "@/lib/console/records";
@@ -360,10 +361,16 @@ export default async function AdminPage({ searchParams }: PageProps<"/admin">) {
                         {category.entries.map((entry) => (
                           <li
                             key={entry.studentId}
-                            className="flex flex-wrap items-baseline justify-between gap-x-4 border-b border-ink/10 py-2 last:border-0"
+                            className="flex flex-wrap items-center justify-between gap-x-4 border-b border-ink/10 py-2 last:border-0"
                           >
-                            <span className="text-[0.95rem] text-ink">
-                              <span className="label-sm mr-2 text-muted">{entry.place}</span>
+                            <span className="flex items-center gap-2 text-[0.95rem] text-ink">
+                              <span className="label-sm text-muted">{entry.place}</span>
+                              <Avatar
+                                key={entry.photo ?? "none"}
+                                name={entry.name}
+                                sources={[entry.photo]}
+                                size={28}
+                              />
                               {entry.name}
                               {entry.year ? (
                                 <span className="label-sm ml-2 text-muted">{entry.year}</span>
@@ -406,12 +413,13 @@ export default async function AdminPage({ searchParams }: PageProps<"/admin">) {
                 {board.map((row) => (
                   <li
                     key={row.student_id}
-                    className="flex flex-wrap items-baseline justify-between gap-x-6 gap-y-1 border-b border-ink/10 py-3 last:border-0"
+                    className="flex flex-wrap items-center justify-between gap-x-6 gap-y-1 border-b border-ink/10 py-3 last:border-0"
                   >
-                    <span className="flex min-w-0 items-baseline gap-3">
+                    <span className="flex min-w-0 items-center gap-3">
                       <span className="d-tall w-6 shrink-0 text-[1.1rem] text-muted">
                         {row.place}
                       </span>
+                      <Avatar key={row.photo ?? "none"} name={row.name} sources={[row.photo]} size={36} />
                       <span className="min-w-0">
                         <span className="block truncate text-[1rem] text-ink">{row.name}</span>
                         <span className="label-sm block text-muted">

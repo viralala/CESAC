@@ -41,6 +41,13 @@
   --lime: #c6f733;
   --pink: #ff3d8f;
 
+  /* The text that sits ON a pop. A pop is the same colour in both themes, so
+     the ink on it has to be too: --ink turns light in dark mode, and light
+     ink on lime is unreadable. Anything painted in a pop takes its text from
+     these two, never from --ink or --white. */
+  --on-pop: #0c1418;
+  --on-pop-light: #ffffff;
+
   /* the spot accent — demoted from brand, used sparingly */
   --red: #e83b2a;
   --red-deep: #b3141f;
@@ -109,6 +116,90 @@
   --sh-3: 0 28px 70px -36px rgba(9, 60, 68, 0.62);
 
   --ease: cubic-bezier(0.2, 0.8, 0.3, 1);
+}
+
+/* ==========================================================================
+   DARK MODE
+
+   Switched by data-theme on <html>, which lib/theme.ts sets before the first
+   paint: the visitor's choice if they made one, their device's otherwise.
+
+   It works by re-pointing the tokens, the same trick .theme-aot uses, so no
+   component had to learn about it. Grounds and surfaces go dark, ink goes
+   light, and the brand teal lifts so it still reads on the dark ground.
+   What deliberately does NOT move:
+
+   - The pops. Lime is lime in both themes, which is why text on a pop reads
+     --on-pop and never --ink.
+   - The panels that are already dark by design: the footer, the console
+     bars, the teal plates and the ribbon. Inverting a dark panel on a dark
+     page would turn it into a pale slab, so .keep-light and its friends put
+     the light palette back inside them and they render exactly as designed.
+   - The two event pages, which are their own themes. Attack on Token sets
+     every token itself in .theme-aot; HR Final Boss is wrapped in
+     .keep-light by its layout.
+   ========================================================================== */
+
+:root[data-theme="dark"] {
+  color-scheme: dark;
+
+  --cream: #0e171b;
+  --cream-2: #1c2d35;
+  --cream-3: #253a43;
+  --white: #16252c;
+
+  --ink: #ebe5d7;
+  --ink-2: #d6cfc0;
+  --ink-3: #bdb6a7;
+
+  --teal: #4cc3cf;
+  --teal-2: #a4e0e6;
+  --teal-3: #6fd1dc;
+  --teal-4: #92dde5;
+
+  --red-deep: #ff8a7a;
+
+  --muted: #9aacb1;
+  --line: rgba(235, 229, 215, 0.12);
+
+  --sh-1: 0 2px 8px -2px rgba(0, 0, 0, 0.5);
+  --sh-2: 0 18px 40px -28px rgba(0, 0, 0, 0.9);
+  --sh-3: 0 28px 70px -36px rgba(0, 0, 0, 0.95);
+}
+
+:root[data-theme="dark"]
+  :is(.keep-light, .washi-deep, .washi-teal, .bg-teal, .bg-teal-2, .toolbar, .ribbon):not(
+    .theme-aot,
+    .theme-aot *
+  ) {
+  color-scheme: light;
+
+  --cream: #f5f1e7;
+  --cream-2: #ebe5d6;
+  --cream-3: #ded5c1;
+  --white: #ffffff;
+
+  --ink: #0c1418;
+  --ink-2: #13212a;
+  --ink-3: #1d303b;
+
+  --teal: #12656f;
+  --teal-2: #093c44;
+  --teal-3: #17808c;
+  --teal-4: #2aa7b6;
+
+  --red-deep: #b3141f;
+
+  --muted: #5c6b70;
+  --line: rgba(12, 20, 24, 0.12);
+
+  --sh-1: 0 2px 8px -2px rgba(9, 60, 68, 0.14);
+  --sh-2: 0 18px 40px -28px rgba(9, 60, 68, 0.55);
+  --sh-3: 0 28px 70px -36px rgba(9, 60, 68, 0.62);
+}
+
+:root[data-theme="dark"] .theme-aot {
+  color-scheme: light;
 }
 
 @theme inline {
@@ -279,6 +370,19 @@ body {
     background-color: var(--cream);
     background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='60' height='30'%3E%3Cg fill='none' stroke='%23dbd9c6' stroke-width='1.2'%3E%3Cpath d='M-30 30a30 30 0 0 1 60 0M-22 30a22 22 0 0 1 44 0M-14 30a14 14 0 0 1 28 0M-6 30a6 6 0 0 1 12 0'/%3E%3Cpath d='M30 30a30 30 0 0 1 60 0M38 30a22 22 0 0 1 44 0M46 30a14 14 0 0 1 28 0M54 30a6 6 0 0 1 12 0'/%3E%3Cpath d='M0 0a30 30 0 0 1 60 0M8 0a22 22 0 0 1 44 0M16 0a14 14 0 0 1 28 0M24 0a6 6 0 0 1 12 0'/%3E%3C/g%3E%3C/svg%3E");
     background-size: 60px 30px;
+  }
+
+  /* The same waves on the dark ground. The stroke is baked into the image, so
+     dark mode needs its own copy rather than a token. */
+  :root[data-theme="dark"] .washi:not(.theme-aot *, .keep-light *) {
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='60' height='30'%3E%3Cg fill='none' stroke='%231a2a31' stroke-width='1.2'%3E%3Cpath d='M-30 30a30 30 0 0 1 60 0M-22 30a22 22 0 0 1 44 0M-14 30a14 14 0 0 1 28 0M-6 30a6 6 0 0 1 12 0'/%3E%3Cpath d='M30 30a30 30 0 0 1 60 0M38 30a22 22 0 0 1 44 0M46 30a14 14 0 0 1 28 0M54 30a6 6 0 0 1 12 0'/%3E%3Cpath d='M0 0a30 30 0 0 1 60 0M8 0a22 22 0 0 1 44 0M16 0a14 14 0 0 1 28 0M24 0a6 6 0 0 1 12 0'/%3E%3C/g%3E%3C/svg%3E");
+  }
+
+  /* The committee mark is navy and blue, which disappears on the dark
+     ground; in dark mode it is knocked out to white, the way the footer and
+     the console bars already show it. */
+  :root[data-theme="dark"] .mark-adapt:not(.keep-light *) {
+    filter: brightness(0) invert(1);
   }
 
   .washi-teal {
@@ -640,12 +744,12 @@ body {
   .pill-lime {
     background: var(--lime);
     border-color: var(--lime);
-    color: var(--ink);
+    color: var(--on-pop);
   }
 
   .pill-lime:hover {
-    background: var(--ink);
-    border-color: var(--ink);
+    background: var(--on-pop);
+    border-color: var(--on-pop);
     color: var(--lime);
   }
 
@@ -722,7 +826,7 @@ body {
     place-items: center;
     text-align: center;
     background: var(--st, var(--lime));
-    color: var(--st-fg, var(--ink));
+    color: var(--st-fg, var(--on-pop));
     font-family: var(--font-sans);
     font-weight: 800;
     line-height: 1.12;
@@ -896,6 +1000,16 @@ body {
   .reveal[data-shown="true"] {
     opacity: 1;
     transform: none;
+  }
+
+  /* A revealed block carries a transform, which makes it a stacking context
+     of its own, so a menu opened inside one (the add-to-calendar list) was
+     painted under the next card down however high its own z-index. The block
+     holding an open menu is lifted above its siblings for as long as it is
+     open. */
+  .reveal:has(details[open]) {
+    position: relative;
+    z-index: 45;
   }
 
   .hide-scrollbar {

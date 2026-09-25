@@ -5,12 +5,19 @@ import {
   deleteRosterPerson,
   saveRosterGroup,
   saveRosterPerson,
+  saveRosterProfile,
 } from "@/app/actions/console-content";
 import { ActionForm } from "@/components/console/action-form";
 import { Chip, Empty, Panel } from "@/components/console/shell";
 import { requireAdmin } from "@/lib/auth/guard";
 import { requireCap } from "@/lib/auth/caps";
-import { getRoster, rosterTotal, type RosterGroup, type RosterPerson } from "@/lib/data/site";
+import {
+  getRoster,
+  getRosterEmails,
+  rosterTotal,
+  type RosterGroup,
+  type RosterPerson,
+} from "@/lib/data/site";
 
 export const metadata: Metadata = {
   title: "Roster",
@@ -44,7 +51,7 @@ export default async function RosterPage() {
 
   // Everything, hidden rows included: a block has to be visible on this page
   // in order to be unhidden.
-  const groups = await getRoster(true);
+  const [groups, emails] = await Promise.all([getRoster(true), getRosterEmails()]);
 
   return (
     <>
@@ -59,6 +66,13 @@ export default async function RosterPage() {
           who has left mid-term and may be back. Hidden rows are not sent to the public page at
           all, so a hidden name is not sitting in the page source of a page that does not show it.
         </p>
+        <p className="serif-it mt-3 text-[1rem] leading-relaxed text-muted">
+          Every name has a page of its own at /people/, filled from the committee&rsquo;s roster
+          form. Open <span className="text-ink">Profile page</span> under anybody to change what it
+          says. To keep somebody&rsquo;s page after they leave the committee, move them into a
+          block of former members rather than deleting them: the page and the history go with the
+          row.
+        </p>
       </Panel>
 
       {groups.length === 0 ? (
@@ -71,7 +85,7 @@ export default async function RosterPage() {
       ) : null}
 
       {groups.map((group) => (
-        <GroupPanel key={group.id} group={group} />
+        <GroupPanel key={group.id} group={group} emails={emails} />
       ))}
 
       <Panel eyebrow="Roster" title="Add a block">
@@ -85,7 +99,7 @@ export default async function RosterPage() {
   );
 }
 
-function GroupPanel({ group }: { group: RosterGroup }) {
+function GroupPanel({ group, emails }: { group: RosterGroup; emails: Map<string, string> }) {
   return (
     <Panel
       eyebrow={group.visible ? "Block" : "Hidden block"}
@@ -103,7 +117,12 @@ function GroupPanel({ group }: { group: RosterGroup }) {
       ) : (
         <ul className="grid gap-2.5">
           {group.people.map((person) => (
-            <PersonRow key={person.id ?? person.name} group={group} person={person} />
+            <PersonRow
+              key={person.id ?? person.name}
+              group={group}
+              person={person}
+              email={person.id ? (emails.get(person.id) ?? "") : ""}
+            />
           ))}
         </ul>
       )}
@@ -147,7 +166,15 @@ function GroupPanel({ group }: { group: RosterGroup }) {
  * the job this page exists for is "fix a title", and a click to reveal a box
  * before you can fix it is a click for nothing.
  */
-function PersonRow({ group, person }: { group: RosterGroup; person: RosterPerson }) {
+function PersonRow({
+  group,
+  person,
+  email,
+}: {
+  group: RosterGroup;
+  person: RosterPerson;
+  email: string;
+}) {
   if (!person.id) {
     // A fallback row, rendered from the constants because the database has no
     // roster in it. There is nothing to edit yet.
@@ -222,17 +249,105 @@ function PersonRow({ group, person }: { group: RosterGroup; person: RosterPerson
         </div>
       </ActionForm>
 
+      <details className="mt-3">
+        <summary className="label-sm cursor-pointer text-muted hover:text-ink">
+          Profile page, /people/{person.slug}
+        </summary>
+        <ProfileForm person={person} email={email} />
+      </details>
+
       <div className="mt-2">
         <ActionForm
           action={deleteRosterPerson}
           submit="Remove"
           tone="danger"
-          confirm={`Take ${person.name} off the roster?`}
+          confirm={`Take ${person.name} off the roster? Their page at /people/${person.slug} goes with them. To keep it, move them to a block of former members instead.`}
         >
           <input type="hidden" name="person_id" value={person.id} />
         </ActionForm>
       </div>
     </li>
+  );
+}
+
+/** One text box on the profile form. */
+function Field({
+  name,
+  label,
+  value,
+  placeholder,
+  max,
+  long = false,
+}: {
+  name: string;
+  label: string;
+  value: string | null;
+  placeholder?: string;
+  max: number;
+  long?: boolean;
+}) {
+  return (
+    <span className={long ? "sm:col-span-2" : undefined}>
+      <label className="label-sm block text-muted">{label}</label>
+      {long ? (
+        <textarea
+          name={name}
+          rows={4}
+          maxLength={max}
+          defaultValue={value ?? ""}
+          placeholder={placeholder}
+          className="field mt-1.5 rounded-[var(--r-md)]"
+        />
+      ) : (
+        <input
+          name={name}
+          type="text"
+          maxLength={max}
+          defaultValue={value ?? ""}
+          placeholder={placeholder}
+          className="field mt-1.5"
+        />
+      )}
+    </span>
+  );
+}
+
+/**
+ * What somebody's page says, as a form.
+ *
+ * Their own words, from the committee's form, and editable here for the day
+ * somebody asks for a line to change. A blank field is left off the page
+ * rather than printed empty. The email ties the entry to an account, so the
+ * photo on that account shows here when no portrait link is set, and it is
+ * never printed on the public page.
+ */
+function ProfileForm({ person, email }: { person: RosterPerson; email: string }) {
+  const p = person.profile;
+  return (
+    <ActionForm action={saveRosterProfile} submit="Save the page" tone="solid">
+      <input type="hidden" name="person_id" value={person.id ?? ""} />
+      <div className="mt-4 grid gap-4 sm:grid-cols-2">
+        <Field name="slug" label="Address, /people/…" value={person.slug} max={80} />
+        <Field name="preferred_name" label="Goes by" value={p.preferredName} max={80} />
+        <Field name="year_branch" label="Year and branch" value={p.yearBranch} placeholder="SY, Computer Engineering" max={80} />
+        <Field name="tenure" label="On the committee" value={p.tenure} placeholder="2026-27" max={80} />
+        <Field name="tagline" label="One line" value={p.tagline} max={240} long />
+        <Field name="about" label="About" value={p.about} max={2000} long />
+        <Field name="hobbies" label="Hobbies and interests" value={p.hobbies} max={400} long />
+        <Field name="fun_fact" label="Fun fact or hidden skill" value={p.funFact} max={500} long />
+        <Field
+          name="photo_url"
+          label="Photo, a Drive file shared with anyone who has the link"
+          value={p.photoUrl}
+          placeholder="https://drive.google.com/file/d/…/view"
+          max={400}
+        />
+        <Field name="email" label="Their account's email, never shown" value={email} placeholder="name@vit.edu" max={200} />
+        <Field name="instagram" label="Instagram" value={p.instagram} placeholder="https://www.instagram.com/…" max={300} />
+        <Field name="linkedin" label="LinkedIn" value={p.linkedin} placeholder="https://www.linkedin.com/in/…" max={300} />
+        <Field name="github" label="GitHub" value={p.github} placeholder="https://github.com/…" max={300} />
+      </div>
+    </ActionForm>
   );
 }
 

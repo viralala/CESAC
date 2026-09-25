@@ -6,6 +6,7 @@ import { requireParticipant } from "@/lib/auth/guard";
 /** Out of the console and back to the public site. */
 const OUT = [
   { href: "/events", label: "Events" },
+  { href: "/faq", label: "FAQ" },
   { href: "/", label: "Site" },
 ] as const;
 

@@ -13,7 +13,6 @@ import {
 } from "@/components/console/queue-parts";
 import { Empty, Stat } from "@/components/console/shell";
 import { requireVerifier } from "@/lib/auth/guard";
-import { TOPICS } from "@/lib/console/options";
 import { LAYOUTS, LEVELS } from "@/lib/console/records";
 import { recordState } from "@/lib/console/record-view";
 import {
@@ -62,11 +61,6 @@ const STATE_FACET: Facet = {
   ],
 };
 
-const TOPIC_FACET: Facet = {
-  name: "topic",
-  label: "About",
-  options: TOPICS.map((t) => ({ value: t.value, label: t.label })),
-};
 
 /** Everything the search box on a record should look through. */
 function recordHaystack(record: RecordToCheck): string {
@@ -168,7 +162,7 @@ function recordRow(record: RecordToCheck): ListRow {
 function questionRow(query: QuestionToAnswer, outOfRoom: boolean): ListRow {
   return {
     id: query.id,
-    facets: { status: query.status, topic: query.topic },
+    facets: { status: query.status },
     search: questionHaystack(query),
     summary: <QuestionSummary query={query} asker={query.author} outOfRoom={outOfRoom} />,
     detail: (
@@ -264,11 +258,11 @@ export default async function VerifyPage() {
             title="Questions waiting on an answer"
             noun="question"
             blurb={`Worked oldest first, and that is the whole design: a student may have ${CEILING} questions waiting at once and no more, so a queue nobody clears stops the people who asked first from asking anything else.`}
-            facets={[TOPIC_FACET]}
+            facets={[]}
             rows={openQuestions.map((query) =>
               questionRow(query, (held.get(query.author_id) ?? 0) >= CEILING),
             )}
-            searchPlaceholder="Subject, what they wrote, student, PRN"
+            searchPlaceholder="Title, what they wrote, student, PRN"
             empty={
               <Empty>
                 Nothing is waiting. Every question that has been asked has an answer on it.
@@ -294,9 +288,9 @@ export default async function VerifyPage() {
             noun="question"
             startFolded
             blurb="What was said, and room to say it again differently. An answer that was wrong is corrected by writing over it: the student reads the replacement rather than a second message contradicting the first."
-            facets={[TOPIC_FACET]}
+            facets={[]}
             rows={answered.map((query) => questionRow(query, false))}
-            searchPlaceholder="Subject, what they wrote, the answer, student"
+            searchPlaceholder="Title, what they wrote, the answer, student"
             empty={<Empty>No question has been answered yet.</Empty>}
           />
         </div>

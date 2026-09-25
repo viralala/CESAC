@@ -63,6 +63,26 @@ export const DOES = [
 
 export type EventStatus = "open" | "announced" | "past";
 
+/**
+ * When an event is, as a calendar needs it.
+ *
+ * Separate from `when`, which is the sentence the cards print and can say
+ * "venue TBA" in a way a timestamp cannot. Null until there is a real date,
+ * and the site says so rather than counting down to a guess. An all-day event
+ * is counted in India time, start and end both inclusive.
+ *
+ * The committee sets these from the Entries page of the console now, and the
+ * database copy wins; these are what the site shows when it cannot ask.
+ */
+export type EventSchedule = {
+  /** ISO 8601 with an offset. For an all-day event, midnight IST on day one. */
+  start: string;
+  /** Same shape. For an all-day event, midnight IST on the last day. */
+  end: string | null;
+  allDay: boolean;
+  venue: string | null;
+};
+
 export type CesacEvent = {
   slug: string;
   name: string;
@@ -73,6 +93,7 @@ export type CesacEvent = {
   when: string;
   status: EventStatus;
   href: string;
+  schedule: EventSchedule | null;
 };
 
 /**
@@ -93,6 +114,14 @@ export const EVENTS: readonly CesacEvent[] = [
     when: "3–4 October 2026 · Venue: TBA",
     status: "announced",
     href: "/events/attack-on-token",
+    // The two days from the sponsorship deck. No hours and no venue have been
+    // set, so it goes into a calendar as two whole days.
+    schedule: {
+      start: "2026-10-03T00:00:00+05:30",
+      end: "2026-10-04T00:00:00+05:30",
+      allDay: true,
+      venue: null,
+    },
   },
   {
     slug: "hr-final-boss",
@@ -104,6 +133,7 @@ export const EVENTS: readonly CesacEvent[] = [
     when: "Date and venue to be announced",
     status: "announced",
     href: "/events/hr-final-boss",
+    schedule: null,
   },
 ];
 

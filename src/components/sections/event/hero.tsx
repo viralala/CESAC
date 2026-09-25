@@ -104,10 +104,13 @@ export function EventHero() {
       />
 
       {/* the event name set vertically down the right edge, the way a board
-          carries its own title in the margin */}
+          carries its own title in the margin. From 1400px and not from xl:
+          at 1280 the container runs to within a few pixels of the edge and
+          this sits straight on top of the "80 teams" and "Top 8" stickers,
+          which is most 14 inch laptops. */}
       <span
         aria-hidden
-        className="jp pointer-events-none absolute right-3 top-[26%] z-0 hidden select-none text-[3.4rem] leading-[1.05] text-cream/[0.12] [writing-mode:vertical-rl] xl:block"
+        className="jp pointer-events-none absolute right-3 top-[26%] z-0 hidden select-none text-[3.4rem] leading-[1.05] text-cream/[0.12] [writing-mode:vertical-rl] min-[1400px]:block"
       >
         {EVENT.jp}
       </span>
@@ -115,7 +118,9 @@ export function EventHero() {
       {/* the deck's registration marks. On the Container rather than the
           section because `grain` already owns the section's ::after. */}
       <Container className="deck-marks relative flex flex-1 flex-col pb-4">
-        <div className="relative z-30 flex items-start justify-between gap-6">
+        {/* mb keeps 進撃の, which hangs above the centred block, off this row
+            on a short laptop screen. See the note on the home hero. */}
+        <div className="relative z-30 mb-4 flex items-start justify-between gap-6 sm:mb-10">
           <p className="label text-[var(--poster-amber)]">{EVENT.host}</p>
           <p className="label hidden text-right text-[var(--poster-amber)] sm:block">
             {EVENT.kicker}

@@ -3,7 +3,7 @@ import "server-only";
 import { redirect } from "next/navigation";
 import { cache } from "react";
 
-import { gateUnsetPassword, getViewer } from "@/lib/auth/guard";
+import { gateMissingPhoto, gateUnsetPassword, getViewer } from "@/lib/auth/guard";
 import type { Viewer } from "@/lib/auth/session";
 import { createEmsClient, SCHEMA_NOT_EXPOSED } from "@/lib/supabase/ems";
 
@@ -106,6 +106,7 @@ export async function requireEmsAdmin(): Promise<EmsAccess> {
   // Same door, same lock as every other console page. These guards are built
   // on getViewer rather than requireRole, so nothing applies this for them.
   gateUnsetPassword(access.viewer);
+  gateMissingPhoto(access.viewer, "/admin/events");
 
   if (!access.isAdmin) redirect("/dashboard");
   return access;

@@ -33,11 +33,16 @@ things it runs, and it lives at its own route rather than being the whole site.
 | --- | --- |
 | `/` | CESAC: what it is, what it does, what is running, who runs it |
 | `/about` | The committee, the four verticals, faculty leadership |
-| `/people` | The full 38-name roster |
-| `/events` | Everything running or announced |
+| `/people` | The full roster; every name opens a page of its own |
+| `/people/[slug]` | One committee member, in their own words from the roster form |
+| `/standouts` | Every standout in every category, with a search; the front page shows the top three |
+| `/events` | Everything running or announced, each with a countdown and an Add to calendar button |
+| `/calendar/[slug]` | An event as an `.ics` file, for Apple Calendar, Outlook and phones |
+| `/faq` | The questions people ask most, linked from the menu on every page |
 | `/events/attack-on-token` | The event: vitals, funnel, three chapters, prizes, entry |
 | `/privacy` · `/terms` | Policy pages, written against the deployed code |
-| `/signin` | Sign-in front door, UI only, no backend behind it |
+| `/signin` | Sign-in front door |
+| `/account/photo` | The one-time photo step every student takes after their password |
 
 ## ⚔ Attack on Token
 
@@ -196,10 +201,16 @@ Audited, and the policy page is written against what is actually deployed:
 - There is no payment gateway. The entry fee is paid by scanning a UPI code in
   the payer's own banking app, so no card or UPI detail touches this site, and
   the only thing stored is the transaction reference somebody types in.
-- Three keys in `localStorage` and nothing else: `cesac.consent` (the notice's
+- Five keys in `localStorage` and nothing else: `cesac.consent` (the notice's
   answer, stored there because setting a cookie in order to ask about cookies is
-  absurd) and `cesac.music` / `cesac.music.volume` (whether the event page's
-  track is on, and how loud). None of them is sent anywhere.
+  absurd), `cesac.music` / `cesac.music.volume` (whether the event page's
+  track is on, and how loud), `cesac.cursor` (whether the petal trail is off)
+  and `cesac.theme` (light or dark, once somebody has chosen). None of them is
+  sent anywhere.
+- Photographs of people go through `next/image`, so the server fetches them
+  and the page serves the copy: a student's photo from Supabase Storage, a
+  committee portrait from a shared Google Drive file. A visitor's browser never
+  contacts either. Both hosts are allowed by path in `next.config.ts`.
 - Fonts are downloaded at build time by `next/font` and served from this origin,
   so a page load makes **no** request to Google. Do not swap them for `<link>`
   tags; the privacy page makes that claim.
@@ -298,7 +309,22 @@ folder or read out of it.
 An email in `public.admin_emails` becomes an organiser the moment it signs in,
 through any provider. That is how the first one gets in, since there is nobody
 to promote them yet. After that, organisers add and remove each other from the
-console. `viral.1251070777@vit.edu` is seeded.
+console.
+
+**The owner** sits above every organiser: `viral.1251070777@vit.edu`, who runs
+the site. The role has existed since the capability migration and was given
+to that account by `20260925_profiles_photos_owner.sql`. An owner is never
+narrowed, and nobody can demote, repassword, edit or delete the owner's account
+from the site; `guard_profile_role` and `guard_owner_delete` refuse it in
+Postgres. The owner role can only be granted or taken away from the SQL editor.
+
+**Setting somebody's password.** An organiser holding People and access can
+set a student's or a verifier's password from `/admin/access` or the student
+directory; only the owner can set another organiser's, so that an organiser
+narrowed to People cannot reset an un-narrowed colleague and sign in as them.
+The account is signed out everywhere, and by default is asked to choose its own
+password at the next sign-in. `admin_set_password()` holds every one of those
+rules.
 
 **What organisers control**
 
@@ -340,6 +366,16 @@ and what they have done, and it is the same six tabs for everybody:
 | Events | `/dashboard/events` | Every event, its state, and the one decision: whether to enter. |
 | Questions | `/dashboard/queries` | Ask the committee something; the answer arrives in the same place. |
 | My details | `/dashboard/profile` | Name, class, PRN and mobile. The address is shown, not offered. |
+
+**The photo step.** After the password, every student is asked for a photo
+once, at `/account/photo`, and the console does not open until they have one.
+The boards print it next to their name: the front page's standouts, the full
+standouts list, the console ranking and the organiser board. The browser crops
+it square and re-encodes it before upload, which drops a phone photo's location
+data; the server checks the bytes and writes it into the student's own folder
+of the public `avatars` bucket. `gateMissingPhoto()` in `lib/auth/guard.ts`
+is the gate, and it stays open on a database that has no `photo_path` column
+yet, so a deploy that lands before the migration cannot lock anybody out.
 
 **What is deliberately not there**
 

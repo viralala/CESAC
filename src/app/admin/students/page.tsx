@@ -1,7 +1,9 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 
+import { clearPhoto, setAccountPassword } from "@/app/actions/admin";
 import { Container, Label } from "@/components/aot/bits";
+import { ActionForm } from "@/components/console/action-form";
 import { Chip, Empty, Panel, Stat, type ChipTone } from "@/components/console/shell";
 import { requireAdmin } from "@/lib/auth/guard";
 import { requireCap } from "@/lib/auth/caps";
@@ -56,8 +58,15 @@ function classAndPrn(student: StudentForOrganiser): string {
  * for the same reason.
  */
 export default async function AdminStudentsPage(props: PageProps<"/admin/students">) {
-  await requireAdmin();
+  const viewer = await requireAdmin();
   await requireCap("people");
+
+  // Who this organiser may set a password for. The database decides; this
+  // only stops the console offering a form that would be refused.
+  const mayRepassword = (student: StudentForOrganiser) =>
+    student.id !== viewer.id &&
+    student.role !== "owner" &&
+    (student.role !== "admin" || viewer.role === "owner");
   const { q, page } = await props.searchParams;
 
   const asked = typeof q === "string" ? q.trim() : "";
@@ -230,6 +239,64 @@ export default async function AdminStudentsPage(props: PageProps<"/admin/student
                               )}
                             </div>
                           </div>
+
+                          {mayRepassword(student) ? (
+                            <details className="mt-3">
+                              <summary className="label-sm cursor-pointer text-muted hover:text-ink">
+                                Set a password, or remove their photo
+                              </summary>
+                              <ActionForm
+                                action={setAccountPassword}
+                                submit="Set the password"
+                                tone="ghost"
+                              >
+                                <input type="hidden" name="email" value={student.email} />
+                                <div className="mt-4 max-w-sm">
+                                  <label
+                                    htmlFor={`pw-${student.id}`}
+                                    className="label block text-ink"
+                                  >
+                                    New password
+                                  </label>
+                                  <input
+                                    id={`pw-${student.id}`}
+                                    name="password"
+                                    type="text"
+                                    required
+                                    minLength={8}
+                                    maxLength={72}
+                                    autoComplete="off"
+                                    placeholder="At least 8 characters"
+                                    className="field mt-2.5"
+                                  />
+                                </div>
+                                <label className="mt-3 flex cursor-pointer items-start gap-3">
+                                  <input
+                                    type="checkbox"
+                                    name="must_change"
+                                    defaultChecked
+                                    className="mt-1 h-4 w-4 shrink-0 accent-[var(--teal)]"
+                                  />
+                                  <span className="text-[0.9rem] leading-snug text-ink">
+                                    Make them choose their own at their next sign-in
+                                  </span>
+                                </label>
+                              </ActionForm>
+
+                              {student.role === "participant" ? (
+                                <div className="mt-4 border-t border-ink/10 pt-3">
+                                  <ActionForm
+                                    action={clearPhoto}
+                                    submit="Remove their photo"
+                                    tone="danger"
+                                    confirm={`Take the photo off ${student.email}? They are asked for a new one next time they open their console.`}
+                                  >
+                                    <input type="hidden" name="profile_id" value={student.id} />
+                                  </ActionForm>
+                                </div>
+                              ) : null}
+                            </details>
+                          ) : null}
                         </li>
                       ))}
                     </ul>

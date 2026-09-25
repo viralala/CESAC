@@ -199,6 +199,59 @@ export async function saveRosterGroup(
 }
 
 /**
+ * What a roster member's own page says.
+ *
+ * Every field arrives, blank ones included, and a blank field clears what was
+ * there: this is the whole profile, not a patch, so what the organiser sees
+ * in the form is exactly what the page will say. Links are checked for https
+ * here as well as by the table's check, because the table's refusal reads
+ * like a stack trace and this one reads like a sentence.
+ *
+ * The email is not printed anywhere public. It ties the entry to an account,
+ * which is how the photo a member puts on their account reaches the roster.
+ */
+export async function saveRosterProfile(
+  _state: AdminState,
+  formData: FormData,
+): Promise<AdminState> {
+  const id = String(formData.get("person_id") ?? "").trim();
+  if (!id) return { error: "That person is not on the page any more. Reload it." };
+
+  const field = (name: string) => String(formData.get(name) ?? "").trim();
+  const links = ["photo_url", "instagram", "linkedin", "github"] as const;
+  for (const name of links) {
+    const value = field(name);
+    if (value && !value.startsWith("https://")) {
+      return { error: `The ${name.replace("_url", "")} link has to start with https://.` };
+    }
+  }
+
+  const supabase = await adminClient();
+  const { data: slug, error } = await supabase.rpc("admin_save_roster_profile", {
+    p_id: id,
+    p_slug: field("slug") || undefined,
+    p_preferred_name: field("preferred_name"),
+    p_year_branch: field("year_branch"),
+    p_tagline: field("tagline"),
+    p_about: field("about"),
+    p_hobbies: field("hobbies"),
+    p_fun_fact: field("fun_fact"),
+    p_photo_url: field("photo_url"),
+    p_instagram: field("instagram"),
+    p_linkedin: field("linkedin"),
+    p_github: field("github"),
+    p_tenure: field("tenure"),
+    p_email: field("email"),
+  });
+
+  revalidatePath("/admin/site");
+  refreshPublic();
+  if (slug) revalidatePath(`/people/${slug}`);
+
+  return say(error, slug ? `Saved. The page is at /people/${slug}.` : "Saved.");
+}
+
+/**
  * Remove a whole block, and everybody in it.
  *
  * The cascade is the database's, not this file's, and it is deliberate: a

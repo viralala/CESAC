@@ -82,6 +82,21 @@ export function gateUnsetPassword(viewer: Viewer): void {
 }
 
 /**
+ * The second step every student takes once, after the password: a photo.
+ *
+ * Same shape and same reasoning as the password gate above, and it runs after
+ * it, so a freshly imported student chooses a password first and a photo
+ * second rather than being shown the two in whichever order they arrive.
+ * `next` is where they were going, so finishing the step drops them there.
+ *
+ * Exported for the event system's guards in lib/ems/access.ts, which call the
+ * pair of these themselves.
+ */
+export function gateMissingPhoto(viewer: Viewer, next = "/dashboard"): void {
+  if (viewer.needsPhoto) redirect(`/account/photo?next=${encodeURIComponent(next)}`);
+}
+
+/**
  * Somebody is standing at a console. Is it theirs?
  *
  * Whoever it is not gets sent to their own, rather than to a wall, because
@@ -95,6 +110,7 @@ async function requireRole(want: Want, next: string): Promise<Viewer> {
   if (!viewer) toGate(want, next);
 
   gateUnsetPassword(viewer);
+  gateMissingPhoto(viewer, next);
 
   if (!holds(viewer, want)) redirect(homeFor(viewer.role));
 

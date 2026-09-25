@@ -38,7 +38,9 @@ export function HrfbHero() {
       </span>
 
       <Container className="relative flex flex-1 flex-col">
-        <div className="relative z-30 flex items-start justify-between gap-6">
+        {/* mb keeps the Devanagari, which hangs above the centred block, off
+            this row on a short laptop screen. See the note on the home hero. */}
+        <div className="relative z-30 mb-4 flex items-start justify-between gap-6 sm:mb-10">
           <p className="label text-hb-azure-deep">{HRFB.host}</p>
           <p className="label hidden text-right text-hb-azure-deep sm:block">{HRFB.kicker}</p>
         </div>

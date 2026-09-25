@@ -2,13 +2,14 @@ import Link from "next/link";
 
 import { Arrow, Container, SectionHead } from "@/components/aot/bits";
 import { Reveal } from "@/components/aot/reveal";
+import { Avatar } from "@/components/site/avatar";
 import { rupees } from "@/lib/console/options";
 import { getCopy, getShowcase, metricUnit } from "@/lib/data/site";
 import { getSettings } from "@/lib/data/console";
 
 /** One accent per category, in the order they are set on the console. */
 const POPS = ["var(--azure)", "var(--violet)", "var(--lime)", "var(--pink)"];
-const ON_POPS = ["var(--ink)", "var(--white)", "var(--ink)", "var(--white)"];
+const ON_POPS = ["var(--on-pop)", "var(--on-pop-light)", "var(--on-pop)", "var(--on-pop-light)"];
 
 /**
  * The students the department is putting its name to.
@@ -19,10 +20,14 @@ const ON_POPS = ["var(--ink)", "var(--white)", "var(--ink)", "var(--white)"];
  * best outgoing student, is whoever the committee named, because that is a
  * judgement and no number will make it.
  *
- * **What is shown is deliberately thin.** A name, a year, and one number. No
- * record titles, no addresses, no PRNs, and nobody who has asked on their own
- * console not to be named here. The database function this reads returns only
- * those fields, so a page written later cannot print more by accident.
+ * **What is shown is deliberately thin.** A name, a year, one number and the
+ * student's photo. No record titles, no addresses, no PRNs, and nobody who has
+ * asked on their own console not to be named here. The database function this
+ * reads returns only those fields, so a page written later cannot print more
+ * by accident.
+ *
+ * Only the top of each category is here. The rest, with a search, is on
+ * /standouts, and every card and the button under them go there.
  *
  * An empty category is skipped rather than shown with a placeholder. A new
  * category nobody has been picked for yet is a real state, and a card reading
@@ -77,12 +82,18 @@ export async function HomeShowcase() {
                   {category.entries.map((entry) => (
                     <li
                       key={entry.studentId}
-                      className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1 border-b border-ink/10 py-3 last:border-0"
+                      className="flex flex-wrap items-center justify-between gap-x-4 gap-y-1 border-b border-ink/10 py-3 last:border-0"
                     >
-                      <span className="flex min-w-0 items-baseline gap-3">
+                      <span className="flex min-w-0 items-center gap-3">
                         <span className="d-tall w-[1.4rem] shrink-0 text-[1rem] leading-none text-ink/30">
                           {entry.place}
                         </span>
+                        <Avatar
+                          key={entry.photo ?? "none"}
+                          name={entry.name}
+                          sources={[entry.photo]}
+                          size={44}
+                        />
                         <span className="min-w-0">
                           <span className="block text-[0.98rem] leading-snug text-ink">
                             {entry.name}
@@ -103,12 +114,29 @@ export async function HomeShowcase() {
                     </li>
                   ))}
                 </ol>
+
+                <Link
+                  href={`/standouts?c=${encodeURIComponent(category.id)}`}
+                  className="label mt-auto inline-flex items-center gap-2 self-start pt-5 text-teal transition-colors hover:text-ink"
+                >
+                  Everyone in {category.title.toLowerCase()}
+                  <Arrow className="h-3.5 w-3.5" />
+                </Link>
               </article>
             </Reveal>
           ))}
         </div>
 
-        <Reveal className="mt-4">
+        {/* The whole list. Asked for by name: the top three stay here, and
+            this is the way through to everybody else, with a search. */}
+        <Reveal className="mt-8 flex justify-center">
+          <Link href="/standouts" className="pill pill-lime px-8 py-4">
+            See the full standouts list
+            <Arrow />
+          </Link>
+        </Reveal>
+
+        <Reveal className="mt-8">
           <Link
             href="/dashboard/certificates"
             className="group flex flex-wrap items-center justify-between gap-5 rounded-[var(--r-xl)] bg-cream-2 px-8 py-7 transition-colors hover:bg-cream-3"

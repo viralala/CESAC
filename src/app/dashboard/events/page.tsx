@@ -4,6 +4,7 @@ import { EventBoard } from "@/components/console/event-board";
 import { Panel } from "@/components/console/shell";
 import { requireParticipant } from "@/lib/auth/guard";
 import { getDeptEvents, getMyRegistrations } from "@/lib/data/dept-events";
+import { getSchedules } from "@/lib/data/event-schedule";
 
 export const metadata: Metadata = {
   title: "Events",
@@ -24,7 +25,11 @@ export const metadata: Metadata = {
 export default async function EventsPage() {
   const viewer = await requireParticipant();
 
-  const [events, registrations] = await Promise.all([getDeptEvents(), getMyRegistrations()]);
+  const [events, registrations, schedules] = await Promise.all([
+    getDeptEvents(),
+    getMyRegistrations(),
+    getSchedules(),
+  ]);
 
   const anyOpen = events.some((event) => event.state === "open");
 
@@ -39,7 +44,12 @@ export default async function EventsPage() {
         one event at a time, so most of this list is locked most of the year.
       </p>
 
-      <EventBoard events={events} registrations={registrations} meId={viewer.id} />
+      <EventBoard
+        events={events}
+        registrations={registrations}
+        meId={viewer.id}
+        schedules={Object.fromEntries(schedules)}
+      />
     </Panel>
   );
 }

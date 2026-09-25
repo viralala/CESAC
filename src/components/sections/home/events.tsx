@@ -5,8 +5,10 @@ import { Arrow, Container, Label, SectionHead } from "@/components/aot/bits";
 import { ParallaxLayer, ParallaxScene } from "@/components/aot/parallax";
 import { Reveal } from "@/components/aot/reveal";
 import { Sticker } from "@/components/aot/stickers";
+import { EventWhen } from "@/components/site/event-when";
 import { RegisterButton } from "@/components/sections/event/register-button";
 import { EVENTS } from "@/lib/data/cesac";
+import { getSchedules, scheduleFor } from "@/lib/data/event-schedule";
 import { REGISTER_SLUG } from "@/lib/data/event";
 import { badgeFor, getEventBadges } from "@/lib/data/event-status";
 import { getCopy } from "@/lib/data/site";
@@ -23,7 +25,7 @@ import { getCopy } from "@/lib/data/site";
  */
 export async function HomeEvents() {
   const [feature, ...rest] = EVENTS;
-  const [badges, t] = await Promise.all([getEventBadges(), getCopy()]);
+  const [badges, t, schedules] = await Promise.all([getEventBadges(), getCopy(), getSchedules()]);
   const featureBadge = feature ? badgeFor(feature, badges) : null;
 
   return (
@@ -67,6 +69,14 @@ export async function HomeEvents() {
                   </p>
 
                   <p className="label mt-8 text-cream/45">{feature.when}</p>
+
+                  <EventWhen
+                    event={feature}
+                    schedule={scheduleFor(feature, schedules)}
+                    tone="dark"
+                    showDate={false}
+                    className="mt-5"
+                  />
 
                   <div className="mt-9 flex flex-wrap gap-3">
                     <Link href={feature.href} className="pill pill-lime px-7 py-3.5">
@@ -137,20 +147,31 @@ export async function HomeEvents() {
           <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
             {rest.map((e, i) => (
               <Reveal key={e.slug} delay={i * 70}>
-                <Link
-                  href={e.href}
-                  className="card group flex h-full flex-col p-7 transition-transform duration-300 hover:-translate-y-1"
-                >
+                {/* The title's link is stretched over the card, so the card
+                    still opens the event while the calendar menu inside it
+                    stays a menu and not a link inside a link. */}
+                <article className="card group relative flex h-full flex-col p-7 transition-transform duration-300 hover:-translate-y-1">
                   <span
                     className="label-sm w-fit rounded-full px-3.5 py-1.5"
                     style={{ background: badgeFor(e, badges).bg, color: badgeFor(e, badges).fg }}
                   >
                     {badgeFor(e, badges).label}
                   </span>
-                  <h3 className="d-tall mt-5 text-[1.9rem] text-ink">{e.name}</h3>
+                  <h3 className="d-tall mt-5 text-[1.9rem] text-ink">
+                    <Link href={e.href} className="after:absolute after:inset-0 after:content-['']">
+                      {e.name}
+                    </Link>
+                  </h3>
                   <p className="mt-2 text-[0.9375rem] leading-relaxed text-ink/70">{e.blurb}</p>
                   <p className="label-sm mt-auto pt-6 text-muted">{e.when}</p>
-                </Link>
+                  <EventWhen
+                    event={e}
+                    schedule={scheduleFor(e, schedules)}
+                    size="compact"
+                    showDate={false}
+                    className="relative z-10 mt-4"
+                  />
+                </article>
               </Reveal>
             ))}
           </div>

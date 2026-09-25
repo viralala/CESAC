@@ -42,7 +42,13 @@ export function HomeHero({ members, verticals }: { members: number; verticals: n
       </ParallaxScene>
 
       <Container className="relative flex flex-1 flex-col">
-        <div className="relative z-30 flex items-start justify-between gap-6">
+        {/* The bottom margin is what keeps 学生委員会 off this line. The block
+            below is centred with my-auto and its Japanese hangs 24px above
+            it, which is fine on a tall screen with room to spare and lands
+            straight on "Computer Engineering" on a 768px-tall laptop, where
+            the auto margin shrinks to nothing. A fixed margin is not eaten by
+            auto the way free space is. */}
+        <div className="relative z-30 mb-4 flex items-start justify-between gap-6 sm:mb-10">
           <p className="label text-teal">{CESAC.department}</p>
           <p className="label hidden text-right text-teal sm:block">{CESAC.short}</p>
         </div>

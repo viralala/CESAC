@@ -15,8 +15,8 @@ export type Badge = { label: string; bg: string; fg: string };
  * hand-written `status` in cesac.ts and nothing ever changed them.
  */
 const BADGE: Record<string, Badge> = {
-  open: { label: "Registration open", bg: "var(--lime)", fg: "var(--ink)" },
-  announced: { label: "Announced", bg: "var(--azure)", fg: "var(--ink)" },
+  open: { label: "Registration open", bg: "var(--lime)", fg: "var(--on-pop)" },
+  announced: { label: "Announced", bg: "var(--azure)", fg: "var(--on-pop)" },
   past: { label: "Wrapped", bg: "var(--cream-3)", fg: "var(--ink)" },
   closed: { label: "Entries closed", bg: "var(--cream-3)", fg: "var(--ink)" },
 };
