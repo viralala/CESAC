@@ -6,6 +6,79 @@ the code is written.
 
 ---
 
+## What landed on 25 September 2026
+
+Seven things, asked for together. The database half is
+`supabase/migrations/20260925_profiles_photos_owner.sql`; it is additive, so
+the code before it keeps working against it, and the code after it degrades
+gracefully until it runs (no photo gate, the old standouts function, the
+written event dates).
+
+1. **Every name on the roster opens a page.** `/people/<slug>`, carrying what
+   each member wrote on the committee's roster form: a tagline, an about,
+   interests, a fun fact, year and branch, and their Instagram, LinkedIn and
+   GitHub. 25 answers were seeded, matched on the roster's spelling of the
+   name. Phone numbers and emails from the form are not published anywhere.
+   Every field is editable under **Profile page** against each person on
+   `/admin/site/roster`. To keep somebody's page after they leave, move them
+   to a block of former members instead of deleting the row.
+
+   Portraits: a Drive **file** link shared as "anyone with the link" shows;
+   failing that, the photo on the member's own account (linked by the email in
+   the same form, which is never shown); failing that, initials. **Four
+   members gave a link that is not a photo file** and need one: Harsh
+   Manjramkar, Manthan Mahesh Devi and Rajvardhan Patil gave Drive folders,
+   Ansh Singh Gurdatta gave a LinkedIn page. Harsh's LinkedIn was his name
+   rather than a link, and is left off. Vedant Chavhan's form address
+   (`vedant.1251070273@vit.edu`) has no account, so his account photo cannot
+   reach the roster until that is corrected.
+
+2. **Students add a photo, once, before their console opens.**
+   `/account/photo`, straight after the password step. Shown next to their
+   name on every board. An organiser can take one down from the student
+   directory, and the student is asked for another.
+
+3. **`/standouts`**, the whole list behind the front page's top three, one tab
+   per category, with a search across all of them. In the menu, and under the
+   front page's cards.
+
+4. **Set anybody's password** from `/admin/access` or a row in the student
+   directory. Students and verifiers by any organiser with People and access;
+   organisers by the owner only; the owner by nobody else. Signs the account
+   out everywhere and, by default, makes them choose their own next time.
+
+5. **The owner.** `viral.1251070777@vit.edu` holds `owner`, which is never
+   narrowed and cannot be demoted, repassworded, edited or deleted from the
+   site by anybody else. Only the SQL editor can move it.
+
+6. **Questions have a title, not a topic.** The dropdown is gone; the student
+   types a title in their own words. The topic filter went from both desks
+   with it.
+
+7. **FAQ, dark mode, and a calendar for every event.** `/faq` is in the menu
+   and footer. The sun/moon button switches the theme (following the device
+   until somebody chooses); the two event pages keep their own looks. Every
+   event shows a countdown and **Add to calendar** (Google, or an `.ics` for
+   Apple, Outlook and phones) once it has a date. Set the date, time and venue
+   under **Date, time and venue** on each event on `/admin/entries`; Attack on
+   Token is seeded as all day on 3 and 4 October.
+
+**Also:** the Japanese and Hindi display lines on the three heroes no longer
+land on the "Computer Engineering" / "CESAC / VIT Pune" labels on a 14 inch
+laptop (768 to 864 pixels tall), and the vertical 攻撃トークン on the event
+page no longer sits on the stickers at 1280 wide.
+
+**Still for a person:**
+
+- [ ] Apply the migration, if it has not been. It was validated against the
+      live schema inside a transaction that was rolled back.
+- [ ] Get photo file links from the four members above, and check Vedant
+      Chavhan's address.
+- [ ] Make sure the roster's Drive photos are shared as "anyone with the
+      link"; a private one quietly falls back to initials.
+
+---
+
 ## What landed on 24 September 2026
 
 The showcase is over, so two things.

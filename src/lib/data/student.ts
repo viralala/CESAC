@@ -2,6 +2,7 @@ import "server-only";
 
 import { cache } from "react";
 
+import { avatarUrl } from "@/lib/photos";
 import { createClient } from "@/lib/supabase/server";
 import type { Tables } from "@/lib/supabase/database.types";
 
@@ -66,6 +67,8 @@ export type BoardRow = {
   year: string | null;
   points: number;
   certificates: number;
+  /** Their photo, as an address next/image can load, or null. */
+  photo: string | null;
 };
 
 /**
@@ -87,5 +90,7 @@ export const getRankingBoard = cache(async (limit = 10): Promise<BoardRow[]> => 
     year: row.year,
     points: Number(row.points),
     certificates: Number(row.certificates),
+    // Absent, not null, on a database the photo migration has not reached.
+    photo: avatarUrl(row.photo),
   }));
 });

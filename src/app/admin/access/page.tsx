@@ -1,6 +1,11 @@
 import type { Metadata } from "next";
 
-import { addOrganiserEmail, removeOrganiserEmail, setRole } from "@/app/actions/admin";
+import {
+  addOrganiserEmail,
+  removeOrganiserEmail,
+  setAccountPassword,
+  setRole,
+} from "@/app/actions/admin";
 import { clearGrants, setGrants } from "@/app/actions/console-content";
 import { addVerifier, removeVerifier, setVerifierPassword } from "@/app/actions/verifiers";
 import { Container, Label } from "@/components/aot/bits";
@@ -69,6 +74,74 @@ export default async function AccessPage() {
           <Stat value={checkers.length} label="Verifiers" note="Records and questions" />
           <Stat value={grantFor.size} label="Narrowed" note="Held to some areas" />
           <Stat value={allowlist.data?.length ?? 0} label="Allowlisted" note="Organiser on sign-in" />
+        </div>
+
+        {/* ---------------------------------------------------------- passwords */}
+        <div className="mt-6">
+          <Panel eyebrow="Passwords" title="Set somebody's password">
+            <p className="serif-it text-[0.98rem] leading-relaxed text-muted">
+              For a student who has forgotten theirs, or anybody locked out. Type the address they
+              sign in with and a new password, save, and tell them what it is. Every session the
+              account had open is signed out, and unless you untick the box they are asked to
+              choose their own the moment they sign in, so what you read out works once.
+            </p>
+            <p className="serif-it mt-3 text-[0.98rem] leading-relaxed text-muted">
+              {viewer.role === "owner"
+                ? "As the owner you can set anybody's but your own, organisers included. Yours is changed from your own password page."
+                : "You can set a student's or a verifier's. Only the owner sets another organiser's, because a password is the whole of an account; and nobody sets the owner's."}
+            </p>
+
+            <ActionForm action={setAccountPassword} submit="Set the password" tone="solid">
+              <div className="mt-5 grid gap-4 sm:grid-cols-2">
+                <div>
+                  <label htmlFor="reset-email" className="label block text-ink">
+                    Their email
+                  </label>
+                  <input
+                    id="reset-email"
+                    name="email"
+                    type="email"
+                    required
+                    autoComplete="off"
+                    placeholder="name.1251070000@vit.edu"
+                    className="field mt-2.5"
+                  />
+                </div>
+                <div>
+                  <label htmlFor="reset-password" className="label block text-ink">
+                    New password
+                  </label>
+                  <input
+                    id="reset-password"
+                    name="password"
+                    type="text"
+                    required
+                    minLength={8}
+                    maxLength={72}
+                    autoComplete="off"
+                    placeholder="At least 8 characters"
+                    className="field mt-2.5"
+                  />
+                </div>
+              </div>
+              <label className="mt-4 flex cursor-pointer items-start gap-3">
+                <input
+                  type="checkbox"
+                  name="must_change"
+                  defaultChecked
+                  className="mt-1 h-4 w-4 shrink-0 accent-[var(--teal)]"
+                />
+                <span className="text-[0.92rem] leading-snug text-ink">
+                  Make them choose their own at their next sign-in
+                </span>
+              </label>
+              <p className="serif-it mt-3 text-[0.85rem] leading-relaxed text-muted">
+                Shown as you type it, on purpose: you are about to hand it over. It is hashed the
+                moment it reaches the database and is not written to the audit log. The log
+                records that you set one, and on whose account.
+              </p>
+            </ActionForm>
+          </Panel>
         </div>
 
         {/* ---------------------------------------------------------- verifiers */}
@@ -260,6 +333,8 @@ export default async function AccessPage() {
                       </Chip>
                       {isMe ? (
                         <span className="label-sm text-muted">You</span>
+                      ) : isOwner ? (
+                        <span className="label-sm text-muted">Runs the site</span>
                       ) : (
                         <ActionForm
                           action={setRole}
@@ -277,7 +352,7 @@ export default async function AccessPage() {
                     {isOwner || isMe ? (
                       <p className="serif-it mt-3 text-[0.88rem] leading-relaxed text-muted">
                         {isOwner
-                          ? "An owner holds every area and cannot be narrowed, so the site can never be locked out of its own settings."
+                          ? "The owner runs the site and sits above every organiser. They hold every area and cannot be narrowed, removed, repassworded or deleted from the console by anybody else, so the site can never be locked away from the person who runs it."
                           : "You cannot change your own access, for the same reason you cannot change your own role."}
                       </p>
                     ) : (

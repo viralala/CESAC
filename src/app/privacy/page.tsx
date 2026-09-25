@@ -54,8 +54,31 @@ const BLOCKS: readonly LegalBlock[] = [
       "The site sets no cookies for analytics, advertising or profiling, and none at all until you sign in.",
       "Signing in sets session cookies whose names begin with sb-, placed by Supabase Auth. They hold the tokens that keep you signed in and identify your account to the server. They are HttpOnly, so no script on the page can read them, and SameSite=Lax, so they are not sent from other sites. Signing out clears them.",
       "These cookies are strictly necessary: they exist only because you asked to sign in, they do nothing else, and there is no version of a sign-in that works without them.",
-      "Four preferences are saved in your browser's local storage and nothing else is: cesac.consent records your answer to the cookie notice so it does not reappear on every page, cesac.music and cesac.music.volume remember whether you turned the music on the Attack on Token page on or off and how loud you set it, and cesac.cursor remembers whether you switched the cursor animation off.",
+      "Five preferences are saved in your browser's local storage and nothing else is: cesac.consent records your answer to the cookie notice so it does not reappear on every page, cesac.music and cesac.music.volume remember whether you turned the music on the Attack on Token page on or off and how loud you set it, cesac.cursor remembers whether you switched the cursor animation off, and cesac.theme remembers whether you chose the light or the dark look.",
       "Local storage stays on your device. It is not sent to our server, not attached to requests, and nothing in it identifies you. You can clear it at any time through your browser's site-data settings.",
+    ],
+  },
+  {
+    heading: "Your photo",
+    body: [
+      "If you are a student, your console asks you for a photo once, the first time you sign in. Wherever the site ranks students, on the front page's standouts, on the standouts list and on the ranking in the console, your name is shown with it.",
+      "Before it leaves your device, your browser crops the photo to a square, shrinks it and saves it as a fresh JPEG. That drops the hidden information a phone photo carries, including the location it was taken at. What is uploaded is only the picture.",
+      "It is stored with Supabase, in a folder only your account can write to, at a public address, because it is printed on public pages. You can replace it at any time from your console. An organiser can take a photo down if it should not be on the front page, and you are then asked for another.",
+      "If you would rather not appear on the public standouts at all, switch that off from My record in your console. You stay on the ranking inside the console, which only signed-in students can see.",
+    ],
+  },
+  {
+    heading: "The roster and its profile pages",
+    body: [
+      "Every committee member has a page under /people. What is on it is what they wrote on the committee's own roster form, where each of them agreed to it being shown on this site: a line about themselves, an about, their interests and the links they chose to give. The form also asked for a phone number and an email address, and neither is published here.",
+      "A committee member's portrait is either a Google Drive file they shared, or the photo on their own account. Either way it is fetched by this site's server and served from this site, so opening a profile page makes no request from your browser to Google or anyone else.",
+      "A committee member who wants something on their page changed or removed can ask the committee, who edit it from the console.",
+    ],
+  },
+  {
+    heading: "Adding an event to your calendar",
+    body: [
+      "Events with a date carry an Add to calendar button. The .ics file it offers is made and served by this site. The Google Calendar option opens Google Calendar in a new tab with the event filled in, and that visit is covered by Google's privacy policy; nothing contacts Google until you choose it.",
     ],
   },
   {
@@ -93,7 +116,7 @@ const BLOCKS: readonly LegalBlock[] = [
   {
     heading: "What organisers do is recorded",
     body: [
-      "When an organiser verifies a payment, opens or closes a chapter, sets a score, applies a cut or changes somebody's role, that action is written to a log with their account and the time.",
+      "When an organiser verifies a payment, opens or closes a chapter, sets a score, applies a cut, changes somebody's role, sets somebody's password or takes down a photo, that action is written to a log with their account and the time. A password an organiser sets is never written to that log or anywhere else; the log records only that one was set, and on whose account.",
       "That record exists so a disputed decision on the day can be checked. It is visible only to organisers.",
     ],
   },
@@ -142,7 +165,7 @@ export default function PrivacyPage() {
       <Legal
         kicker="Legal"
         title="Privacy policy"
-        updated="15 September 2026"
+        updated="25 September 2026"
         intro="This page describes exactly what this website does with information about the people who visit it. It is written against the code that is actually deployed, not against an intention."
         blocks={BLOCKS}
       />

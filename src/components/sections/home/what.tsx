@@ -14,10 +14,10 @@ const POP: Record<string, string> = {
 };
 
 const ON_POP: Record<string, string> = {
-  azure: "var(--ink)",
-  violet: "var(--white)",
-  lime: "var(--ink)",
-  pink: "var(--white)",
+  azure: "var(--on-pop)",
+  violet: "var(--on-pop-light)",
+  lime: "var(--on-pop)",
+  pink: "var(--on-pop-light)",
 };
 
 /**
@@ -59,7 +59,7 @@ export async function HomeWhat() {
                   alt={`${CESAC.abbr}, the ${CESAC.name}`}
                   width={320}
                   height={344}
-                  className="h-auto w-[86px] shrink-0"
+                  className="mark-adapt h-auto w-[86px] shrink-0"
                   sizes="86px"
                 />
                 <div>

@@ -9,6 +9,13 @@ import {
   STUDENT_LEADERSHIP,
   VERTICALS,
 } from "@/lib/data/committee";
+import {
+  EMPTY_PROFILE,
+  ROSTER_PROFILES,
+  rosterSlug,
+  type RosterProfile,
+} from "@/lib/data/roster-profiles";
+import { avatarUrl, driveImage } from "@/lib/photos";
 import { createClient } from "@/lib/supabase/server";
 import type { Tables } from "@/lib/supabase/database.types";
 
@@ -124,6 +131,16 @@ export type RosterPerson = {
   rank: "lead" | "head" | null;
   position: number;
   visible: boolean;
+  /** The tail of their page's address, /people/<slug>. */
+  slug: string;
+  /** What they wrote about themselves. Every field can be empty. */
+  profile: RosterProfile;
+  /**
+   * Addresses to try for their photo, best first: the portrait the committee
+   * set, then the photo on their own account. The avatar falls through the
+   * list and lands on initials when none of them loads.
+   */
+  photos: string[];
 };
 
 export type RosterGroup = {
@@ -141,14 +158,25 @@ export type RosterGroup = {
 
 /** The committee sheet as it was transcribed, for when the database is away. */
 function rosterFallback(): RosterGroup[] {
-  const person = (name: string, role: string | null, rank: RosterPerson["rank"], i: number) => ({
-    id: null,
-    name,
-    role,
-    rank,
-    position: i + 1,
-    visible: true,
-  });
+  const person = (
+    name: string,
+    role: string | null,
+    rank: RosterPerson["rank"],
+    i: number,
+  ): RosterPerson => {
+    const profile = ROSTER_PROFILES[name] ?? EMPTY_PROFILE;
+    return {
+      id: null,
+      name,
+      role,
+      rank,
+      position: i + 1,
+      visible: true,
+      slug: rosterSlug(name),
+      profile,
+      photos: [driveImage(profile.photoUrl)].filter((u): u is string => Boolean(u)),
+    };
+  };
 
   return [
     {
@@ -227,16 +255,42 @@ function rosterFallback(): RosterGroup[] {
 export const getRoster = cache(async (all = false): Promise<RosterGroup[]> => {
   const supabase = await createClient();
 
-  const [groups, people] = await Promise.all([
+  const [groups, people, accountPhotos] = await Promise.all([
     supabase.from("roster_groups").select("*").order("position").order("title"),
     supabase.from("roster_people").select("*").order("position").order("name"),
+    // The photo each linked member put on their own account. A function
+    // rather than a join: the link is an email address, and the table that
+    // holds it is closed to everybody but organisers.
+    supabase.rpc("roster_photos"),
   ]);
 
   if (!groups.data?.length) return rosterFallback();
 
+  const accountPhoto = new Map(
+    (accountPhotos.data ?? []).map((row) => [row.person_id, avatarUrl(row.photo)]),
+  );
+
   const byGroup = new Map<string, RosterPerson[]>();
   for (const row of people.data ?? []) {
     if (!all && !row.visible) continue;
+
+    // Every profile column is read with a fallback because the columns
+    // arrived with a migration, and a deploy that reaches the database first
+    // should render the roster it always did rather than fail.
+    const profile: RosterProfile = {
+      preferredName: row.preferred_name ?? null,
+      yearBranch: row.year_branch ?? null,
+      tagline: row.tagline ?? null,
+      about: row.about ?? null,
+      hobbies: row.hobbies ?? null,
+      funFact: row.fun_fact ?? null,
+      photoUrl: row.photo_url ?? null,
+      instagram: row.instagram ?? null,
+      linkedin: row.linkedin ?? null,
+      github: row.github ?? null,
+      tenure: row.tenure ?? null,
+    };
+
     const list = byGroup.get(row.group_id) ?? [];
     list.push({
       id: row.id,
@@ -245,6 +299,11 @@ export const getRoster = cache(async (all = false): Promise<RosterGroup[]> => {
       rank: row.rank === "lead" || row.rank === "head" ? row.rank : null,
       position: row.position,
       visible: row.visible,
+      slug: row.slug ?? rosterSlug(row.name),
+      profile,
+      photos: [driveImage(profile.photoUrl), accountPhoto.get(row.id)].filter(
+        (u): u is string => Boolean(u),
+      ),
     });
     byGroup.set(row.group_id, list);
   }
@@ -263,6 +322,32 @@ export const getRoster = cache(async (all = false): Promise<RosterGroup[]> => {
       visible: g.visible,
       people: byGroup.get(g.id) ?? [],
     }));
+});
+
+/**
+ * One person on the public roster, by the tail of their address, with the
+ * block they sit in. Null for a slug nobody holds or a person who is hidden,
+ * which the page turns into a 404 rather than an empty profile.
+ */
+export async function getRosterPerson(
+  slug: string,
+): Promise<{ person: RosterPerson; group: RosterGroup } | null> {
+  for (const group of await getRoster()) {
+    const person = group.people.find((p) => p.slug === slug);
+    if (person) return { person, group };
+  }
+  return null;
+}
+
+/**
+ * The address each roster entry is linked to its account by, for the console
+ * page that edits it. Read under the organiser policy on roster_private, so
+ * anybody else gets an empty map.
+ */
+export const getRosterEmails = cache(async (): Promise<Map<string, string>> => {
+  const supabase = await createClient();
+  const { data } = await supabase.from("roster_private").select("person_id, email");
+  return new Map((data ?? []).filter((r) => r.email).map((r) => [r.person_id, r.email as string]));
 });
 
 /** How many people the roster names. Printed on the /people page. */
@@ -296,12 +381,17 @@ export const getScale = cache(async (): Promise<ScaleRow[]> => {
 // ---------------------------------------------------------------------------
 
 export type ShowcaseEntry = {
+  /** The rank. Two students on the same number share it. */
   place: number;
+  /** The order, one to n with no ties, which is what the front page cuts at. */
+  seq: number;
   studentId: string;
   name: string;
   year: string | null;
   value: number;
   note: string | null;
+  /** The student's photo, as an address next/image can load, or null. */
+  photo: string | null;
 };
 
 export type ShowcaseCategory = {
@@ -309,27 +399,15 @@ export type ShowcaseCategory = {
   title: string;
   blurb: string;
   metric: string;
+  /** How many the front page shows. The standouts page shows everybody. */
+  slots: number;
   entries: ShowcaseEntry[];
 };
 
-/** What the number under a name means, in the words the card prints. */
-export const METRICS: readonly { value: string; label: string; unit: string; note: string }[] = [
-  { value: "points", label: "Most points", unit: "points", note: "Everything on their record, added up on the scale." },
-  { value: "wins", label: "Most places won", unit: "placed", note: "First, second and third places brought back." },
-  { value: "publications", label: "Most published", unit: "published", note: "Papers, books and chapters." },
-  { value: "prize_money", label: "Most prize money", unit: "won", note: "In rupees, from the records they have filed." },
-  { value: "international", label: "Most international", unit: "international", note: "Records at international level." },
-  { value: "records", label: "Most on file", unit: "records", note: "How many records they have uploaded, of any kind." },
-  { value: "manual", label: "Chosen by the committee", unit: "", note: "Nobody is ranked. You name them yourself." },
-];
-
-export const METRIC_LABEL: Record<string, string> = Object.fromEntries(
-  METRICS.map((m) => [m.value, m.label]),
-);
-
-export function metricUnit(metric: string): string {
-  return METRICS.find((m) => m.value === metric)?.unit ?? "";
-}
+// The metric table moved to lib/data/metrics.ts so the client-side standouts
+// search can read it; this file is server-only. Re-exported for the callers
+// that already import it from here.
+export { METRICS, METRIC_LABEL, metricUnit } from "@/lib/data/metrics";
 
 /**
  * The front page showcase.
@@ -345,30 +423,78 @@ export function metricUnit(metric: string): string {
  * yet. The public section is the one that skips them.
  */
 export const getShowcase = cache(async (): Promise<ShowcaseCategory[]> => {
-  const supabase = await createClient();
-  const { data } = await supabase.rpc("showcase_board");
+  const all = await getStandouts();
+  return all.map((category) => ({
+    ...category,
+    entries: category.entries.filter((entry) => entry.seq <= category.slots),
+  }));
+});
 
-  const byCategory = new Map<string, ShowcaseCategory>();
-  for (const row of data ?? []) {
-    const existing = byCategory.get(row.category_id) ?? {
+type BoardRow = {
+  category_id: string;
+  category_title: string;
+  category_blurb: string;
+  metric: string;
+  place: number;
+  student_id: string;
+  name: string;
+  year: string | null;
+  value: number;
+  note: string | null;
+  slots?: number;
+  seq?: number;
+  photo?: string | null;
+};
+
+function byCategory(rows: readonly BoardRow[]): ShowcaseCategory[] {
+  const out = new Map<string, ShowcaseCategory>();
+  for (const row of rows) {
+    const existing = out.get(row.category_id) ?? {
       id: row.category_id,
       title: row.category_title,
       blurb: row.category_blurb,
       metric: row.metric,
+      slots: Number(row.slots ?? 0),
       entries: [],
     };
     existing.entries.push({
       place: Number(row.place),
+      seq: Number(row.seq ?? row.place),
       studentId: row.student_id,
       name: row.name,
       year: row.year,
       value: Number(row.value),
       note: row.note,
+      photo: avatarUrl(row.photo),
     });
-    byCategory.set(row.category_id, existing);
+    out.set(row.category_id, existing);
   }
+  return [...out.values()];
+}
 
-  return [...byCategory.values()];
+/**
+ * Every standout in every category, for /standouts, and what the front page
+ * takes its top few from.
+ *
+ * `standouts_board()` is the showcase's counting without the cut, plus each
+ * student's photo. It arrived with the photo migration; until that has run
+ * on the database this falls back to `showcase_board()`, which is the top of
+ * each category and no photos, so the front page keeps working through a
+ * deploy that lands before the migration does. In that case the category's
+ * slot count is taken to be however many came back, which is exactly what
+ * the old function had already cut it to.
+ */
+export const getStandouts = cache(async (): Promise<ShowcaseCategory[]> => {
+  const supabase = await createClient();
+
+  const { data, error } = await supabase.rpc("standouts_board");
+  if (!error) return byCategory(data ?? []);
+
+  const { data: old } = await supabase.rpc("showcase_board");
+  return byCategory(old ?? []).map((category) => ({
+    ...category,
+    slots: category.entries.length,
+  }));
 });
 
 /** Every category, shown or not, for the console page that edits them. */

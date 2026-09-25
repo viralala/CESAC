@@ -15,6 +15,12 @@
  * and verify_record, admin_create_verifier, admin_set_verifier_password,
  * admin_remove_verifier, admin_verifiers and is_verifier, and answer_question,
  * which both consoles write a reply through.
+ *
+ * The lines for 20260925_profiles_photos_owner.sql were added by hand, the
+ * way the 19 and 21 September ones first were: profiles.photo_path, the
+ * profile columns on roster_people, roster_private, the schedule columns on
+ * dept_events, and the functions that migration adds. Regenerate once it is
+ * applied and the diff should be empty.
  */
 export type Json =
   | string
@@ -405,7 +411,9 @@ export type Database = {
       }
       dept_events: {
         Row: {
+          all_day: boolean
           created_at: string
+          ends_at: string | null
           fee_inr: number
           href: string | null
           jp: string | null
@@ -414,14 +422,18 @@ export type Database = {
           one_liner: string
           position: number
           slug: string
+          starts_at: string | null
           state: Database["public"]["Enums"]["dept_event_state"]
           team_size: number
           updated_at: string
           updated_by: string | null
+          venue: string | null
           when_label: string
         }
         Insert: {
+          all_day?: boolean
           created_at?: string
+          ends_at?: string | null
           fee_inr?: number
           href?: string | null
           jp?: string | null
@@ -430,14 +442,18 @@ export type Database = {
           one_liner: string
           position?: number
           slug: string
+          starts_at?: string | null
           state?: Database["public"]["Enums"]["dept_event_state"]
           team_size?: number
           updated_at?: string
           updated_by?: string | null
+          venue?: string | null
           when_label: string
         }
         Update: {
+          all_day?: boolean
           created_at?: string
+          ends_at?: string | null
           fee_inr?: number
           href?: string | null
           jp?: string | null
@@ -446,10 +462,12 @@ export type Database = {
           one_liner?: string
           position?: number
           slug?: string
+          starts_at?: string | null
           state?: Database["public"]["Enums"]["dept_event_state"]
           team_size?: number
           updated_at?: string
           updated_by?: string | null
+          venue?: string | null
           when_label?: string
         }
         Relationships: [
@@ -659,6 +677,7 @@ export type Database = {
           id: string
           must_change_password: boolean
           phone: string | null
+          photo_path: string | null
           prn: string | null
           role: Database["public"]["Enums"]["app_role"]
           showcase_opt_out: boolean
@@ -676,6 +695,7 @@ export type Database = {
           id: string
           must_change_password?: boolean
           phone?: string | null
+          photo_path?: string | null
           prn?: string | null
           role?: Database["public"]["Enums"]["app_role"]
           showcase_opt_out?: boolean
@@ -693,6 +713,7 @@ export type Database = {
           id?: string
           must_change_password?: boolean
           phone?: string | null
+          photo_path?: string | null
           prn?: string | null
           role?: Database["public"]["Enums"]["app_role"]
           showcase_opt_out?: boolean
@@ -800,34 +821,70 @@ export type Database = {
       }
       roster_people: {
         Row: {
+          about: string | null
+          fun_fact: string | null
+          github: string | null
           group_id: string
+          hobbies: string | null
           id: string
+          instagram: string | null
+          linkedin: string | null
           name: string
+          photo_url: string | null
           position: number
+          preferred_name: string | null
           rank: string | null
           role: string | null
+          slug: string | null
+          tagline: string | null
+          tenure: string | null
           updated_at: string
           visible: boolean
+          year_branch: string | null
         }
         Insert: {
+          about?: string | null
+          fun_fact?: string | null
+          github?: string | null
           group_id: string
+          hobbies?: string | null
           id?: string
+          instagram?: string | null
+          linkedin?: string | null
           name: string
+          photo_url?: string | null
           position?: number
+          preferred_name?: string | null
           rank?: string | null
           role?: string | null
+          slug?: string | null
+          tagline?: string | null
+          tenure?: string | null
           updated_at?: string
           visible?: boolean
+          year_branch?: string | null
         }
         Update: {
+          about?: string | null
+          fun_fact?: string | null
+          github?: string | null
           group_id?: string
+          hobbies?: string | null
           id?: string
+          instagram?: string | null
+          linkedin?: string | null
           name?: string
+          photo_url?: string | null
           position?: number
+          preferred_name?: string | null
           rank?: string | null
           role?: string | null
+          slug?: string | null
+          tagline?: string | null
+          tenure?: string | null
           updated_at?: string
           visible?: boolean
+          year_branch?: string | null
         }
         Relationships: [
           {
@@ -835,6 +892,32 @@ export type Database = {
             columns: ["group_id"]
             isOneToOne: false
             referencedRelation: "roster_groups"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      roster_private: {
+        Row: {
+          email: string | null
+          person_id: string
+          updated_at: string
+        }
+        Insert: {
+          email?: string | null
+          person_id: string
+          updated_at?: string
+        }
+        Update: {
+          email?: string | null
+          person_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "roster_private_person_id_fkey"
+            columns: ["person_id"]
+            isOneToOne: true
+            referencedRelation: "roster_people"
             referencedColumns: ["id"]
           },
         ]
@@ -1357,6 +1440,7 @@ export type Database = {
       admin_can: { Args: { p_cap: string }; Returns: boolean }
       admin_caps_all: { Args: never; Returns: string[] }
       admin_clear_grants: { Args: { p_profile_id: string }; Returns: undefined }
+      admin_clear_photo: { Args: { p_profile_id: string }; Returns: undefined }
       admin_create_verifier: {
         Args: { p_email: string; p_name?: string; p_password: string }
         Returns: string
@@ -1385,6 +1469,25 @@ export type Database = {
         Returns: undefined
       }
       admin_restore_team: { Args: { p_team_id: string }; Returns: undefined }
+      admin_save_roster_profile: {
+        Args: {
+          p_about?: string
+          p_email?: string
+          p_fun_fact?: string
+          p_github?: string
+          p_hobbies?: string
+          p_id: string
+          p_instagram?: string
+          p_linkedin?: string
+          p_photo_url?: string
+          p_preferred_name?: string
+          p_slug?: string
+          p_tagline?: string
+          p_tenure?: string
+          p_year_branch?: string
+        }
+        Returns: string
+      }
       admin_score_team: {
         Args: {
           p_chapter_id: string
@@ -1408,6 +1511,16 @@ export type Database = {
         }
         Returns: undefined
       }
+      admin_set_event_schedule: {
+        Args: {
+          p_all_day?: boolean
+          p_ends_at?: string
+          p_slug: string
+          p_starts_at?: string
+          p_venue?: string
+        }
+        Returns: undefined
+      }
       admin_set_event_state: {
         Args: {
           p_slug: string
@@ -1418,6 +1531,10 @@ export type Database = {
       admin_set_grants: {
         Args: { p_caps: string[]; p_note?: string; p_profile_id: string }
         Returns: undefined
+      }
+      admin_set_password: {
+        Args: { p_email: string; p_must_change?: boolean; p_password: string }
+        Returns: string
       }
       admin_set_points: {
         Args: { p_key: string; p_points: number }
@@ -1569,6 +1686,16 @@ export type Database = {
       join_team: { Args: { p_code: string }; Returns: string }
       leaderboard_is_public: { Args: never; Returns: boolean }
       leave_team: { Args: never; Returns: undefined }
+      event_schedule: {
+        Args: never
+        Returns: {
+          all_day: boolean
+          ends_at: string
+          slug: string
+          starts_at: string
+          venue: string
+        }[]
+      }
       login_attempt_record: {
         Args: { p_email: string; p_ip: string; p_ok: boolean }
         Returns: undefined
@@ -1595,6 +1722,7 @@ export type Database = {
         Returns: {
           certificates: number
           name: string
+          photo: string
           place: number
           points: number
           student_id: string
@@ -1611,6 +1739,14 @@ export type Database = {
         Returns: string
       }
       registration_is_open: { Args: never; Returns: boolean }
+      roster_photos: {
+        Args: never
+        Returns: {
+          person_id: string
+          photo: string
+        }[]
+      }
+      roster_slugify: { Args: { p: string }; Returns: string }
       showcase_board: {
         Args: never
         Returns: {
@@ -1622,6 +1758,25 @@ export type Database = {
           name: string
           note: string
           place: number
+          student_id: string
+          value: number
+          year: string
+        }[]
+      }
+      standouts_board: {
+        Args: never
+        Returns: {
+          category_blurb: string
+          category_id: string
+          category_position: number
+          category_title: string
+          metric: string
+          name: string
+          note: string
+          photo: string
+          place: number
+          seq: number
+          slots: number
           student_id: string
           value: number
           year: string

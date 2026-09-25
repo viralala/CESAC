@@ -7,6 +7,7 @@ import { EventPrizes } from "@/components/sections/event/prizes";
 import { EventRegister } from "@/components/sections/event/register";
 import { RegisterStrip } from "@/components/sections/event/register-button";
 import { EventVitals } from "@/components/sections/event/vitals";
+import { WhenBand } from "@/components/sections/event/when-band";
 import { Ribbon } from "@/components/sections/ribbon";
 import { EVENT } from "@/lib/data/event";
 
@@ -45,11 +46,12 @@ const WORDS = [
  * The production plan (staffing, AV, grading pipeline, pre-launch gates) is
  * internal and is deliberately not here.
  */
-export default function AttackOnTokenPage() {
+export default async function AttackOnTokenPage() {
   return (
     <>
       <EventHero />
       <EventVitals />
+      <WhenBand slug="attack-on-token" ground="bg-cream" />
       <RegisterStrip line="Two people, ₹125, one form. That is the whole of getting in." />
       <section className="bg-cream py-6 sm:py-10">
         <div className="mx-auto w-full max-w-[1280px] px-5 sm:px-8">

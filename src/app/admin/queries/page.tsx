@@ -7,7 +7,6 @@ import { QuestionDetail, QuestionSummary } from "@/components/console/queue-part
 import { Empty, Stat } from "@/components/console/shell";
 import { requireAdmin } from "@/lib/auth/guard";
 import { requireCap } from "@/lib/auth/caps";
-import { TOPICS } from "@/lib/console/options";
 import { stamp } from "@/lib/console/record-view";
 import { EVENT } from "@/lib/data/event";
 import { getQueryQueue, type QueryForOrganiser } from "@/lib/data/queries";
@@ -26,11 +25,6 @@ export const metadata: Metadata = {
  */
 const CEILING = 5;
 
-const TOPIC_FACET: Facet = {
-  name: "topic",
-  label: "About",
-  options: TOPICS.map((t) => ({ value: t.value, label: t.label })),
-};
 
 const STATUS_FACET: Facet = {
   name: "status",
@@ -63,7 +57,7 @@ function haystack(query: QueryForOrganiser): string {
 function row(query: QueryForOrganiser, outOfRoom: boolean): ListRow {
   return {
     id: query.id,
-    facets: { status: query.status, topic: query.topic },
+    facets: { status: query.status },
     search: haystack(query),
     summary: <QuestionSummary query={query} asker={query.author} outOfRoom={outOfRoom} />,
     detail: (
@@ -92,11 +86,12 @@ function row(query: QueryForOrganiser, outOfRoom: boolean): ListRow {
  * unworked queue does not pile up visibly, it quietly stops the people who
  * asked first from asking anything else.
  *
- * Two lists since 22 September, each of them filterable by what the question
- * is about and foldable whole. The same six questions arrive hundreds of
- * times, so the settled list grows without limit and nobody scrolls it; being
- * able to shut it and to pull one topic out of it is the difference between a
- * record and a wall.
+ * Two lists since 22 September, each of them searchable and foldable whole.
+ * The same six questions arrive hundreds of times, so the settled list grows
+ * without limit and nobody scrolls it; being able to shut it and to search it
+ * is the difference between a record and a wall. It used to filter by topic
+ * as well, until the student form stopped asking for one: a question now
+ * carries a title the student typed, and the search box reads that.
  *
  * Nothing on this page decides anything by itself. `answer_question` in the
  * database checks whether whoever is asking may answer at all, which is what
@@ -157,11 +152,11 @@ export default async function QueriesPage() {
             title="Waiting on an answer"
             noun="question"
             blurb="Open one to read what was asked and write back. The standard replies land in the box rather than going to the student, so read one over and change whatever does not fit."
-            facets={[TOPIC_FACET]}
+            facets={[]}
             rows={open.map((query) =>
               row(query, (perAsker.get(query.author_id) ?? 0) >= CEILING),
             )}
-            searchPlaceholder="Subject, what they wrote, student, PRN"
+            searchPlaceholder="Title, what they wrote, student, PRN"
             empty={
               <Empty>
                 Nothing is waiting. Every question that has been asked has an answer on it.
@@ -177,9 +172,9 @@ export default async function QueriesPage() {
             noun="question"
             startFolded
             blurb="Most recently answered first. The answer box is there a second time on purpose: an answer that was wrong is corrected by writing over it, and the student reads the replacement rather than a second message."
-            facets={[STATUS_FACET, TOPIC_FACET]}
+            facets={[STATUS_FACET]}
             rows={settled.map((query) => row(query, false))}
-            searchPlaceholder="Subject, what they wrote, the answer, student"
+            searchPlaceholder="Title, what they wrote, the answer, student"
             empty={
               <Empty>
                 No question has been answered yet. Answered ones move down here, so what was said

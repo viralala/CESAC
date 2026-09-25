@@ -8,6 +8,7 @@ import { SiteHeader } from "@/components/site/header";
 import { ThemeTransition } from "@/components/site/theme-transition";
 import { getViewer } from "@/lib/auth/guard";
 import { PetalCursor } from "@/components/site/petal-cursor";
+import { THEME_SCRIPT } from "@/lib/theme";
 
 // Tall condensed headline voice.
 const anton = Anton({
@@ -84,7 +85,10 @@ export const metadata: Metadata = {
 };
 
 export const viewport: Viewport = {
-  themeColor: "#12656f",
+  themeColor: [
+    { media: "(prefers-color-scheme: light)", color: "#12656f" },
+    { media: "(prefers-color-scheme: dark)", color: "#0e171b" },
+  ],
 };
 
 export default async function RootLayout({ children }: LayoutProps<"/">) {
@@ -98,7 +102,17 @@ export default async function RootLayout({ children }: LayoutProps<"/">) {
       lang="en"
       data-scroll-behavior="smooth"
       className={`${anton.variable} ${archivo.variable} ${playfair.variable} ${baloo2.variable} ${kalam.variable} ${oswald.variable} h-full`}
+      // The theme script below sets data-theme on this element before React
+      // gets to it, so the server's copy and the browser's differ on purpose.
+      suppressHydrationWarning
     >
+      <head>
+        {/* Light or dark, decided before the first paint so a dark device
+            never sees a frame of the light site. See lib/theme.ts. Inline
+            and tiny on purpose: it is the one script that has to run before
+            anything else is drawn. */}
+        <script dangerouslySetInnerHTML={{ __html: THEME_SCRIPT }} />
+      </head>
       <body className="flex min-h-full flex-col antialiased">
         <a
           href="#main-content"

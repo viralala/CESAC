@@ -4,6 +4,7 @@ import Link from "next/link";
 import {
   saveDeptEvent,
   setEntryStatus,
+  setEventSchedule,
   setEventState,
   verifyEntryPayment,
 } from "@/app/actions/admin";
@@ -40,6 +41,11 @@ const PAYMENT_TONE = {
   verified: "lime",
   rejected: "red",
 } as const;
+
+/** A stored instant as the value a datetime-local box wants, in India time. */
+function istInput(iso: string): string {
+  return new Date(Date.parse(iso) + 330 * 60 * 1000).toISOString().slice(0, 16);
+}
 
 function personLine(p: Entry["student"]): string {
   if (!p) return "Account deleted";
@@ -169,6 +175,66 @@ export default async function EntriesPage() {
                       </Link>
                     ) : null}
                   </div>
+
+                  <details className="mt-6 border-t border-ink/10 pt-5">
+                    <summary className="label cursor-pointer text-muted hover:text-ink">
+                      Date, time and venue:{" "}
+                      <span className="text-ink">
+                        {event.starts_at ? istInput(event.starts_at).replace("T", " ") : "not set"}
+                      </span>
+                    </summary>
+                    <p className="serif-it mt-3 max-w-[64ch] text-[0.92rem] leading-relaxed text-muted">
+                      What the countdown counts to and what goes into somebody&rsquo;s calendar. Times
+                      are India time. Leave the start empty while the date is not settled and every
+                      page says it is to be announced; the &ldquo;When&rdquo; line above is the
+                      sentence the cards print, and is edited below with the rest of the event.
+                    </p>
+                    <ActionForm action={setEventSchedule} submit="Save the date" tone="solid">
+                      <input type="hidden" name="slug" value={event.slug} />
+                      <div className="mt-4 grid gap-4 sm:grid-cols-2">
+                        <span>
+                          <label className="label-sm block text-muted">Starts</label>
+                          <input
+                            name="starts_at"
+                            type="datetime-local"
+                            defaultValue={event.starts_at ? istInput(event.starts_at) : ""}
+                            className="field mt-1.5"
+                          />
+                        </span>
+                        <span>
+                          <label className="label-sm block text-muted">Ends</label>
+                          <input
+                            name="ends_at"
+                            type="datetime-local"
+                            defaultValue={event.ends_at ? istInput(event.ends_at) : ""}
+                            className="field mt-1.5"
+                          />
+                        </span>
+                        <span>
+                          <label className="label-sm block text-muted">Venue</label>
+                          <input
+                            name="venue"
+                            type="text"
+                            maxLength={160}
+                            defaultValue={event.venue ?? ""}
+                            placeholder="Leave empty while it is TBA"
+                            className="field mt-1.5"
+                          />
+                        </span>
+                        <label className="flex cursor-pointer items-center gap-3 self-end pb-3">
+                          <input
+                            type="checkbox"
+                            name="all_day"
+                            defaultChecked={event.all_day ?? false}
+                            className="h-4 w-4 accent-[var(--teal)]"
+                          />
+                          <span className="text-[0.92rem] text-ink">
+                            All day, so only the dates count
+                          </span>
+                        </label>
+                      </div>
+                    </ActionForm>
+                  </details>
 
                   <div className="mt-8 border-t border-ink/10 pt-7">
                     <p className="label text-ink">

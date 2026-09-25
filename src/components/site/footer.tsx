@@ -3,6 +3,7 @@ import Link from "next/link";
 
 import { GradientStrip } from "@/components/aot/art";
 import { Container } from "@/components/aot/bits";
+import { SocialMark } from "@/components/site/social-mark";
 import { CESAC } from "@/lib/data/cesac";
 
 const COLUMNS: { title: string; links: [string, string][] }[] = [
@@ -11,6 +12,8 @@ const COLUMNS: { title: string; links: [string, string][] }[] = [
     links: [
       ["/about", "About"],
       ["/people", "People"],
+      ["/standouts", "Standouts"],
+      ["/faq", "FAQ"],
       ["/#contact", "Get involved"],
     ],
   },
@@ -56,34 +59,6 @@ const DEPARTMENT_LINKS = [
 ];
 
 /** Drawn rather than fetched, so the footer blocks on no CDN. */
-function SocialMark({ id }: { id: "linkedin" | "instagram" }) {
-  if (id === "instagram") {
-    // Drawn from shapes rather than one path, because the mark is three
-    // concentric things and strokes at 16px stay legible where a filled
-    // silhouette of the same glyph turns into a blob.
-    return (
-      <svg
-        viewBox="0 0 16 16"
-        className="h-4 w-4 shrink-0"
-        aria-hidden
-        fill="none"
-        stroke="currentColor"
-        strokeWidth={1.5}
-      >
-        <rect x="1.45" y="1.45" width="13.1" height="13.1" rx="4" />
-        <circle cx="8" cy="8" r="3.1" />
-        <circle cx="11.75" cy="4.3" r="0.9" fill="currentColor" stroke="none" />
-      </svg>
-    );
-  }
-
-  return (
-    <svg viewBox="0 0 16 16" className="h-4 w-4 shrink-0" aria-hidden fill="currentColor">
-      <path d="M13.63 13.63h-2.37V9.92c0-.89-.02-2.03-1.24-2.03-1.24 0-1.43.97-1.43 1.97v3.77H6.22V6h2.28v1.04h.03c.32-.6 1.09-1.24 2.25-1.24 2.4 0 2.85 1.58 2.85 3.64v4.19ZM3.55 4.96a1.38 1.38 0 1 1 0-2.76 1.38 1.38 0 0 1 0 2.76Zm1.19 8.67H2.36V6h2.38v7.63ZM14.82 0H1.18C.53 0 0 .52 0 1.16v13.68C0 15.48.53 16 1.18 16h13.64c.65 0 1.18-.52 1.18-1.16V1.16C16 .52 15.47 0 14.82 0Z" />
-    </svg>
-  );
-}
-
 export function SiteFooter() {
   return (
     <footer className="bg-cream px-3 pb-3 sm:px-5 sm:pb-5">

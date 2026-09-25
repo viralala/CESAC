@@ -233,7 +233,11 @@ export function QuestionSummary({
         <Chip tone={query.status === "open" ? "muted" : query.status === "closed" ? "ink" : "lime"}>
           {query.status}
         </Chip>
-        <Chip tone="teal">{TOPIC_LABEL[query.topic] ?? "Something else"}</Chip>
+        {/* Only a question asked before the title replaced the dropdown
+            carries a bucket worth printing; everything since is "other". */}
+        {query.topic !== "other" && TOPIC_LABEL[query.topic] ? (
+          <Chip tone="teal">{TOPIC_LABEL[query.topic]}</Chip>
+        ) : null}
         {outOfRoom ? <Chip tone="red">out of room</Chip> : null}
       </div>
     </div>
@@ -254,7 +258,8 @@ export function QuestionDetail({
     <>
       <p className="label-sm break-words text-muted">{personLine(asker)}</p>
       <p className="label-sm mt-1 text-muted">
-        {TOPIC_LABEL[query.topic] ?? "Something else"} · asked {stamp(query.created_at)}
+        {query.topic !== "other" && TOPIC_LABEL[query.topic] ? `${TOPIC_LABEL[query.topic]} · ` : ""}
+        asked {stamp(query.created_at)}
       </p>
 
       <p className="mt-3 whitespace-pre-line rounded-[var(--r-md)] bg-cream-2 px-5 py-4 text-[0.98rem] leading-relaxed text-ink">

@@ -16,7 +16,7 @@ export const metadata: Metadata = {
 };
 
 const POPS = ["var(--azure)", "var(--violet)", "var(--lime)", "var(--pink)"];
-const ON_POPS = ["var(--ink)", "var(--white)", "var(--ink)", "var(--white)"];
+const ON_POPS = ["var(--on-pop)", "var(--on-pop-light)", "var(--on-pop)", "var(--on-pop-light)"];
 
 export default async function AboutPage() {
   const [groups, t] = await Promise.all([getRoster(), getCopy()]);

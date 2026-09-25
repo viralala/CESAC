@@ -520,3 +520,117 @@ export async function updateSettings(_state: AdminState, formData: FormData): Pr
 
   return say(error, "Saved.");
 }
+
+/**
+ * Set somebody's password, from the console.
+ *
+ * Asked for so that a student who has forgotten theirs does not have to wait
+ * for email, which this project can barely send (see HANDOVER.md, item 1).
+ * All of the rules are in `admin_set_password()` and none of them here, so a
+ * crafted request meets the same ladder the form does: an organiser holding
+ * People and access sets a student's or a verifier's, only the owner sets an
+ * organiser's, nobody sets the owner's, and nobody sets their own this way.
+ *
+ * By default the account is put back behind the choose-a-password screen, so
+ * what the organiser read out works for exactly one sign-in. The password is
+ * handed to the database and hashed there; it is not logged, not written to
+ * the audit entry and not kept anywhere, which is why the form says to note
+ * it down before saving.
+ */
+export async function setAccountPassword(
+  _state: AdminState,
+  formData: FormData,
+): Promise<AdminState> {
+  const email = String(formData.get("email") ?? "")
+    .trim()
+    .toLowerCase();
+  const password = String(formData.get("password") ?? "");
+  const mustChange = formData.get("must_change") === "on";
+
+  if (!email.includes("@")) return { error: "Put in the email address the account signs in with." };
+  if (password.length < 8) return { error: "A password has to be at least 8 characters." };
+
+  const supabase = await adminClient();
+  const { data, error } = await supabase.rpc("admin_set_password", {
+    p_email: email,
+    p_password: password,
+    p_must_change: mustChange,
+  });
+
+  revalidatePath("/admin/students");
+  revalidatePath("/admin/access");
+  return say(
+    error,
+    mustChange
+      ? `Done. ${data ?? email} can sign in with it once, and is asked to choose their own straight away. Every session they had open is signed out.`
+      : `Done. ${data ?? email} signs in with it from now on. Every session they had open is signed out.`,
+  );
+}
+
+/**
+ * Take a photo off an account.
+ *
+ * For the one that should not be on the front page. The student is sent back
+ * to the photo step the next time they open their console, which is the whole
+ * of the moderation: they pick a better one.
+ */
+export async function clearPhoto(_state: AdminState, formData: FormData): Promise<AdminState> {
+  const id = String(formData.get("profile_id") ?? "");
+  if (!id) return { error: "That account is not on the page any more. Reload it." };
+
+  const supabase = await adminClient();
+  const { error } = await supabase.rpc("admin_clear_photo", { p_profile_id: id });
+
+  revalidatePath("/", "layout");
+  return say(error, "Photo removed. They are asked for a new one when they next open their console.");
+}
+
+/** A datetime-local value, read as India time. */
+function istInstant(value: string, dateOnly: boolean): string | null {
+  const v = value.trim();
+  if (!v) return null;
+  if (!/^\d{4}-\d{2}-\d{2}(T\d{2}:\d{2})?$/.test(v)) return "bad";
+  return dateOnly || v.length === 10 ? `${v.slice(0, 10)}T00:00:00+05:30` : `${v}:00+05:30`;
+}
+
+/**
+ * When an event is, for the countdown and the calendar button.
+ *
+ * The form's times are read as India time whatever the organiser's laptop is
+ * set to, because the events are on campus and "10:00" means 10:00 in Pune.
+ * An all-day event keeps only the dates. Clearing the start clears the lot,
+ * which puts every page back to "date to be announced" and takes the calendar
+ * button away: that is the right thing to do when a date moves and the new
+ * one is not settled yet.
+ */
+export async function setEventSchedule(
+  _state: AdminState,
+  formData: FormData,
+): Promise<AdminState> {
+  const slug = String(formData.get("slug") ?? "");
+  const allDay = formData.get("all_day") === "on";
+  const start = istInstant(String(formData.get("starts_at") ?? ""), allDay);
+  const end = istInstant(String(formData.get("ends_at") ?? ""), allDay);
+  const venue = String(formData.get("venue") ?? "").trim();
+
+  if (!slug) return { error: "Which event? Reload the page and try again." };
+  if (start === "bad" || end === "bad") return { error: "Those dates did not read. Use the pickers." };
+  if (!start && end) return { error: "Give it a start before an end, or clear both." };
+
+  const supabase = await adminClient();
+  const { error } = await supabase.rpc("admin_set_event_schedule", {
+    p_slug: slug,
+    p_starts_at: start ?? undefined,
+    p_ends_at: end ?? undefined,
+    p_all_day: allDay,
+    p_venue: venue || undefined,
+  });
+
+  revalidatePath("/", "layout");
+  return say(
+    error,
+    start
+      ? "Saved. The countdown and the calendar button use it everywhere now."
+      : "Cleared. Every page says the date is to be announced.",
+  );
+}

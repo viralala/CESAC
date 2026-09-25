@@ -10,7 +10,9 @@ import {
   type EventState,
 } from "@/app/actions/events";
 import { Chip, Notice, Row } from "@/components/console/shell";
+import { EventWhen } from "@/components/site/event-when";
 import { rupees } from "@/lib/console/options";
+import type { EventSchedule } from "@/lib/data/cesac";
 import type { DeptEvent, MyRegistration } from "@/lib/data/dept-events";
 import { REGISTER, REGISTER_SLUG, REGISTRATION_IS_LIVE } from "@/lib/data/event";
 
@@ -46,9 +48,12 @@ export function EventBoard({
   events,
   registrations,
   meId,
+  schedules,
 }: {
   events: DeptEvent[];
   registrations: MyRegistration[];
+  /** When each event is, by slug, for the countdown and the calendar button. */
+  schedules: Record<string, EventSchedule | null>;
   /**
    * An entry has two sides and they are not the same. The one who signed up
    * owes the fee and sees the note about it; the partner they named sees the
@@ -96,6 +101,18 @@ export function EventBoard({
               {event.when_label} {"·"} {event.team_size === 2 ? "Teams of two" : "One seat each"}{" "}
               {"·"} {event.fee_inr > 0 ? `${rupees(event.fee_inr)} entry` : "Free"}
             </p>
+
+            <EventWhen
+              event={{
+                slug: event.slug,
+                name: event.name,
+                blurb: event.one_liner,
+                href: event.href ?? "/events",
+              }}
+              schedule={schedules[event.slug] ?? null}
+              showDate={false}
+              className="mt-4"
+            />
 
             {event.href ? (
               <p className="label mt-4">

@@ -1,6 +1,7 @@
 import Link from "next/link";
 
 import { Chip, Empty, Stat } from "@/components/console/shell";
+import { Avatar } from "@/components/site/avatar";
 import { rupees } from "@/lib/console/options";
 import type { ScaleRow } from "@/lib/data/site";
 import type { BoardRow, Standing } from "@/lib/data/student";
@@ -64,14 +65,15 @@ export function RankingTable({ rows, meId }: { rows: BoardRow[]; meId: string })
         return (
           <li
             key={row.studentId}
-            className={`flex flex-wrap items-baseline justify-between gap-x-6 gap-y-1.5 border-b border-ink/10 py-3.5 last:border-0 ${
+            className={`flex flex-wrap items-center justify-between gap-x-6 gap-y-1.5 border-b border-ink/10 py-3.5 last:border-0 ${
               isMe ? "-mx-3 rounded-[var(--r-md)] bg-teal/[0.07] px-3" : ""
             }`}
           >
-            <span className="flex min-w-0 items-baseline gap-4">
+            <span className="flex min-w-0 items-center gap-4">
               <span className="d-tall w-[2.6rem] shrink-0 text-[1.3rem] leading-none text-teal">
                 {row.place}
               </span>
+              <Avatar key={row.photo ?? "none"} name={row.name} sources={[row.photo]} size={40} />
               <span className="min-w-0">
                 <span className="block text-[1.02rem] text-ink">{row.name}</span>
                 <span className="label-sm block text-muted">

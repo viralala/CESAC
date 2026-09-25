@@ -4,7 +4,10 @@ import type { ReactNode } from "react";
 
 import { signOut } from "@/app/actions/auth";
 import { Container, Label } from "@/components/aot/bits";
+import { Avatar } from "@/components/site/avatar";
+import { ThemeToggle } from "@/components/site/theme-toggle";
 import type { Viewer } from "@/lib/auth/session";
+import { avatarUrl } from "@/lib/photos";
 
 /**
  * The signed-in chrome.
@@ -34,7 +37,14 @@ export function ConsoleBar({
   // the verifier gets the dark one too because what they are doing is the
   // committee's work rather than their own.
   const dark = isAdmin || viewer.isVerifier;
-  const role = isAdmin ? "Organiser" : viewer.isVerifier ? "Verifier" : "Participant";
+  const role =
+    viewer.role === "owner"
+      ? "Owner"
+      : isAdmin
+        ? "Organiser"
+        : viewer.isVerifier
+          ? "Verifier"
+          : "Participant";
 
   return (
     <header
@@ -82,6 +92,21 @@ export function ConsoleBar({
             <span className="label block text-cream">{viewer.name}</span>
             <span className="label-sm block text-cream/50">{role}</span>
           </span>
+          {/* The photo the boards print, and the way to change it. */}
+          <Link
+            href="/account/photo"
+            title="Change your photo"
+            aria-label="Change your photo"
+            className="rounded-full ring-2 ring-cream/30 transition hover:ring-lime"
+          >
+            <Avatar
+              key={viewer.photoPath ?? "none"}
+              name={viewer.name}
+              sources={[avatarUrl(viewer.photoPath)]}
+              size={36}
+            />
+          </Link>
+          <ThemeToggle tone="light" />
           <form action={signOut}>
             <button
               type="submit"
@@ -178,7 +203,7 @@ export type ChipTone = "teal" | "lime" | "muted" | "red" | "ink";
 export function Chip({ tone = "muted", children }: { tone?: ChipTone; children: ReactNode }) {
   const skin: Record<ChipTone, string> = {
     teal: "bg-teal text-white",
-    lime: "bg-lime text-ink",
+    lime: "bg-lime text-[var(--on-pop)]",
     muted: "bg-cream-2 text-muted",
     red: "bg-red/10 text-red-deep",
     ink: "bg-ink text-cream",

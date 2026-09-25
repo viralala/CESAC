@@ -5,6 +5,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
 
+import { ThemeToggle } from "@/components/site/theme-toggle";
 import { CESAC } from "@/lib/data/cesac";
 
 /**
@@ -18,6 +19,8 @@ const NAV = [
   { href: "/about", label: "About" },
   { href: "/events", label: "Events" },
   { href: "/people", label: "People" },
+  { href: "/standouts", label: "Standouts" },
+  { href: "/faq", label: "FAQ" },
 ];
 
 /**
@@ -64,6 +67,9 @@ export function SiteHeader({ signedIn = false, consoleHref = "/dashboard" }: {
   // on near-black ground.
   const onAot = pathname === "/events/attack-on-token";
   const onDark = onAot && !lifted && !open;
+  // The two event pages keep their own palettes in dark mode, and this bar
+  // sits over them, so on those routes it keeps the light one as well.
+  const ownPalette = onAot || isOn("/events/hr-final-boss");
 
   const accent = onDark
     ? "text-[var(--deck-gold)]"
@@ -79,7 +85,7 @@ export function SiteHeader({ signedIn = false, consoleHref = "/dashboard" }: {
 
   return (
     <header
-      className="fixed inset-x-0 top-0 z-50 px-3 pt-3 sm:px-5 sm:pt-4"
+      className={`fixed inset-x-0 top-0 z-50 px-3 pt-3 sm:px-5 sm:pt-4 ${ownPalette ? "keep-light" : ""}`}
       /* The crest paints its second wing with var(--lime), and this bar sits
          outside .theme-aot, so on that route it has to be handed the deck's
          brass here or the wing stays site-lime on a deck-dark hero. */
@@ -107,7 +113,7 @@ export function SiteHeader({ signedIn = false, consoleHref = "/dashboard" }: {
             width={407}
             height={433}
             priority
-            className={`h-7 w-auto shrink-0 ${onDark ? "brightness-0 invert" : ""}`}
+            className={`h-7 w-auto shrink-0 ${onDark ? "brightness-0 invert" : "mark-adapt"}`}
             sizes="28px"
           />
           <span
@@ -134,9 +140,11 @@ export function SiteHeader({ signedIn = false, consoleHref = "/dashboard" }: {
           ))}
         </nav>
 
+        <ThemeToggle tone={onDark ? "light" : "ink"} className="ml-auto lg:ml-2" />
+
         <Link
           href={signedIn ? consoleHref : "/signin"}
-          className={`pill ml-auto hidden px-6 py-2.5 text-[0.8rem] lg:ml-2 lg:inline-flex ${cta}`}
+          className={`pill hidden px-6 py-2.5 text-[0.8rem] lg:ml-1 lg:inline-flex ${cta}`}
         >
           {signedIn ? "Your console" : "Sign in"}
         </Link>
@@ -146,7 +154,7 @@ export function SiteHeader({ signedIn = false, consoleHref = "/dashboard" }: {
           onClick={() => setOpen((v) => !v)}
           aria-expanded={open}
           aria-label={open ? "Close menu" : "Open menu"}
-          className={`ml-auto grid h-11 w-11 shrink-0 place-items-center rounded-full border-2 lg:hidden ${
+          className={`grid h-11 w-11 shrink-0 place-items-center rounded-full border-2 lg:hidden ${
             onDark ? "border-cream text-cream" : "border-ink text-ink"
           }`}
         >

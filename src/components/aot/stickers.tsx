@@ -16,12 +16,12 @@ type Pop = "lime" | "pink" | "violet" | "blue" | "azure" | "red" | "white" | "in
 
 /** Foreground picked per pop so every badge clears contrast without thinking. */
 const POP: Record<Pop, { bg: string; fg: string }> = {
-  lime: { bg: "var(--lime)", fg: "var(--ink)" },
-  pink: { bg: "var(--pink)", fg: "var(--white)" },
-  violet: { bg: "var(--violet)", fg: "var(--white)" },
-  blue: { bg: "var(--blue)", fg: "var(--white)" },
-  azure: { bg: "var(--azure)", fg: "var(--ink)" },
-  red: { bg: "var(--red)", fg: "var(--white)" },
+  lime: { bg: "var(--lime)", fg: "var(--on-pop)" },
+  pink: { bg: "var(--pink)", fg: "var(--on-pop-light)" },
+  violet: { bg: "var(--violet)", fg: "var(--on-pop-light)" },
+  blue: { bg: "var(--blue)", fg: "var(--on-pop-light)" },
+  azure: { bg: "var(--azure)", fg: "var(--on-pop)" },
+  red: { bg: "var(--red)", fg: "var(--on-pop-light)" },
   white: { bg: "var(--white)", fg: "var(--ink)" },
   ink: { bg: "var(--ink)", fg: "var(--cream)" },
 };

@@ -4,7 +4,7 @@ import { useActionState, useEffect, useId, useRef } from "react";
 
 import { askQuestion, type QueryState } from "@/app/actions/queries";
 import { Chip, Notice } from "@/components/console/shell";
-import { TOPICS, TOPIC_LABEL } from "@/lib/console/options";
+import { TOPIC_LABEL } from "@/lib/console/options";
 import type { Query } from "@/lib/data/queries";
 
 function when(iso: string): string {
@@ -40,30 +40,14 @@ export function QueryDesk({ queries }: { queries: Query[] }) {
 
   return (
     <div className="grid gap-8">
+      {/* No "what is it about" dropdown. It was asked to go: a student knows
+          what their question is and the six fixed buckets never fitted it,
+          so they type a title in their own words and that is what the
+          committee reads first. */}
       <form ref={form} action={action} className="grid gap-5">
         <div>
-          <label htmlFor={`${uid}-topic`} className="label block text-ink">
-            What is it about
-          </label>
-          <select
-            id={`${uid}-topic`}
-            name="topic"
-            required
-            defaultValue="other"
-            aria-invalid={state.field === "topic" || undefined}
-            className="field mt-2.5"
-          >
-            {TOPICS.map((topic) => (
-              <option key={topic.value} value={topic.value}>
-                {topic.label}
-              </option>
-            ))}
-          </select>
-        </div>
-
-        <div>
           <label htmlFor={`${uid}-subject`} className="label block text-ink">
-            Subject
+            Title
           </label>
           <input
             id={`${uid}-subject`}
@@ -75,6 +59,9 @@ export function QueryDesk({ queries }: { queries: Query[] }) {
             aria-invalid={state.field === "subject" || undefined}
             className={`field mt-2.5 ${state.field === "subject" ? "border-red" : ""}`}
           />
+          <p className="serif-it mt-2 text-[0.85rem] text-muted">
+            One line, in your own words. It is the first thing the committee reads.
+          </p>
         </div>
 
         <div>
@@ -128,7 +115,9 @@ export function QueryDesk({ queries }: { queries: Query[] }) {
                     <Chip tone={shown.tone}>{shown.label}</Chip>
                   </div>
                   <p className="label-sm mt-1.5 text-muted">
-                    {TOPIC_LABEL[query.topic] ?? "Something else"} {"·"}{" "}
+                    {query.topic !== "other" && TOPIC_LABEL[query.topic]
+                      ? `${TOPIC_LABEL[query.topic]} · `
+                      : null}
                     {when(query.created_at)}
                   </p>
                   <p className="mt-3 whitespace-pre-line text-[0.98rem] leading-relaxed text-ink/80">

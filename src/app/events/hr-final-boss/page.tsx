@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 
 import { SiteFooter } from "@/components/site/footer";
+import { WhenBand } from "@/components/sections/event/when-band";
 import { HrfbAgenda } from "@/components/sections/hr-final-boss/agenda";
 import { HrfbAsk } from "@/components/sections/hr-final-boss/ask";
 import { HrfbBoss } from "@/components/sections/hr-final-boss/boss";
@@ -27,6 +28,7 @@ export default function HrFinalBossPage() {
     <>
       <HrfbHero />
       <HrfbVitals />
+      <WhenBand slug="hr-final-boss" ground="grid-box" />
       <HrfbBoss />
       <HrfbAsk />
       <HrfbAgenda />

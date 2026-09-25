@@ -32,6 +32,17 @@ export type Viewer = {
    * render until this is false.
    */
   mustChangePassword: boolean;
+  /** Where this account's photo sits in the avatars bucket, if it has one. */
+  photoPath: string | null;
+  /**
+   * True for a student who has not added a photo yet. The student console
+   * does not open until they have, because the boards print a photo next to
+   * every name and a board of initials is not what was asked for.
+   *
+   * Students only. An organiser or a verifier is never on a board, and
+   * holding them at a photo screen would keep the console shut for nothing.
+   */
+  needsPhoto: boolean;
 };
 
 export function viewerFrom(profile: Profile): Viewer {
@@ -44,6 +55,13 @@ export function viewerFrom(profile: Profile): Viewer {
     isAdmin: profile.role === "admin" || profile.role === "owner",
     isVerifier: profile.role === "verifier",
     mustChangePassword: profile.must_change_password,
+    photoPath: profile.photo_path ?? null,
+    // `in` rather than a null check, so a deployment that reaches the
+    // database before the photo migration has run cannot lock every student
+    // out: without the column there is nowhere to save a photo, and the gate
+    // stays open until there is.
+    needsPhoto:
+      profile.role === "participant" && "photo_path" in profile && !profile.photo_path,
   };
 }
 

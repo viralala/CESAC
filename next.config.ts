@@ -1,6 +1,9 @@
 import type { NextConfig } from "next";
 
 import { ACTION_BODY_LIMIT_BYTES } from "./src/lib/console/limits";
+import { SUPABASE_URL } from "./src/lib/supabase/config";
+
+const supabase = new URL(SUPABASE_URL);
 
 const nextConfig: NextConfig = {
   experimental: {
@@ -17,6 +20,36 @@ const nextConfig: NextConfig = {
        */
       bodySizeLimit: ACTION_BODY_LIMIT_BYTES,
     },
+  },
+
+  images: {
+    /*
+     * Photographs of people, and only from the two places they are kept. By
+     * path and with no query string, so this site's optimiser cannot be used
+     * to fetch anything else from either host. See src/lib/photos.ts.
+     *
+     * Going through the optimiser is also what keeps a visitor's browser from
+     * contacting Supabase Storage or Google directly: the server fetches the
+     * original and the page serves the copy, which is what the privacy page
+     * promises.
+     */
+    remotePatterns: [
+      {
+        protocol: "https",
+        hostname: supabase.hostname,
+        port: "",
+        pathname: "/storage/v1/object/public/avatars/**",
+        search: "",
+      },
+      {
+        protocol: "https",
+        hostname: "lh3.googleusercontent.com",
+        port: "",
+        pathname: "/d/**",
+        search: "",
+      },
+    ],
+    qualities: [75],
   },
 };
 
