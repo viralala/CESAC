@@ -9,10 +9,13 @@ the code is written.
 ## What landed on 25 September 2026
 
 Seven things, asked for together. The database half is
-`supabase/migrations/20260925_profiles_photos_owner.sql`; it is additive, so
-the code before it keeps working against it, and the code after it degrades
-gracefully until it runs (no photo gate, the old standouts function, the
-written event dates).
+`supabase/migrations/20260925_profiles_photos_owner.sql`, **applied to the
+live project on 25 September 2026** as two migrations, schema then seed. It
+was run first inside a transaction that was rolled back, with the owner,
+password, photo and read rules checked as an organiser, the owner, a student
+and a signed-out visitor; after it ran, all 25 seeded profiles were compared
+against the form responses field by field and matched. It is additive, so the
+code before it kept working against it.
 
 1. **Every name on the roster opens a page.** `/people/<slug>`, carrying what
    each member wrote on the committee's roster form: a tagline, an about,
@@ -70,8 +73,7 @@ page no longer sits on the stickers at 1280 wide.
 
 **Still for a person:**
 
-- [ ] Apply the migration, if it has not been. It was validated against the
-      live schema inside a transaction that was rolled back.
+- [x] Apply the migration. Done on 25 September 2026.
 - [ ] Get photo file links from the four members above, and check Vedant
       Chavhan's address.
 - [ ] Make sure the roster's Drive photos are shared as "anyone with the

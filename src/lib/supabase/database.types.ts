@@ -16,11 +16,12 @@
  * admin_remove_verifier, admin_verifiers and is_verifier, and answer_question,
  * which both consoles write a reply through.
  *
- * The lines for 20260925_profiles_photos_owner.sql were added by hand, the
- * way the 19 and 21 September ones first were: profiles.photo_path, the
+ * Regenerated in full on 25 September 2026, after
+ * 20260925_profiles_photos_owner.sql was applied: profiles.photo_path, the
  * profile columns on roster_people, roster_private, the schedule columns on
- * dept_events, and the functions that migration adds. Regenerate once it is
- * applied and the diff should be empty.
+ * dept_events, and the functions that migration adds. The lines had been
+ * written by hand first, and the generator agreed with them apart from where
+ * one function sat in the alphabet.
  */
 export type Json =
   | string
@@ -1680,12 +1681,6 @@ export type Database = {
           state: string
         }[]
       }
-      event_stats: { Args: never; Returns: Json }
-      is_admin: { Args: never; Returns: boolean }
-      is_verifier: { Args: never; Returns: boolean }
-      join_team: { Args: { p_code: string }; Returns: string }
-      leaderboard_is_public: { Args: never; Returns: boolean }
-      leave_team: { Args: never; Returns: undefined }
       event_schedule: {
         Args: never
         Returns: {
@@ -1696,6 +1691,12 @@ export type Database = {
           venue: string
         }[]
       }
+      event_stats: { Args: never; Returns: Json }
+      is_admin: { Args: never; Returns: boolean }
+      is_verifier: { Args: never; Returns: boolean }
+      join_team: { Args: { p_code: string }; Returns: string }
+      leaderboard_is_public: { Args: never; Returns: boolean }
+      leave_team: { Args: never; Returns: undefined }
       login_attempt_record: {
         Args: { p_email: string; p_ip: string; p_ok: boolean }
         Returns: undefined
