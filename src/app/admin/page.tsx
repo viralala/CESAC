@@ -45,8 +45,7 @@ const DESTINATIONS: readonly Destination[] = [
     cap: "records",
     eyebrow: "The work",
     title: "Student records",
-    blurb:
-      "Every certificate, paper, book and chapter students have filed. Check them, turn one down, delete a duplicate, export the lot for the office workbook.",
+    blurb: "Check, turn down, delete or export every certificate and paper students have filed.",
     tone: "teal",
   },
   {
@@ -54,8 +53,7 @@ const DESTINATIONS: readonly Destination[] = [
     cap: "people",
     eyebrow: "The department",
     title: "Students",
-    blurb:
-      "The whole roll, searchable by name, class or PRN. Who has signed in, who is still on their first password, and what each one has filed.",
+    blurb: "The whole roll, searchable by name, class or PRN, with who has signed in.",
     tone: "azure",
   },
   {
@@ -71,8 +69,7 @@ const DESTINATIONS: readonly Destination[] = [
     cap: "content",
     eyebrow: "The public pages",
     title: "Site content",
-    blurb:
-      "The words on the front page, the roster and its titles, the points scale, and who the front page names. Nothing here needs a deploy.",
+    blurb: "Front page wording, the roster, the points scale and the showcase, live without a deploy.",
     tone: "lime",
   },
   {
@@ -80,8 +77,7 @@ const DESTINATIONS: readonly Destination[] = [
     cap: "people",
     eyebrow: "Who can do what",
     title: "Access",
-    blurb:
-      "Organisers and what each one can reach, the verifiers who check records, and the allowlist that makes somebody an organiser the moment they sign in.",
+    blurb: "Organisers and their areas, the verifiers, and the organiser allowlist.",
     tone: "pink",
   },
   {
@@ -89,8 +85,7 @@ const DESTINATIONS: readonly Destination[] = [
     cap: "settings",
     eyebrow: "Switches",
     title: "Event controls",
-    blurb:
-      "Registration, the published leaderboard, the front page showcase, the seat cap, the fee, the UPI details, the announcement, and the chapter run of show.",
+    blurb: "Registration, leaderboard, showcase, seats, fee, UPI, announcement and chapter schedule.",
     tone: "ink",
   },
   {
@@ -204,16 +199,15 @@ export default async function AdminPage({ searchParams }: PageProps<"/admin">) {
             {greeting}, {viewer.name.split(" ")[0]}
           </h1>
           <p className="serif-it mt-4 text-[1.1rem] leading-relaxed text-muted">
-            Everything on this page is live. Pick where you are going, or read down for how the
-            department is doing.
+            Everything here is live, so pick where you are going or read on for how the department
+            is doing.
           </p>
         </header>
 
         {denied ? (
           <div className="mt-8">
             <Notice tone="error">
-              {CAP_LABEL[denied] ?? denied} is not one of your areas, so that page sent you back
-              here. Ask whoever set up the committee&rsquo;s access to add it.
+              {CAP_LABEL[denied] ?? denied} is not one of your areas, so ask whoever set up access to add it.
             </Notice>
           </div>
         ) : null}
@@ -221,12 +215,11 @@ export default async function AdminPage({ searchParams }: PageProps<"/admin">) {
         {snapshot.waiting > 0 ? (
           <div className="mt-8">
             <Notice tone="ok">
-              {snapshot.waiting === 1
-                ? "One record is waiting on a check."
-                : `${snapshot.waiting} records are waiting on a check.`}{" "}
+              {snapshot.waiting === 1 ? "One record is" : `${snapshot.waiting} records are`} waiting
+              on a check
               {snapshot.verifiers > 0
-                ? `${snapshot.verifiers === 1 ? "The verifier works" : `The ${snapshot.verifiers} verifiers work`} the same queue at /verify, and the questions desk with it.`
-                : "Nobody holds a verifier login yet. Add one under Access and they get a console with the records queue and the questions desk on it, and nothing else."}
+                ? `, shared with ${snapshot.verifiers === 1 ? "the verifier" : `the ${snapshot.verifiers} verifiers`} at /verify.`
+                : ", and you can add a verifier under Access to share it."}
             </Notice>
           </div>
         ) : null}
@@ -234,8 +227,8 @@ export default async function AdminPage({ searchParams }: PageProps<"/admin">) {
         {!settings.registration_open ? (
           <div className="mt-4">
             <Notice tone="error">
-              Registration is closed. Nobody can make a team, though anyone can still make an
-              account. Open it under Event controls when you are ready to take sign-ups.
+              Registration is closed, so open it under Event controls when you are ready to take
+              sign-ups.
             </Notice>
           </div>
         ) : null}
@@ -262,8 +255,8 @@ export default async function AdminPage({ searchParams }: PageProps<"/admin">) {
           </div>
           {open.length === 0 ? (
             <Empty>
-              Your account holds none of the console&rsquo;s areas, so there is nothing here to
-              open. Ask whoever set the committee up to give you one.
+              Your account holds none of the console&rsquo;s areas, so ask whoever set up the
+              committee to give you one.
             </Empty>
           ) : null}
         </section>
@@ -291,8 +284,8 @@ export default async function AdminPage({ searchParams }: PageProps<"/admin">) {
             {scale.length ? (
               <>
                 <p className="serif-it text-[0.98rem] leading-relaxed text-muted">
-                  A record scores its base plus its level. Change a number and the whole
-                  department is scored again on the next request; nothing is stored against a row.
+                  A record scores its base plus its level, and changing a number re-scores everyone
+                  at once.
                 </p>
 
                 <div className="mt-5 grid gap-x-8 gap-y-1 sm:grid-cols-2">
@@ -330,9 +323,8 @@ export default async function AdminPage({ searchParams }: PageProps<"/admin">) {
               </>
             ) : (
               <Empty>
-                The scale could not be read. Nothing is printed from a constant here on purpose: a
-                scale shown from code while the database scores from a table is a console that
-                lies about a student&rsquo;s own total.
+                The scale could not be read, so nothing is shown rather than a number that might be
+                wrong.
               </Empty>
             )}
           </Panel>
@@ -386,8 +378,8 @@ export default async function AdminPage({ searchParams }: PageProps<"/admin">) {
                       </ol>
                     ) : (
                       <p className="serif-it mt-2 text-[0.9rem] text-muted">
-                        Nothing in it yet. A ranked category fills itself as students upload; a
-                        chosen one waits for you to name somebody.
+                        Empty for now, as a ranked category fills when students upload and a chosen
+                        one waits for you to name someone.
                       </p>
                     )}
                   </li>
@@ -395,8 +387,7 @@ export default async function AdminPage({ searchParams }: PageProps<"/admin">) {
               </ul>
             ) : (
               <Empty>
-                No category is set up. Make one under Site content and the front page starts
-                naming students; until then that band does not render at all.
+                No category is set up, so make one under Site content to start naming students.
               </Empty>
             )}
           </Panel>
@@ -435,8 +426,7 @@ export default async function AdminPage({ searchParams }: PageProps<"/admin">) {
               </ol>
             ) : (
               <Empty>
-                Nobody is on the board. It fills as students file records, and a student with
-                nothing filed is left off it rather than listed on nought.
+                Nobody is on the board yet, and it fills as students file records.
               </Empty>
             )}
           </Panel>
@@ -473,8 +463,7 @@ export default async function AdminPage({ searchParams }: PageProps<"/admin">) {
               </ul>
             ) : (
               <Empty>
-                No department event is set up. Add one under Event system and it appears on the
-                public events page.
+                No department event is set up, so add one under Event system.
               </Empty>
             )}
           </Panel>
@@ -496,9 +485,7 @@ export default async function AdminPage({ searchParams }: PageProps<"/admin">) {
               </ul>
             ) : (
               <Empty>
-                Nothing has happened yet. Every record verified, payment checked, chapter opened,
-                score set and cut applied is written here with who did it, so a disputed decision
-                has a record.
+                Nothing has happened yet, and every decision will be logged here with who made it.
               </Empty>
             )}
           </Panel>

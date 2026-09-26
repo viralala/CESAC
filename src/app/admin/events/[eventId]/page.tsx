@@ -88,7 +88,7 @@ export default async function EventEntriesPage({ params }: PageProps<"/admin/eve
             <Label tone="teal">{event.status}</Label>
             <h1 className="d-tall mt-4 text-[clamp(2.2rem,5.5vw,3.6rem)] text-ink">{event.name}</h1>
             <p className="serif-it mt-4 text-[1.05rem] leading-relaxed text-muted">
-              Entries close {formatDateTime(event.registration_end)}. The event runs{" "}
+              Entries close {formatDateTime(event.registration_end)} and the event runs{" "}
               {formatDateTime(event.event_start)}.
             </p>
           </header>
@@ -112,8 +112,7 @@ export default async function EventEntriesPage({ params }: PageProps<"/admin/eve
             >
               {registrations.length === 0 ? (
                 <Empty>
-                  Nobody has entered yet. Teams appear here the moment a leader registers, whether
-                  or not the fee has been paid.
+                  Nobody has entered yet, and teams appear the moment a leader registers.
                 </Empty>
               ) : (
                 <ul className="grid gap-3">
@@ -173,12 +172,14 @@ export default async function EventEntriesPage({ params }: PageProps<"/admin/eve
 
             <Panel eyebrow="Crew" title="Who organises this">
               <p className="serif-it -mt-1 mb-6 text-[1.02rem] leading-relaxed text-muted">
-                An organiser sees this page and cannot enter this event. Committee admins reach
-                every event without being listed here.
+                Organisers listed here manage this event but cannot enter it, and committee admins
+                reach every event anyway.
               </p>
 
               {organisers.length === 0 ? (
-                <Empty>Nobody is assigned. Committee admins can still see everything.</Empty>
+                <Empty>
+                  Nobody is assigned, though committee admins can still see everything.
+                </Empty>
               ) : (
                 <ul className="grid gap-3">
                   {organisers.map((person) => (
@@ -230,9 +231,8 @@ export default async function EventEntriesPage({ params }: PageProps<"/admin/eve
             {isCommittee ? (
               <Panel eyebrow="Settings" title="Change this event">
                 <p className="serif-it -mt-1 mb-6 text-[1.02rem] leading-relaxed text-muted">
-                  Careful with the seat count and the fee once entries are open. Lowering the seats
-                  below what is already taken does not throw anybody out, it just stops the next
-                  team.
+                  Take care changing seats or the fee once entries are open, though lowering seats
+                  never removes a team.
                 </p>
                 <EmsEventForm
                   action={updateEvent}

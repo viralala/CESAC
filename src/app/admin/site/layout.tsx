@@ -31,9 +31,7 @@ export default async function SiteLayout({ children }: LayoutProps<"/admin/site"
           <Label tone="teal">{EVENT.host}</Label>
           <h1 className="d-tall mt-4 text-[clamp(2.4rem,6vw,4rem)] text-ink">The site itself</h1>
           <p className="serif-it mt-4 text-[1.05rem] leading-relaxed text-muted">
-            The roster, the sentences on the public pages, what a record is worth and who the
-            front page names. Everything here was a line in the source until now, which meant a
-            ten second correction took a deploy. Nothing on this page does.
+            The roster, public wording, points and front page names, all live without a deploy.
           </p>
         </header>
 

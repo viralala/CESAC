@@ -61,25 +61,21 @@ export default async function RosterPage() {
         aside={`${rosterTotal(groups)} named`}
       >
         <p className="serif-it text-[1rem] leading-relaxed text-muted">
-          Blocks render in the order below, and people render in their own order inside a block. A
-          block or a person can be hidden without being deleted, which is what to do for somebody
-          who has left mid-term and may be back. Hidden rows are not sent to the public page at
-          all, so a hidden name is not sitting in the page source of a page that does not show it.
+          Blocks and people render in the order below, and hiding one keeps it off the public page
+          without deleting it.
         </p>
         <p className="serif-it mt-3 text-[1rem] leading-relaxed text-muted">
-          Every name has a page of its own at /people/, filled from the committee&rsquo;s roster
-          form. Open <span className="text-ink">Profile page</span> under anybody to change what it
-          says. To keep somebody&rsquo;s page after they leave the committee, move them into a
-          block of former members rather than deleting them: the page and the history go with the
-          row.
+          Every name has a page at /people/, edited from{" "}
+          <span className="text-ink">Profile page</span> under each person, and moving a leaver to a
+          former members block keeps their page.
         </p>
       </Panel>
 
       {groups.length === 0 ? (
         <Panel eyebrow="Roster" title="Nothing here yet">
           <Empty>
-            The roster tables came back empty, so /people is rendering the names in the source
-            instead. Add a block below and it takes over.
+            The roster tables are empty, so /people shows the names in the source until you add a
+            block.
           </Empty>
         </Panel>
       ) : null}
@@ -148,8 +144,8 @@ function GroupPanel({ group, emails }: { group: RosterGroup; emails: Map<string,
             >
               <input type="hidden" name="group_id" value={group.id} />
               <p className="serif-it text-[0.9rem] leading-relaxed text-muted">
-                Everybody in the block goes with it. To take a block off the page for now, untick
-                &ldquo;Show it&rdquo; above instead.
+                Deleting a block deletes everyone in it, so untick &ldquo;Show it&rdquo; to hide it
+                instead.
               </p>
             </ActionForm>
           </div>

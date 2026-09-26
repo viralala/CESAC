@@ -2,14 +2,9 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { useActionState, useId, useState } from "react";
+import { useActionState, useId } from "react";
 
-import {
-  signInWithPassword,
-  signUpWithPassword,
-  signInWithProvider,
-  type AuthState,
-} from "@/app/actions/auth";
+import { signInWithPassword, signInWithProvider, type AuthState } from "@/app/actions/auth";
 import { WallMark } from "@/components/aot/art";
 import { Container, Label, Ticks } from "@/components/aot/bits";
 import { Notice } from "@/components/console/shell";
@@ -17,43 +12,27 @@ import { PasswordField } from "@/components/sections/password-field";
 import { PROVIDER_LABEL, type Provider } from "@/lib/auth/providers";
 import { EVENT } from "@/lib/data/event";
 
-type Mode = "signin" | "signup";
-
-const COPY: Record<Mode, { tab: string; title: string; lede: string; submit: string; pending: string }> =
-  {
-    signin: {
-      tab: "Sign in",
-      title: "Cadet sign in",
-      lede: "Your console holds your team, your hand-ins and your standing. Organisers land in theirs from the same door.",
-      submit: "Enter the gate",
-      pending: "Opening the gate",
-    },
-    signup: {
-      tab: "Create account",
-      title: "Make an account",
-      lede: "One account each. You make a team after you are in, and your partner joins it with a code.",
-      submit: "Create the account",
-      pending: "Creating",
-    },
-  };
+const COPY = {
+  title: "Cadet sign in",
+  lede: "Your console holds your team, your hand-ins and your standing. Organisers land in theirs from the same door.",
+  submit: "Enter the gate",
+  pending: "Opening the gate",
+};
 
 /**
  * Crypko's shell again: one rounded frame holding a deep panel and a white
  * form, with Yonika's pill fields and buttons.
  *
- * The two tabs used to be participant and organiser, which no longer means
- * anything: everyone signs in the same way and the role on the account
- * decides which console opens. So the tabs now carry the choice that is
- * actually in front of a visitor, which is whether they have an account yet.
+ * Sign in only. There used to be a second tab for making an account, and it
+ * went on 26 September 2026: the department makes every account itself, from
+ * the roster, so a self-made one was only ever a duplicate or a stranger.
  */
 export function SignInPanel({
-  initialMode,
   next,
   urlError,
   notice,
   providers,
 }: {
-  initialMode: Mode;
   next?: string;
   urlError?: string;
   notice?: string;
@@ -64,24 +43,12 @@ export function SignInPanel({
    */
   providers: readonly Provider[];
 }) {
-  const [mode, setMode] = useState<Mode>(initialMode);
-  const [signInState, signInAction, signingIn] = useActionState<AuthState, FormData>(
-    signInWithPassword,
-    {},
-  );
-  const [signUpState, signUpAction, signingUp] = useActionState<AuthState, FormData>(
-    signUpWithPassword,
-    {},
-  );
+  const [state, action, pending] = useActionState<AuthState, FormData>(signInWithPassword, {});
 
   const uid = useId();
-  const copy = COPY[mode];
-  const isSignUp = mode === "signup";
-
-  const state = isSignUp ? signUpState : signInState;
-  const pending = isSignUp ? signingUp : signingIn;
-  const error = state.error ?? (mode === "signin" ? urlError : undefined);
-  const said = state.notice ?? (mode === "signin" ? notice : undefined);
+  const copy = COPY;
+  const error = state.error ?? urlError;
+  const said = state.notice ?? notice;
 
   return (
     <div className="washi grain min-h-[100svh] py-24 sm:py-28">
@@ -90,10 +57,8 @@ export function SignInPanel({
           <div className="shell-inner grid lg:grid-cols-[1fr_1fr]">
             {/* the wall side */}
             <aside
-              style={{ ["--panel" as string]: isSignUp ? "var(--teal-2)" : "var(--teal)" }}
-              className={`relative isolate hidden overflow-hidden p-10 text-cream lg:flex lg:flex-col xl:p-12 ${
-                isSignUp ? "washi-deep" : "washi-teal"
-              } transition-colors duration-500`}
+              style={{ ["--panel" as string]: "var(--teal)" }}
+              className="washi-teal relative isolate hidden overflow-hidden p-10 text-cream lg:flex lg:flex-col xl:p-12"
             >
               <div
                 aria-hidden
@@ -139,7 +104,7 @@ export function SignInPanel({
                   <span className="text-lime">Build what comes next.</span>
                 </p>
                 <div className="mt-7 flex items-center gap-5">
-                  <Ticks count={3} active={isSignUp ? 2 : 0} tone="dark" />
+                  <Ticks count={3} active={0} tone="dark" />
                   <span className="label-sm text-cream/50">{EVENT.dateVenue}</span>
                 </div>
               </div>
@@ -148,7 +113,7 @@ export function SignInPanel({
             {/* the form side */}
             <div className="flex items-center justify-center bg-white px-6 py-14 sm:px-12">
               <div className="w-full max-w-[420px]">
-                <Label tone={isSignUp ? "muted" : "teal"}>Access</Label>
+                <Label tone="teal">Access</Label>
                 <h1 className="d-tall mt-3 text-[2.5rem] text-ink">{copy.title}</h1>
                 <p className="serif-it mt-3 text-[1.05rem] leading-relaxed text-muted">
                   {copy.lede}
@@ -161,64 +126,33 @@ export function SignInPanel({
                     full, above the form, because the hint under the password
                     box was being read after the first failed attempt rather
                     than before it. */}
-                {!isSignUp ? (
-                  <div className="mt-6 rounded-[var(--r-md)] border-2 border-teal/25 bg-teal/[0.06] px-5 py-4">
-                    <p className="label text-ink">If the department made your account</p>
-                    <ol className="mt-3 grid gap-2 text-[0.95rem] leading-relaxed text-ink">
-                      <li className="flex gap-3">
-                        <span aria-hidden className="label-sm shrink-0 text-teal">1</span>
-                        <span>
-                          Your email is your <strong>VIT address</strong>, the one ending{" "}
-                          <span className="font-mono text-[0.9rem]">@vit.edu</span>.
-                        </span>
-                      </li>
-                      <li className="flex gap-3">
-                        <span aria-hidden className="label-sm shrink-0 text-teal">2</span>
-                        <span>
-                          Your password is <strong>that same email address</strong>, typed again.
-                        </span>
-                      </li>
-                      <li className="flex gap-3">
-                        <span aria-hidden className="label-sm shrink-0 text-teal">3</span>
-                        <span>
-                          You are asked to pick a new one straight away, and nothing else on the
-                          site opens until you do. Everyone in your class knows the first one.
-                        </span>
-                      </li>
-                    </ol>
-                    <p className="serif-it mt-3 text-[0.88rem] leading-relaxed text-muted">
-                      Made your own account instead? Sign in with the password you chose.
-                    </p>
-                  </div>
-                ) : null}
-
-                {/* mode toggle, as a segmented pill */}
-                <div
-                  role="tablist"
-                  aria-label="Sign in or create an account"
-                  className="mt-8 grid grid-cols-2 gap-1 rounded-full bg-cream-2 p-1"
-                >
-                  {(Object.keys(COPY) as Mode[]).map((key) => {
-                    const active = key === mode;
-                    return (
-                      <button
-                        key={key}
-                        role="tab"
-                        type="button"
-                        aria-selected={active}
-                        onClick={() => setMode(key)}
-                        className={`label rounded-full px-4 py-3 transition-colors ${
-                          active
-                            ? key === "signup"
-                              ? "bg-ink text-cream"
-                              : "bg-teal text-white"
-                            : "text-muted hover:text-ink"
-                        }`}
-                      >
-                        {COPY[key].tab}
-                      </button>
-                    );
-                  })}
+                <div className="mt-6 rounded-[var(--r-md)] border-2 border-teal/25 bg-teal/[0.06] px-5 py-4">
+                  <p className="label text-ink">If the department made your account</p>
+                  <ol className="mt-3 grid gap-2 text-[0.95rem] leading-relaxed text-ink">
+                    <li className="flex gap-3">
+                      <span aria-hidden className="label-sm shrink-0 text-teal">1</span>
+                      <span>
+                        Your email is your <strong>VIT address</strong>, the one ending{" "}
+                        <span className="font-mono text-[0.9rem]">@vit.edu</span>.
+                      </span>
+                    </li>
+                    <li className="flex gap-3">
+                      <span aria-hidden className="label-sm shrink-0 text-teal">2</span>
+                      <span>
+                        Your password is <strong>that same email address</strong>, typed again.
+                      </span>
+                    </li>
+                    <li className="flex gap-3">
+                      <span aria-hidden className="label-sm shrink-0 text-teal">3</span>
+                      <span>
+                        You are asked to pick a new one straight away, and nothing else on the
+                        site opens until you do. Everyone in your class knows the first one.
+                      </span>
+                    </li>
+                  </ol>
+                  <p className="serif-it mt-3 text-[0.88rem] leading-relaxed text-muted">
+                    Made your own account instead? Sign in with the password you chose.
+                  </p>
                 </div>
 
                 {/* the social routes first: fewer steps, and no password to lose */}
@@ -250,30 +184,8 @@ export function SignInPanel({
                   <div className="mb-7 mt-7 h-px bg-ink/10" aria-hidden />
                 )}
 
-                <form
-                  key={mode}
-                  action={isSignUp ? signUpAction : signInAction}
-                  className="grid gap-5"
-                >
+                <form action={action} className="grid gap-5">
                   {next ? <input type="hidden" name="next" value={next} /> : null}
-
-                  {isSignUp ? (
-                    <div>
-                      <label htmlFor={`${uid}-name`} className="label block text-ink">
-                        Your name
-                      </label>
-                      <input
-                        id={`${uid}-name`}
-                        name="name"
-                        type="text"
-                        autoComplete="name"
-                        required
-                        aria-invalid={state.field === "name" || undefined}
-                        placeholder="As it should appear on the certificate"
-                        className={`field mt-2.5 ${state.field === "name" ? "border-red" : ""}`}
-                      />
-                    </div>
-                  ) : null}
 
                   <div>
                     <label htmlFor={`${uid}-email`} className="label block text-ink">
@@ -283,7 +195,7 @@ export function SignInPanel({
                       id={`${uid}-email`}
                       // Remounting on a new default is what makes the value
                       // survive React's post-action form reset.
-                      key={`${mode}-email-${state.email ?? ""}`}
+                      key={`email-${state.email ?? ""}`}
                       name="email"
                       type="email"
                       defaultValue={state.email}
@@ -299,24 +211,17 @@ export function SignInPanel({
                     id={`${uid}-pw`}
                     name="password"
                     label="Password"
-                    autoComplete={isSignUp ? "new-password" : "current-password"}
+                    autoComplete="current-password"
                     required
-                    minLength={isSignUp ? 8 : undefined}
                     invalid={state.field === "password"}
-                    hint={
-                      isSignUp
-                        ? "At least 8 characters."
-                        : "If the department made your account, it is your own email address."
-                    }
+                    hint="If the department made your account, it is your own email address."
                   />
 
-                  {!isSignUp ? (
-                    <div className="flex justify-end">
-                      <Link href="/signin/help" className="label text-teal hover:underline">
-                        Forgot password
-                      </Link>
-                    </div>
-                  ) : null}
+                  <div className="flex justify-end">
+                    <Link href="/signin/help" className="label text-teal hover:underline">
+                      Forgot password
+                    </Link>
+                  </div>
 
                   {error ? <Notice tone="error">{error}</Notice> : null}
                   {said ? <Notice tone="ok">{said}</Notice> : null}
@@ -324,18 +229,14 @@ export function SignInPanel({
                   <button
                     type="submit"
                     disabled={pending}
-                    className={`pill mt-1 w-full disabled:cursor-progress disabled:opacity-70 ${
-                      isSignUp ? "" : "pill-lime"
-                    }`}
+                    className="pill pill-lime mt-1 w-full disabled:cursor-progress disabled:opacity-70"
                   >
                     {pending ? copy.pending : copy.submit}
                   </button>
                 </form>
 
                 <p className="serif-it mt-8 border-t border-ink/10 pt-6 text-[0.95rem] leading-relaxed text-muted">
-                  {isSignUp
-                    ? "Making an account does not enter you. You build your team and pay the entry fee from the console once you are in."
-                    : "Not registered yet? Make an account, then build your team from the console."}
+                  No account? The department makes one for every student, so ask an organiser.
                 </p>
 
                 <p className="label mt-6 text-muted">

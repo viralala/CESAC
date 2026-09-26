@@ -18,7 +18,7 @@ export async function proxy(request: NextRequest) {
   const { response, user } = await updateSession(request);
   const { pathname, search } = request.nextUrl;
 
-  const isGate = pathname === "/signin" || pathname === "/signup";
+  const isGate = pathname === "/signin";
   const isConsole =
     pathname === "/dashboard" ||
     pathname.startsWith("/dashboard/") ||
@@ -79,10 +79,12 @@ function keepCookies(to: NextResponse, from: NextResponse): NextResponse {
 export const config = {
   matcher: [
     /*
-     * Everything except static assets, image optimisation and the auth
-     * callback. The callback sets the session cookies itself and must not be
-     * intercepted on the way in.
+     * Everything except static assets, image optimisation, profile photos and
+     * the auth callback. The callback sets the session cookies itself and
+     * must not be intercepted on the way in. A photo is public and cached at
+     * the edge, and a refreshed session cookie on its response would stop
+     * that cache from keeping it.
      */
-    "/((?!_next/static|_next/image|auth/callback|favicon.ico|icon.svg|opengraph-image|.*\.(?:svg|png|jpg|jpeg|gif|webp|avif|mp3|ogg|wav|woff2?)$).*)",
+    "/((?!_next/static|_next/image|photo/|auth/callback|favicon.ico|icon.svg|opengraph-image|.*\.(?:svg|png|jpg|jpeg|gif|webp|avif|mp3|ogg|wav|woff2?)$).*)",
   ],
 };

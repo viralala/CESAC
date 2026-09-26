@@ -222,9 +222,7 @@ export default async function VerifyPage() {
           <Label tone="teal">{CESAC.abbr}</Label>
           <h1 className="d-tall mt-4 text-[clamp(2.6rem,7vw,4.5rem)] text-ink">The queue</h1>
           <p className="serif-it mt-4 text-[1.1rem] leading-relaxed text-muted">
-            Signed in as {viewer.name}. Two lists: what students have filed, and what they have
-            asked. Open a row to see everything it claims and the files behind it. Nothing else on
-            the site is yours to change, which is the point of this account.
+            Signed in as {viewer.name}, so open a row to check what students filed and asked.
           </p>
         </header>
 
@@ -241,14 +239,13 @@ export default async function VerifyPage() {
             eyebrow="The work"
             title="Records waiting on a check"
             noun="record"
-            blurb="Open the files, check the row says what they say, then verify it or turn it down. A record with nothing attached is the one worth looking at hardest."
+            blurb="Open the files, check the row matches, then verify it or turn it down."
             facets={RECORD_FACETS}
             rows={waiting.map(recordRow)}
             searchPlaceholder="Title, student, PRN, journal, organiser"
             empty={
               <Empty>
-                Nothing is waiting. Every record filed so far has been decided on. This fills up
-                again the moment a student uploads something.
+                Nothing is waiting, and this fills again when a student uploads something.
               </Empty>
             }
           />
@@ -265,7 +262,7 @@ export default async function VerifyPage() {
             searchPlaceholder="Title, what they wrote, student, PRN"
             empty={
               <Empty>
-                Nothing is waiting. Every question that has been asked has an answer on it.
+                Nothing is waiting, and every question asked has an answer.
               </Empty>
             }
           />
@@ -275,7 +272,7 @@ export default async function VerifyPage() {
             title="Records already decided"
             noun="record"
             startFolded
-            blurb="Verified and turned down together. Anything here can be put back in the queue, which is how a decision made too quickly gets undone."
+            blurb="Decided records, any of which can be put back in the queue."
             facets={[STATE_FACET, ...RECORD_FACETS]}
             rows={settled.map(recordRow)}
             searchPlaceholder="Title, student, PRN, journal, organiser"
@@ -287,7 +284,7 @@ export default async function VerifyPage() {
             title="Questions already answered"
             noun="question"
             startFolded
-            blurb="What was said, and room to say it again differently. An answer that was wrong is corrected by writing over it: the student reads the replacement rather than a second message contradicting the first."
+            blurb="Answered questions, where writing over an answer replaces what the student reads."
             facets={[]}
             rows={answered.map((query) => questionRow(query, false))}
             searchPlaceholder="Title, what they wrote, the answer, student"
@@ -296,10 +293,8 @@ export default async function VerifyPage() {
         </div>
 
         <p className="serif-it mt-8 max-w-[62ch] text-[0.98rem] leading-relaxed text-muted">
-          Turning a record down does not take its points off the ranking. That is deliberate: the
-          board counts what a student says they did, and a disputed claim is a thing the department
-          has looked at rather than a thing it has deleted. If a row should never have existed at
-          all, an organiser can remove it from their own console.
+          Turning a record down keeps its points on the ranking, and only an organiser can delete a
+          record.
         </p>
       </Container>
     </div>

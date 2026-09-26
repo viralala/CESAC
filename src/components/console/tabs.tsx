@@ -8,9 +8,9 @@ export type Tab = { href: string; label: string; badge?: number };
 /**
  * The console's own spine.
  *
- * Six places, one row, and the one you are standing in is filled rather than
- * underlined, because on a phone this strip scrolls sideways and an underline
- * half off the edge tells you nothing. The badge is only ever a real count:
+ * The one you are standing in is filled rather than underlined. The strip
+ * wraps instead of scrolling sideways: it used to scroll with the scrollbar
+ * hidden, and a tab past the edge of a phone was a tab nobody knew was there. The badge is only ever a real count:
  * where there is nothing to count it does not render, rather than showing a
  * nought that reads as a notification.
  */
@@ -34,7 +34,7 @@ export function ConsoleTabs({ tabs }: { tabs: readonly Tab[] }) {
   return (
     <nav
       aria-label="Your console"
-      className="hide-scrollbar -mx-1 flex gap-1.5 overflow-x-auto px-1 py-1"
+      className="-mx-1 flex flex-wrap gap-1.5 px-1 py-1"
     >
       {tabs.map((tab) => {
         const active = tab.href === current;

@@ -124,14 +124,10 @@ export default async function QueriesPage() {
           <Label tone="teal">{EVENT.host}</Label>
           <h1 className="d-tall mt-4 text-[clamp(2.4rem,6vw,4rem)] text-ink">Questions</h1>
           <p className="serif-it mt-4 text-[1.1rem] leading-relaxed text-muted">
-            Everything students have sent the committee, oldest first. Only the person who asked
-            and the committee can read a question, and the answer lands on their own console
-            rather than in their inbox.
+            Everything students have asked, oldest first, visible only to them and the committee.
           </p>
           <p className="serif-it mt-4 text-[1.02rem] leading-relaxed text-muted">
-            Work it from the top. A student may have {CEILING} questions waiting at once and no
-            more, so a queue nobody clears does not pile up where anyone can see it: it stops the
-            people who asked first from asking anything else.
+            Work from the top, because a student with {CEILING} open questions cannot ask another.
           </p>
         </header>
 
@@ -151,7 +147,7 @@ export default async function QueriesPage() {
             eyebrow="Queue"
             title="Waiting on an answer"
             noun="question"
-            blurb="Open one to read what was asked and write back. The standard replies land in the box rather than going to the student, so read one over and change whatever does not fit."
+            blurb="Open one to reply, and edit a standard reply before sending it."
             facets={[]}
             rows={open.map((query) =>
               row(query, (perAsker.get(query.author_id) ?? 0) >= CEILING),
@@ -159,9 +155,7 @@ export default async function QueriesPage() {
             searchPlaceholder="Title, what they wrote, student, PRN"
             empty={
               <Empty>
-                Nothing is waiting. Every question that has been asked has an answer on it.
-                Anything new arrives at the bottom of this list, because the queue is worked
-                oldest first.
+                Nothing is waiting, and anything new arrives here, oldest first.
               </Empty>
             }
           />
@@ -171,14 +165,13 @@ export default async function QueriesPage() {
             title="Answered"
             noun="question"
             startFolded
-            blurb="Most recently answered first. The answer box is there a second time on purpose: an answer that was wrong is corrected by writing over it, and the student reads the replacement rather than a second message."
+            blurb="Most recently answered first, and writing over an answer replaces what the student reads."
             facets={[STATUS_FACET]}
             rows={settled.map((query) => row(query, false))}
             searchPlaceholder="Title, what they wrote, the answer, student"
             empty={
               <Empty>
-                No question has been answered yet. Answered ones move down here, so what was said
-                can be read back and corrected if it was wrong.
+                No question has been answered yet, and answered ones move down here.
               </Empty>
             }
           />

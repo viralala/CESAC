@@ -83,9 +83,8 @@ export default async function EntriesPage() {
             <Label tone="teal">{EVENT.host}</Label>
             <h1 className="d-tall mt-4 text-[clamp(2.4rem,6vw,4rem)] text-ink">Entries</h1>
             <p className="serif-it mt-4 text-[1.1rem] leading-relaxed text-muted">
-              The events on the public site, and everybody who has entered one. Opening an event
-              here is what lets students enter it: the events page, the entry form and the database
-              all read the same column.
+              Department events and their entries, where opening an event is what lets students
+              enter it.
             </p>
           </header>
 
@@ -184,10 +183,8 @@ export default async function EntriesPage() {
                       </span>
                     </summary>
                     <p className="serif-it mt-3 max-w-[64ch] text-[0.92rem] leading-relaxed text-muted">
-                      What the countdown counts to and what goes into somebody&rsquo;s calendar. Times
-                      are India time. Leave the start empty while the date is not settled and every
-                      page says it is to be announced; the &ldquo;When&rdquo; line above is the
-                      sentence the cards print, and is edited below with the rest of the event.
+                      The countdown and calendar time in India time, left empty to show the date as
+                      to be announced.
                     </p>
                     <ActionForm action={setEventSchedule} submit="Save the date" tone="solid">
                       <input type="hidden" name="slug" value={event.slug} />
@@ -376,10 +373,8 @@ export default async function EntriesPage() {
 
             <Panel eyebrow="New" title="Add an event" aside="Starts locked">
               <p className="serif-it -mt-1 mb-6 text-[1.02rem] leading-relaxed text-muted">
-                A new event is listed the moment you save it and takes no entries until you open it
-                above, so it is safe to fill this in early. Putting in a slug that already exists
-                edits that event instead: the slug is its web address and never moves, because
-                every entry points at it.
+                A new event is listed on save but takes no entries until you open it, and an
+                existing slug edits that event.
               </p>
 
               <ActionForm action={saveDeptEvent} submit="Save event" tone="solid">

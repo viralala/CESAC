@@ -47,8 +47,7 @@ export default async function AdminProfilePage() {
           <Label tone="teal">{EVENT.host}</Label>
           <h1 className="d-tall mt-4 text-[clamp(2.4rem,6vw,4rem)] text-ink">My details</h1>
           <p className="serif-it mt-4 text-[1.1rem] leading-relaxed text-muted">
-            Your own account, and nobody else&apos;s. The name here is the one printed beside your
-            records and on the console bar.
+            Your own account, whose name is printed beside your records and on the console bar.
           </p>
         </header>
 

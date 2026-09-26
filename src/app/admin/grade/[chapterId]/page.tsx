@@ -81,8 +81,7 @@ export default async function GradePage(props: PageProps<"/admin/grade/[chapterI
           {submissions.length === 0 ? (
             <div className="mt-6">
               <Empty>
-                Nothing has been handed in for this chapter. Teams can only hand in while the
-                chapter is open, so if that is unexpected, check its state on the command page.
+                Nothing has been handed in, and teams can only hand in while the chapter is open.
               </Empty>
             </div>
           ) : (

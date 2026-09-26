@@ -33,19 +33,14 @@ export default async function SiteCopyPage() {
     <>
       <Panel eyebrow="How this works" title="Where these end up">
         <p className="serif-it text-[1rem] leading-relaxed text-muted">
-          Each box is one sentence on the public site. A save is live on the next load of the page
-          it belongs to, with no deploy. The code still carries the wording it shipped with, and
-          that is what renders if the database cannot be reached, so a blank box is a blank
-          sentence rather than the old one coming back.
+          Each box is one sentence on the public site, live on the next page load.
         </p>
       </Panel>
 
       {sections.length === 0 ? (
         <Panel eyebrow="Copy" title="Nothing to edit">
           <Empty>
-            The site copy table came back empty, which usually means the migration that seeds it
-            has not run against this project. The pages are still rendering the wording in the
-            source.
+            The site copy table is empty, so the pages are showing the wording in the source.
           </Empty>
         </Panel>
       ) : null}

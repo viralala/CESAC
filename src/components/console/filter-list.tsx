@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState, type ReactNode } from "react";
+import { useId, useMemo, useState, type ReactNode } from "react";
 
 import { Label } from "@/components/aot/bits";
 
@@ -47,11 +47,14 @@ export type ListRow = {
  * has answered everything wants the settled list out of the way, not scrolled
  * past.
  *
- * **Filtering.** Chips rather than a select, because the counts are half the
- * information: how many are waiting, how many are books, how many reached
- * national. Each facet's counts are worked out against the rows that pass
- * *every other* filter, so narrowing by kind immediately tells you what
- * levels are left inside that kind rather than restating the whole table.
+ * **Filtering.** One dropdown per facet. These were rows of chips until
+ * 26 September, which put every option of every facet on screen at once and
+ * pushed the list itself below the fold. The counts are half the
+ * information, so each option still carries one: how many are waiting, how
+ * many are books, how many reached national. Each facet's counts are worked
+ * out against the rows that pass *every other* filter, so narrowing by kind
+ * immediately tells you what levels are left inside that kind rather than
+ * restating the whole table.
  *
  * All of it is state in the browser and none of it is in the URL. These are
  * consoles somebody stands in front of and sorts through, not pages they
@@ -85,6 +88,7 @@ export function FilterList({
   const [picked, setPicked] = useState<Record<string, string>>({});
   const [term, setTerm] = useState("");
   const [open, setOpen] = useState<ReadonlySet<string>>(new Set());
+  const uid = useId();
 
   const needle = term.trim().toLowerCase();
 
@@ -171,35 +175,38 @@ export function FilterList({
             <>
               {/* ------------------------------------------------- the filters */}
               <div className="mt-6 grid gap-4 rounded-[var(--r-md)] bg-cream-2 px-5 py-5">
-                {facets.map((facet) => (
-                  <div key={facet.name} className="flex flex-wrap items-center gap-x-4 gap-y-2">
-                    <span className="label-sm w-24 shrink-0 text-muted">{facet.label}</span>
-                    <div className="flex flex-wrap gap-2">
-                      <Chip
-                        on={!picked[facet.name]}
-                        count={counts[facet.name]?.[""] ?? 0}
-                        onClick={() => setPicked((was) => ({ ...was, [facet.name]: "" }))}
-                      >
-                        All
-                      </Chip>
-                      {facet.options.map((option) => (
-                        <Chip
-                          key={option.value}
-                          on={picked[facet.name] === option.value}
-                          count={counts[facet.name]?.[option.value] ?? 0}
-                          onClick={() =>
-                            setPicked((was) => ({
-                              ...was,
-                              [facet.name]: was[facet.name] === option.value ? "" : option.value,
-                            }))
-                          }
-                        >
-                          {option.label}
-                        </Chip>
-                      ))}
-                    </div>
+                {facets.length > 0 ? (
+                  <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+                    {facets.map((facet) => {
+                      const id = `${uid}-${facet.name}`;
+                      const value = picked[facet.name] ?? "";
+                      return (
+                        <div key={facet.name} className="min-w-0">
+                          <label htmlFor={id} className="label-sm block text-muted">
+                            {facet.label}
+                          </label>
+                          <select
+                            id={id}
+                            value={value}
+                            onChange={(event) =>
+                              setPicked((was) => ({ ...was, [facet.name]: event.target.value }))
+                            }
+                            className={`field mt-1.5 w-full bg-white py-2.5 ${
+                              value ? "border-teal text-teal" : ""
+                            }`}
+                          >
+                            <option value="">All ({counts[facet.name]?.[""] ?? 0})</option>
+                            {facet.options.map((option) => (
+                              <option key={option.value} value={option.value}>
+                                {option.label} ({counts[facet.name]?.[option.value] ?? 0})
+                              </option>
+                            ))}
+                          </select>
+                        </div>
+                      );
+                    })}
                   </div>
-                ))}
+                ) : null}
 
                 <div className="flex flex-wrap items-center gap-x-4 gap-y-3">
                   <span className="label-sm w-24 shrink-0 text-muted">Search</span>
@@ -237,9 +244,8 @@ export function FilterList({
               {/* ---------------------------------------------------- the rows */}
               {shown.length === 0 ? (
                 <p className="serif-it mt-6 rounded-[var(--r-md)] border-2 border-dashed border-ink/15 px-6 py-7 text-[1.02rem] leading-relaxed text-muted">
-                  Nothing matches that. There {rows.length === 1 ? "is" : "are"} {rows.length}{" "}
-                  {rows.length === 1 ? noun : `${noun}s`} in this list; clear the filters to see
-                  {rows.length === 1 ? " it" : " them"}.
+                  Nothing matches that, so clear the filters to see all {rows.length}{" "}
+                  {rows.length === 1 ? noun : `${noun}s`}.
                 </p>
               ) : (
                 <ul className="mt-6 grid gap-2.5">
@@ -293,39 +299,5 @@ export function FilterList({
         </>
       )}
     </section>
-  );
-}
-
-/** A filter chip, with how many it would leave. */
-function Chip({
-  on,
-  count,
-  onClick,
-  children,
-}: {
-  on: boolean;
-  count: number;
-  onClick: () => void;
-  children: ReactNode;
-}) {
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      aria-pressed={on}
-      // A chip that would empty the list is dimmed rather than removed. Taking
-      // it away would make the row of chips jump about as the other filters
-      // change, and "none of these are books" is worth being able to read.
-      className={`label-sm flex items-center gap-2 rounded-full border-2 px-3.5 py-1.5 transition-colors ${
-        on
-          ? "border-teal bg-teal text-white"
-          : count === 0
-            ? "border-ink/10 text-muted/50"
-            : "border-ink/15 bg-white text-muted hover:border-teal hover:text-teal"
-      }`}
-    >
-      {children}
-      <span className={on ? "text-white/70" : "text-muted/60"}>{count}</span>
-    </button>
   );
 }

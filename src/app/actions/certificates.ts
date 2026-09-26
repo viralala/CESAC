@@ -6,6 +6,7 @@ import { requireRecordOwner } from "@/lib/auth/guard";
 import { MAX_CERTIFICATE_BYTES, MAX_CERTIFICATE_LABEL } from "@/lib/console/limits";
 import { CONTRIBUTIONS, type Contribution } from "@/lib/console/options";
 import { LAYOUT, LEVELS, SLOTS, type Kind, type Level, type Slot } from "@/lib/console/records";
+import { refreshPublicData } from "@/lib/data/public-cache";
 import {
   DriveError,
   driveCredentials,
@@ -174,6 +175,7 @@ function refresh(): void {
   revalidatePath("/dashboard");
   revalidatePath("/dashboard/certificates");
   revalidatePath("/dashboard/ranking");
+  refreshPublicData();
   revalidatePath("/");
 }
 

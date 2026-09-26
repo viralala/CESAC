@@ -6,6 +6,15 @@ import { SUPABASE_URL } from "./src/lib/supabase/config";
 const supabase = new URL(SUPABASE_URL);
 
 const nextConfig: NextConfig = {
+  /*
+   * There is no sign-up page any more: the department makes every account
+   * from the roster, and Supabase refuses self sign-up outright. Old links to
+   * /signup land on the sign-in form rather than a 404.
+   */
+  async redirects() {
+    return [{ source: "/signup", destination: "/signin", permanent: true }];
+  },
+
   experimental: {
     serverActions: {
       /*
@@ -50,6 +59,13 @@ const nextConfig: NextConfig = {
       },
     ],
     qualities: [75],
+    /*
+     * Every photo address here is written once and never reused: a new
+     * upload is a new file with a new id or name. So a resized copy can be
+     * kept for a month, which is what keeps a busy page from sending a burst
+     * of requests to Google's image host or spending the optimiser's quota.
+     */
+    minimumCacheTTL: 60 * 60 * 24 * 31,
   },
 };
 

@@ -16,6 +16,7 @@ import {
   type RosterProfile,
 } from "@/lib/data/roster-profiles";
 import { avatarUrl, driveImage } from "@/lib/photos";
+import { publicRoster, publicSiteText, publicStandouts } from "@/lib/data/public-cache";
 import { createClient } from "@/lib/supabase/server";
 import type { Tables } from "@/lib/supabase/database.types";
 
@@ -93,10 +94,11 @@ export type Copy = (key: string, replacements?: Record<string, string | number>)
  * heading that is missing.
  */
 export const getCopy = cache(async (): Promise<Copy> => {
-  const supabase = await createClient();
-  const { data } = await supabase.from("site_text").select("key, value");
+  // Shared across visitors for a minute; see lib/data/public-cache.ts. A
+  // failed read leaves every sentence on the wording in the source.
+  const rows = await publicSiteText().catch(() => []);
 
-  const live = new Map((data ?? []).map((row) => [row.key, row.value]));
+  const live = new Map(rows.map((row) => [row.key, row.value]));
 
   return (key, replacements) => {
     const raw = live.get(key) ?? FALLBACK[key] ?? "";
@@ -253,6 +255,18 @@ function rosterFallback(): RosterGroup[] {
  * source of a page that does not display it.
  */
 export const getRoster = cache(async (all = false): Promise<RosterGroup[]> => {
+  // The public roster is the same for every visitor, so it is read once a
+  // minute for all of them (lib/data/public-cache.ts). The console's view,
+  // hidden rows included, is read with the organiser's own session instead.
+  if (!all) {
+    try {
+      const raw = await publicRoster();
+      return buildRoster(raw.groups, raw.people, raw.photos, false);
+    } catch {
+      return rosterFallback();
+    }
+  }
+
   const supabase = await createClient();
 
   const [groups, people, accountPhotos] = await Promise.all([
@@ -264,14 +278,21 @@ export const getRoster = cache(async (all = false): Promise<RosterGroup[]> => {
     supabase.rpc("roster_photos"),
   ]);
 
-  if (!groups.data?.length) return rosterFallback();
+  return buildRoster(groups.data ?? [], people.data ?? [], accountPhotos.data ?? [], true);
+});
 
-  const accountPhoto = new Map(
-    (accountPhotos.data ?? []).map((row) => [row.person_id, avatarUrl(row.photo)]),
-  );
+function buildRoster(
+  groups: Tables<"roster_groups">[],
+  people: Tables<"roster_people">[],
+  accountPhotos: { person_id: string; photo: string | null }[],
+  all: boolean,
+): RosterGroup[] {
+  if (!groups.length) return rosterFallback();
+
+  const accountPhoto = new Map(accountPhotos.map((row) => [row.person_id, avatarUrl(row.photo)]));
 
   const byGroup = new Map<string, RosterPerson[]>();
-  for (const row of people.data ?? []) {
+  for (const row of people) {
     if (!all && !row.visible) continue;
 
     // Every profile column is read with a fallback because the columns
@@ -308,7 +329,7 @@ export const getRoster = cache(async (all = false): Promise<RosterGroup[]> => {
     byGroup.set(row.group_id, list);
   }
 
-  return groups.data
+  return groups
     .filter((g) => all || g.visible)
     .map((g) => ({
       id: g.id,
@@ -322,7 +343,7 @@ export const getRoster = cache(async (all = false): Promise<RosterGroup[]> => {
       visible: g.visible,
       people: byGroup.get(g.id) ?? [],
     }));
-});
+}
 
 /**
  * One person on the public roster, by the tail of their address, with the
@@ -485,11 +506,14 @@ function byCategory(rows: readonly BoardRow[]): ShowcaseCategory[] {
  * the old function had already cut it to.
  */
 export const getStandouts = cache(async (): Promise<ShowcaseCategory[]> => {
+  // The same board for everyone, so shared for a minute across visitors.
+  try {
+    return byCategory(await publicStandouts());
+  } catch {
+    // Fall through to the old function, read directly.
+  }
+
   const supabase = await createClient();
-
-  const { data, error } = await supabase.rpc("standouts_board");
-  if (!error) return byCategory(data ?? []);
-
   const { data: old } = await supabase.rpc("showcase_board");
   return byCategory(old ?? []).map((category) => ({
     ...category,

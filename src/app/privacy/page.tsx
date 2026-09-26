@@ -63,7 +63,7 @@ const BLOCKS: readonly LegalBlock[] = [
     body: [
       "If you are a student, your console asks you for a photo once, the first time you sign in. Wherever the site ranks students, on the front page's standouts, on the standouts list and on the ranking in the console, your name is shown with it.",
       "Before it leaves your device, your browser crops the photo to a square, shrinks it and saves it as a fresh JPEG. That drops the hidden information a phone photo carries, including the location it was taken at. What is uploaded is only the picture.",
-      "It is stored with Supabase, in a folder only your account can write to, at a public address, because it is printed on public pages. You can replace it at any time from your console. An organiser can take a photo down if it should not be on the front page, and you are then asked for another.",
+      "It is stored in the committee's Google Drive, in a folder of profile photos, shared so that anyone with its link can view it, because it is printed on public pages. It is not listed in any Drive search. It is fetched by this site's server and served from this site, so a page showing it makes no request from your browser to Google. You can replace it at any time from your console, and the old one is binned. An organiser can take a photo down if it should not be on the front page, and you are then asked for another.",
       "If you would rather not appear on the public standouts at all, switch that off from My record in your console. You stay on the ranking inside the console, which only signed-in students can see.",
     ],
   },

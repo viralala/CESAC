@@ -4,6 +4,7 @@ import type { ReactNode } from "react";
 
 import { signOut } from "@/app/actions/auth";
 import { Container, Label } from "@/components/aot/bits";
+import { ConsoleNav } from "@/components/console/console-nav";
 import { Avatar } from "@/components/site/avatar";
 import { ThemeToggle } from "@/components/site/theme-toggle";
 import type { Viewer } from "@/lib/auth/session";
@@ -75,17 +76,7 @@ export function ConsoleBar({
           {area}
         </span>
 
-        <nav className="order-last flex w-full items-center gap-1 overflow-x-auto hide-scrollbar sm:order-none sm:ml-2 sm:w-auto">
-          {nav.map((item) => (
-            <Link
-              key={item.href}
-              href={item.href}
-              className="label whitespace-nowrap rounded-full px-3.5 py-2 text-cream/60 transition-colors hover:bg-cream/10 hover:text-cream"
-            >
-              {item.label}
-            </Link>
-          ))}
-        </nav>
+        <ConsoleNav items={nav.map(({ href, label }) => ({ href, label }))} />
 
         <div className="ml-auto flex items-center gap-3">
           <span className="hidden text-right sm:block">

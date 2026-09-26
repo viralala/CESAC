@@ -46,8 +46,7 @@ export default async function ControlsPage() {
           <Label tone="teal">Switches</Label>
           <h1 className="d-tall mt-4 text-[clamp(2.4rem,6vw,3.8rem)] text-ink">Event controls</h1>
           <p className="serif-it mt-4 text-[1.08rem] leading-relaxed text-muted">
-            Everything on this page takes effect at once. There is no save-and-publish step and no
-            draft: the next visitor gets what is set here.
+            Every change here is live immediately, with no draft or publish step.
           </p>
         </header>
 
@@ -225,8 +224,7 @@ export default async function ControlsPage() {
                     >
                       <input type="hidden" name="chapter_id" value={chapter.id} />
                       <p className="serif-it text-[0.9rem] leading-relaxed text-muted">
-                        Ranks the teams still in by their score for this chapter and keeps the top{" "}
-                        {chapter.cut_to}. Score everyone first.
+                        Keeps the top {chapter.cut_to} teams by score for this chapter, so score everyone first.
                       </p>
                     </ActionForm>
                   </div>

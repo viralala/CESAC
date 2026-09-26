@@ -90,9 +90,7 @@ export default async function AdminStudentsPage(props: PageProps<"/admin/student
             <Label tone="teal">Accounts</Label>
             <h1 className="d-tall mt-4 text-[clamp(2.4rem,6vw,4rem)] text-ink">Students</h1>
             <p className="serif-it mt-4 text-[1.1rem] leading-relaxed text-muted">
-              Everybody with an account, found by the things an organiser has in front of them at
-              a desk: a name, an address, a PRN or a class. This page only reads. Changing an
-              address is an auth-level job and is still done in the Supabase dashboard.
+              Every account, searchable by name, address, PRN or class, and read only.
             </p>
           </header>
 
@@ -114,26 +112,18 @@ export default async function AdminStudentsPage(props: PageProps<"/admin/student
             >
               {hold.waiting > 0 ? (
                 <p className="serif-it text-[1.02rem] leading-relaxed text-muted">
-                  Every account the roster import created was given the student&apos;s own email
-                  address as its password, and is held at the change-password screen until it is
-                  replaced. {hold.waiting} of {hold.accounts} accounts are still there. An address
-                  is not a secret, so every one of those is an account any classmate could sign in
-                  to, and this window is only shut when that number reaches zero.
+                  {hold.waiting} of {hold.accounts} imported accounts still use their own email as the password, so
+                  any classmate could sign in to them until this reaches zero.
                 </p>
               ) : (
                 <p className="serif-it text-[1.02rem] leading-relaxed text-muted">
-                  No account is holding the password it was imported with. That window is shut,
-                  and it stays shut without anybody watching it: the flag is set once by the
-                  import and cleared only by the database function that runs after Supabase has
-                  accepted a new password.
+                  No account is still on its imported password, and the database keeps it that way.
                 </p>
               )}
 
               <p className="serif-it mt-4 text-[1.02rem] leading-relaxed text-muted">
-                {hold.released} accounts are not held at that screen. That is nearly the same as
-                having chosen a password, and not quite: the flag records that an account is
-                waiting, not where its password came from, so an account made through Google, and
-                one made before the check existed, are counted here as well.
+                {hold.released} accounts are past the change-password screen, including any made through Google
+                or before the check existed.
               </p>
             </Panel>
 
@@ -185,25 +175,18 @@ export default async function AdminStudentsPage(props: PageProps<"/admin/student
               <div className="mt-7 border-t border-ink/10 pt-7">
                 {!searched ? (
                   <Empty>
-                    Nothing is listed until you search. A directory that opens on a page of real
-                    names, addresses and PRNs is printing them for no reason. Type any part of a
-                    name, an address, a PRN or a class, and the matches come back from the
-                    database rather than from a copy of the roster sent to this browser.
+                    Type any part of a name, address, PRN or class to find a student.
                   </Empty>
                 ) : found.total === 0 ? (
                   <Empty>
-                    Nothing matched <span className="text-ink">{found.term}</span>. The search
-                    looks for what you typed inside a name, an address, a PRN or a class, so part
-                    of any one of them will find somebody, and a name typed back to front will
-                    not.
+                    Nothing matched <span className="text-ink">{found.term}</span>, so try part of a
+                    name, address, PRN or class.
                   </Empty>
                 ) : pastTheEnd ? (
                   <Empty>
-                    There is no page {found.page} of this search. It matched {found.total}{" "}
-                    {found.total === 1 ? "account" : "accounts"}, which is {found.pages}{" "}
-                    {found.pages === 1 ? "page" : "pages"}.{" "}
+                    This search has only {found.pages} {found.pages === 1 ? "page" : "pages"}, so go{" "}
                     <Link href={hrefFor(asked, 1)} className="text-ink underline">
-                      Back to the first one
+                      back to the first one
                     </Link>
                     .
                   </Empty>

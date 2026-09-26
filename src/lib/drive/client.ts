@@ -335,8 +335,19 @@ export async function ensureStudentFolder(
   creds: DriveCredentials,
   email: string,
 ): Promise<string> {
+  return ensureFolder(creds, email);
+}
+
+/**
+ * A folder directly under the parent, found by name or made on first use.
+ *
+ * Profile photos use this with a fixed name, so they sit in one folder of
+ * their own beside the per-student certificate folders rather than inside
+ * them: the committee can open one folder and see every face on the site.
+ */
+export async function ensureFolder(creds: DriveCredentials, name: string): Promise<string> {
   const q = [
-    `name = '${quote(email)}'`,
+    `name = '${quote(name)}'`,
     `mimeType = '${FOLDER_MIME}'`,
     `'${quote(creds.parentFolderId)}' in parents`,
     "trashed = false",
@@ -353,13 +364,69 @@ export async function ensureStudentFolder(
     method: "POST",
     headers: { "content-type": "application/json" },
     body: JSON.stringify({
-      name: email,
+      name,
       mimeType: FOLDER_MIME,
       parents: [creds.parentFolderId],
     }),
   });
 
   return created.id;
+}
+
+/**
+ * Let anyone holding the link read one file.
+ *
+ * A profile photo is shown on public pages, so it has to load for a visitor
+ * who is signed in to nothing. "Anyone with the link" is exactly that and no
+ * more: `allowFileDiscovery` stays false, so the file does not turn up in
+ * anybody's Drive search, and only this one file is opened, never its folder.
+ */
+export async function shareWithLink(creds: DriveCredentials, fileId: string): Promise<void> {
+  await call<unknown>(
+    creds,
+    `${API}/files/${encodeURIComponent(fileId)}/permissions?${ALL_DRIVES}`,
+    {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ role: "reader", type: "anyone", allowFileDiscovery: false }),
+    },
+  );
+}
+
+/** The only kinds of file the photo route will hand back. SVG is not one. */
+const PHOTO_TYPES = new Set(["image/jpeg", "image/png", "image/webp"]);
+
+/**
+ * A profile photo's bytes, read through the Drive API as the authorised
+ * account, or null if the file is not a profile photo.
+ *
+ * The folder check is the whole point. That account also owns every
+ * student's certificate files, which are private, so a route that fetched any
+ * id it was given would be a way to read them. Only a file whose parent is
+ * the photo folder, of an image type, and not binned, comes back.
+ */
+export async function downloadPhoto(
+  creds: DriveCredentials,
+  fileId: string,
+  folderId: string,
+): Promise<{ bytes: ArrayBuffer; mimeType: string } | null> {
+  const id = encodeURIComponent(fileId);
+  const meta = await call<{ parents?: string[]; mimeType?: string; trashed?: boolean }>(
+    creds,
+    `${API}/files/${id}?fields=parents,mimeType,trashed&${ALL_DRIVES}`,
+  );
+  if (meta.trashed || !meta.parents?.includes(folderId)) return null;
+  if (!meta.mimeType || !PHOTO_TYPES.has(meta.mimeType)) return null;
+
+  const response = await fetch(`${API}/files/${id}?alt=media&${ALL_DRIVES}`, {
+    headers: { authorization: `Bearer ${await accessToken(creds)}` },
+    cache: "no-store",
+  });
+  if (!response.ok) {
+    throw new DriveError(`Google Drive returned ${response.status}.`, await response.text());
+  }
+
+  return { bytes: await response.arrayBuffer(), mimeType: meta.mimeType };
 }
 
 export type UploadedFile = { id: string; link: string };

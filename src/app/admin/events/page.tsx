@@ -79,20 +79,18 @@ export default async function AdminEventsPage() {
             <Label tone="teal">CESAC</Label>
             <h1 className="d-tall mt-4 text-[clamp(2.4rem,6vw,4rem)] text-ink">Events</h1>
             <p className="serif-it mt-4 text-[1.1rem] leading-relaxed text-muted">
-              Every event the committee runs, who organises it, and who has entered. Teams form
-              here, pay here, and hold their seat from the moment they claim it.
+              Every committee event with its organisers and entries, where teams form, pay and hold
+              their seats.
             </p>
           </header>
 
           {!schemaReady ? (
             <div className="mt-8">
               <Notice tone="error">
-                The tables are in the database but the API cannot reach them yet. In Supabase, open{" "}
+                The API cannot reach these tables yet, so in Supabase open{" "}
                 <strong className="font-normal">Project Settings, API</strong> and add{" "}
                 <code className="rounded bg-ink/10 px-1.5 py-0.5 font-mono text-[0.9em]">ems</code>{" "}
-                to <strong className="font-normal">Exposed schemas</strong>, alongside the ones
-                already listed. Nothing on this page works until that is ticked, and nothing else on
-                the site is affected either way.
+                to <strong className="font-normal">Exposed schemas</strong> before this page can work.
               </Notice>
             </div>
           ) : null}
@@ -100,9 +98,8 @@ export default async function AdminEventsPage() {
           {schemaReady && !isCommittee ? (
             <div className="mt-8">
               <Notice tone="ok">
-                You are signed in as a teacher admin. You can read everything on this page and the
-                analytics behind it. Creating events, moving organisers and changing who is an admin
-                are the committee&rsquo;s to do.
+                As a teacher admin you can read everything here, while changes are the
+                committee&rsquo;s to make.
               </Notice>
             </div>
           ) : null}
@@ -121,12 +118,11 @@ export default async function AdminEventsPage() {
             >
               {!schemaReady ? (
                 <Empty>
-                  Nothing can be read until the schema is exposed. This is not an empty board.
+                  Nothing can be read until the schema is exposed, so this is not an empty board.
                 </Empty>
               ) : events.length === 0 ? (
                 <Empty>
-                  No events yet. The first one the committee creates appears here as a draft, hidden
-                  from students until entries are opened.
+                  No events yet, and the first one appears here as a draft hidden from students.
                 </Empty>
               ) : (
                 <ul className="grid gap-4">
@@ -234,16 +230,13 @@ export default async function AdminEventsPage() {
             {schemaReady && isCommittee ? (
               <Panel eyebrow="People" title="Who runs the system">
                 <p className="serif-it -mt-1 mb-6 text-[1.02rem] leading-relaxed text-muted">
-                  A committee admin runs everything. A teacher admin reads everything and changes
-                  nothing, and cannot enter an event. Anyone who is already an organiser in the main
-                  console counts as a committee admin here without being listed, so this panel is
-                  only for the people the two consoles disagree about.
+                  Committee admins run everything, teacher admins only read, and main console
+                  organisers count as committee admins automatically.
                 </p>
 
                 {admins.length === 0 ? (
                   <Empty>
-                    Nobody has been added here yet. The existing organisers already have full access
-                    through their role in the main console.
+                    Nobody is added yet, and existing organisers already have full access.
                   </Empty>
                 ) : (
                   <ul className="grid gap-3">

@@ -62,10 +62,8 @@ export default async function AccessPage() {
           <Label tone="teal">Who can do what</Label>
           <h1 className="d-tall mt-4 text-[clamp(2.4rem,6vw,3.8rem)] text-ink">Access</h1>
           <p className="serif-it mt-4 text-[1.08rem] leading-relaxed text-muted">
-            Three kinds of login. An organiser opens this console and can be narrowed to named
-            areas of it. A verifier gets one page: the records waiting to be checked and the
-            questions waiting for an answer, and nothing else on the site. The allowlist is for
-            somebody who has no account yet.
+            Organisers run this console, verifiers only check records and answer questions, and the
+            allowlist is for people without an account yet.
           </p>
         </header>
 
@@ -80,15 +78,13 @@ export default async function AccessPage() {
         <div className="mt-6">
           <Panel eyebrow="Passwords" title="Set somebody's password">
             <p className="serif-it text-[0.98rem] leading-relaxed text-muted">
-              For a student who has forgotten theirs, or anybody locked out. Type the address they
-              sign in with and a new password, save, and tell them what it is. Every session the
-              account had open is signed out, and unless you untick the box they are asked to
-              choose their own the moment they sign in, so what you read out works once.
+              Set a new password for anyone locked out; their sessions end, and unless you untick
+              the box they pick their own at next sign-in.
             </p>
             <p className="serif-it mt-3 text-[0.98rem] leading-relaxed text-muted">
               {viewer.role === "owner"
-                ? "As the owner you can set anybody's but your own, organisers included. Yours is changed from your own password page."
-                : "You can set a student's or a verifier's. Only the owner sets another organiser's, because a password is the whole of an account; and nobody sets the owner's."}
+                ? "As the owner you can reset anyone's password except your own."
+                : "You can reset a student's or a verifier's password; only the owner resets an organiser's."}
             </p>
 
             <ActionForm action={setAccountPassword} submit="Set the password" tone="solid">
@@ -136,9 +132,7 @@ export default async function AccessPage() {
                 </span>
               </label>
               <p className="serif-it mt-3 text-[0.85rem] leading-relaxed text-muted">
-                Shown as you type it, on purpose: you are about to hand it over. It is hashed the
-                moment it reaches the database and is not written to the audit log. The log
-                records that you set one, and on whose account.
+                It is hashed on save and never written to the audit log.
               </p>
             </ActionForm>
           </Panel>
@@ -152,18 +146,13 @@ export default async function AccessPage() {
             aside={checkers.length ? `${checkers.length} with a login` : undefined}
           >
             <p className="serif-it text-[0.98rem] leading-relaxed text-muted">
-              A verifier signs in at the same door as everybody else and lands on{" "}
-              <span className="font-mono text-[0.9rem] text-ink">/verify</span>, which holds two
-              lists. Every record a student has filed, with the files behind it and a button to
-              verify it or turn it down; and every question students have asked, with the same
-              answer box and the same standard replies this console uses. The two belong together
-              because most of what arrives on that desk is somebody asking whether their
-              certificate has been counted yet.
+              A verifier signs in at the same door, lands on{" "}
+              <span className="font-mono text-[0.9rem] text-ink">/verify</span>, and can only check
+              records and answer questions there.
             </p>
             <p className="serif-it mt-4 text-[0.98rem] leading-relaxed text-muted">
-              They cannot open this console, read the audit log, see a payment, edit the site or
-              change anything at all about a record other than whether it is checked. That is
-              refused by the database rather than merely hidden from them.
+              The database refuses them everything else, including this console, payments and the
+              site.
             </p>
 
             {checkers.length ? (
@@ -222,9 +211,7 @@ export default async function AccessPage() {
                             className="field mt-2.5"
                           />
                           <p className="serif-it mt-2 text-[0.85rem] leading-relaxed text-muted">
-                            Shown as you type it, on purpose: you are about to read it out to
-                            somebody. Their old password stops working the moment this saves, and
-                            nothing anywhere keeps a copy of either.
+                            Their old password stops working the moment this saves.
                           </p>
                         </div>
                       </ActionForm>
@@ -235,8 +222,7 @@ export default async function AccessPage() {
             ) : (
               <div className="mt-6">
                 <Empty>
-                  Nobody holds a verifier login yet, so every record waiting to be checked is
-                  waiting on an organiser. Add one below and they can start straight away.
+                  Nobody holds a verifier login yet, so add one below to share the checking.
                 </Empty>
               </div>
             )}
@@ -244,9 +230,7 @@ export default async function AccessPage() {
             <div className="mt-7 border-t border-ink/10 pt-6">
               <p className="label text-ink">Add a verifier</p>
               <p className="serif-it mt-2 text-[0.92rem] leading-relaxed text-muted">
-                You choose the password and hand it over yourself. Write it down before you save:
-                it is hashed the moment it reaches the database and there is no way to read it
-                back, only to set a new one.
+                Write the password down before you save, because it cannot be read back.
               </p>
 
               <ActionForm action={addVerifier} submit="Create the login" tone="solid">
@@ -301,11 +285,8 @@ export default async function AccessPage() {
         <div className="mt-6">
           <Panel eyebrow="The console" title="Organisers" aside={`${organisers.length} with the role`}>
             <p className="serif-it text-[0.98rem] leading-relaxed text-muted">
-              An organiser with nothing ticked below can reach the whole console, which is how
-              every one of them started. Tick the areas somebody should have and they are narrowed
-              to those, in the database and not merely on screen: the pages disappear from their
-              nav and every write behind them is refused by Postgres. An owner is never narrowed,
-              so the site cannot be locked out of its own settings.
+              An organiser with nothing ticked can reach everything; tick areas to narrow them, and
+              the owner is never narrowed.
             </p>
 
             <ul className="mt-6 grid gap-3">
@@ -352,8 +333,8 @@ export default async function AccessPage() {
                     {isOwner || isMe ? (
                       <p className="serif-it mt-3 text-[0.88rem] leading-relaxed text-muted">
                         {isOwner
-                          ? "The owner runs the site and sits above every organiser. They hold every area and cannot be narrowed, removed, repassworded or deleted from the console by anybody else, so the site can never be locked away from the person who runs it."
-                          : "You cannot change your own access, for the same reason you cannot change your own role."}
+                          ? "The owner holds every area and cannot be narrowed, removed or deleted by anyone else."
+                          : "You cannot change your own access."}
                       </p>
                     ) : (
                       <details className="mt-3">
@@ -408,9 +389,7 @@ export default async function AccessPage() {
             <div className="mt-7 border-t border-ink/10 pt-6">
               <p className="label text-ink">Allowlist</p>
               <p className="serif-it mt-2 text-[0.92rem] leading-relaxed text-muted">
-                An email here becomes an organiser the moment it signs in, through any provider.
-                Use it for people who do not have an account yet. A verifier is made above
-                instead, because a verifier is not an organiser.
+                An email listed here becomes an organiser the moment it first signs in.
               </p>
 
               {allowlist.data?.length ? (

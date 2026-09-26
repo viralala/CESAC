@@ -62,18 +62,17 @@ export default async function AdminTeamsPage() {
             <Label tone="teal">Registration</Label>
             <h1 className="d-tall mt-4 text-[clamp(2.6rem,7vw,4.5rem)] text-ink">Teams</h1>
             <p className="serif-it mt-4 text-[1.1rem] leading-relaxed text-muted">
-              {live.length} {live.length === 1 ? "pair is" : "pairs are"} entered, {heads} people
-              in all, {paidUp} paid up. Hand-in teams are counted separately below:{" "}
-              {counts.registered} registered of {counts.teams} made, {counts.seated} seats held
-              against a cap of {settings.seats_cap}.
+              {live.length} {live.length === 1 ? "pair is" : "pairs are"} entered with {heads} people and{" "}
+              {paidUp} paid up, while hand-in teams have {counts.registered} registered of {counts.teams}{" "}
+              and {counts.seated} of {settings.seats_cap} seats held.
             </p>
           </header>
 
           <section className="mt-10">
             <h2 className="d-tall text-[1.9rem] text-ink">Entered pairs</h2>
             <p className="serif-it mt-2 text-[1rem] leading-relaxed text-muted">
-              Everybody who has entered an event and what they owe. Opening and closing events,
-              and verifying a fee that came in by hand, are on{" "}
+              Everyone who has entered an event and what they owe, while opening events and verifying
+              hand payments happen on{" "}
               <Link href="/admin/entries" className="text-teal hover:underline">
                 Entries
               </Link>
@@ -83,8 +82,7 @@ export default async function AdminTeamsPage() {
             {live.length === 0 ? (
               <div className="mt-5">
                 <Empty>
-                  Nobody has entered anything yet. The first pair appears here the moment somebody
-                  enters on the events page.
+                  Nobody has entered yet, and the first pair appears here the moment they do.
                 </Empty>
               </div>
             ) : (
@@ -101,8 +99,7 @@ export default async function AdminTeamsPage() {
             {waiting.length === 0 ? (
               <div className="mt-5">
                 <Empty>
-                  Nothing to verify. A team appears here when it records a payment, and stays
-                  until an organiser confirms it against the account.
+                  Nothing to verify, and a team appears here once it records a payment.
                 </Empty>
               </div>
             ) : (
@@ -119,8 +116,7 @@ export default async function AdminTeamsPage() {
             {rest.length === 0 ? (
               <div className="mt-5">
                 <Empty>
-                  No hand-in team has been made yet. These are separate from the entries above:
-                  a pair can be entered and paid up without having made one.
+                  No hand-in team has been made yet, and these are separate from the entries above.
                 </Empty>
               </div>
             ) : (
@@ -214,8 +210,8 @@ function TeamCard({ team, highlight = false }: { team: TeamWithPeople; highlight
                 <input type="hidden" name="team_id" value={team.id} />
                 <input type="hidden" name="verified" value="true" />
                 <p className="serif-it text-[0.9rem] leading-relaxed text-muted">
-                  Check the reference against the account first. Verifying registers the team if
-                  it already has two people.
+                  Check the reference against the account first, since verifying registers a team of
+                  two.
                 </p>
               </ActionForm>
 

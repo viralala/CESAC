@@ -3,7 +3,7 @@ import "server-only";
 import { cache } from "react";
 
 import { EVENTS, type CesacEvent, type EventSchedule } from "@/lib/data/cesac";
-import { createClient } from "@/lib/supabase/server";
+import { publicSchedules } from "@/lib/data/public-cache";
 
 /**
  * When each event is, keyed by slug.
@@ -20,9 +20,8 @@ export const getSchedules = cache(async (): Promise<Map<string, EventSchedule | 
   const out = new Map<string, EventSchedule | null>(EVENTS.map((e) => [e.slug, e.schedule]));
 
   try {
-    const supabase = await createClient();
-    const { data, error } = await supabase.rpc("event_schedule");
-    if (error || !data) return out;
+    // The same for every visitor, so read once a minute for all of them.
+    const data = await publicSchedules();
 
     for (const row of data) {
       out.set(

@@ -69,15 +69,12 @@ export default async function PointsPage() {
     <>
       <Panel eyebrow="Before you change one" title="What a number here does">
         <Notice tone="error">
-          Nothing is stored against a record. Changing a number re-scores every record in the
-          department the next time anybody loads the board, including records filed years ago.
-          That is usually what you want, and it is never only going forward.
+          Changing a number re-scores every record in the department at once, including old ones.
         </Notice>
 
         <p className="serif-it mt-6 text-[1rem] leading-relaxed text-muted">
-          A record scores a base plus a level. The base is what the student came away with for a
-          hackathon or an extracurricular activity, or the kind of publication it is for a paper.
-          Four worked examples on today&rsquo;s numbers:
+          A record scores a base for its result or kind of publication plus a level, as in these
+          examples:
         </p>
 
         <dl className="mt-5 grid gap-2.5">
@@ -109,8 +106,7 @@ export default async function PointsPage() {
       {scale.length === 0 ? (
         <Panel eyebrow="Scale" title="Nothing to edit">
           <Empty>
-            The scale could not be read. The board is still scoring from it, so nothing has
-            changed on the site; this page simply cannot show you the numbers right now.
+            The scale could not be read here, though the board is still scoring from it.
           </Empty>
         </Panel>
       ) : null}

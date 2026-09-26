@@ -297,8 +297,7 @@ function Files({
   return (
     <div className="mt-5 grid gap-3 border-t border-ink/10 pt-5">
       <p className="serif-it text-[0.9rem] leading-relaxed text-muted">
-        All four are optional. Upload what you have; an empty slot costs you nothing. Nothing here
-        is shown on the public site.
+        All four are optional and none of them is shown on the public site.
       </p>
 
       <SlotRow
@@ -684,10 +683,8 @@ function RecordForm({
             className="field mt-2.5 file:mr-4 file:rounded-full file:border-0 file:bg-ink file:px-4 file:py-1.5 file:text-cream"
           />
           <p className="serif-it mt-2 text-[0.85rem] leading-relaxed text-muted">
-            PDF, JPG or PNG, up to {MAX_CERTIFICATE_LABEL}. One file has to come with every
-            record: the certificate for an event, and for a paper the paper itself, the
-            acceptance mail or a photo of the listing. The prize, the event and the photo with
-            the HOD are added from the record once it is saved, and those stay optional.
+            PDF, JPG or PNG up to {MAX_CERTIFICATE_LABEL}, one file per record, with the prize, event and
+            HOD photos added once it is saved.
           </p>
           {oversize ? (
             <div className="mt-3">

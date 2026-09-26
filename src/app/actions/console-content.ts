@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 
 import { requireAdmin } from "@/lib/auth/guard";
+import { refreshPublicData } from "@/lib/data/public-cache";
 import { createClient } from "@/lib/supabase/server";
 import type { AdminState } from "@/app/actions/admin";
 
@@ -28,6 +29,7 @@ async function adminClient() {
 
 /** Every page the public site renders content on. Cheap, and easy to forget. */
 function refreshPublic(): void {
+  refreshPublicData();
   revalidatePath("/");
   revalidatePath("/about");
   revalidatePath("/people");

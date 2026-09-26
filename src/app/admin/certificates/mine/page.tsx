@@ -48,9 +48,8 @@ export default async function MyRecordPage() {
           <Label tone="teal">{EVENT.host}</Label>
           <h1 className="d-tall mt-4 text-[clamp(2.4rem,6vw,4rem)] text-ink">My record</h1>
           <p className="serif-it mt-4 text-[1.1rem] leading-relaxed text-muted">
-            Filed the same way any student files one, and checked the same way: by somebody else.
-            Another organiser holding Student records, or the verifier, has to look at this before
-            it carries the verified mark, the same rule that applies to everyone else&apos;s record.
+            Your record is checked like anyone else&apos;s, by another organiser or a verifier,
+            never by you.
           </p>
         </header>
 
@@ -63,9 +62,7 @@ export default async function MyRecordPage() {
             {driveReady ? null : (
               <div className="mb-6">
                 <Notice tone="error">
-                  Uploads are not switched on yet, so a record can be saved but no file can be
-                  attached to it. Everything you add now keeps its place and takes its files
-                  later.
+                  Uploads are not switched on yet, so records save now and take their files later.
                 </Notice>
               </div>
             )}
@@ -85,10 +82,8 @@ export default async function MyRecordPage() {
 
             <Panel eyebrow="The front page" title="Being named publicly">
               <p className="serif-it text-[0.98rem] leading-relaxed text-muted">
-                The front page of the site names a few students each term, with their year and one
-                number, worked out from what is on their record. It never shows a record, a file,
-                an address or a PRN. Every student on the board is named; there is no switch to
-                come off it.
+                The front page names students by year and points, and never shows a record, file,
+                address or PRN.
               </p>
             </Panel>
           </div>

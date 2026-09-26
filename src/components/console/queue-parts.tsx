@@ -275,8 +275,7 @@ export function QuestionDetail({
         </div>
       ) : query.status !== "open" ? (
         <p className="serif-it mt-4 text-[0.92rem] leading-relaxed text-muted">
-          This one left the queue without an answer on it, so the student has been told nothing.
-          Writing one below puts it right.
+          This left the queue unanswered, so write a reply below to tell the student.
         </p>
       ) : null}
 

@@ -223,19 +223,12 @@ export default async function AdminCertificatesPage() {
           <Label tone="teal">{EVENT.host}</Label>
           <h1 className="d-tall mt-4 text-[clamp(2.4rem,6vw,4rem)] text-ink">Records</h1>
           <p className="serif-it mt-4 text-[1.1rem] leading-relaxed text-muted">
-            Everything students have filed: hackathon certificates, non-technical and
-            extracurricular certificates, and the four publication layouts from the department
-            sheet. The files are in the department Drive and the row
-            here is only the claim made about them, so opening the link is the only thing that
-            actually decides anything. Since 22 September a student cannot file a record without
-            attaching something, so a row with nothing on it was either typed in here by an
-            organiser or filed before that rule existed.
+            Everything students have filed, with the files in the department Drive, so open the file
+            to decide.
           </p>
           <p className="serif-it mt-4 text-[1.02rem] leading-relaxed text-muted">
-            Nothing on this page moves the ranking. The board counts a record from the moment it
-            is uploaded, so verifying one adds no points and turning one down takes none away.
-            What changes is what the department can say it has seen, and the mark the student
-            reads on their own record.
+            Verifying or turning down a record never changes the ranking, only what the department
+            has checked.
           </p>
         </header>
 
@@ -259,14 +252,13 @@ export default async function AdminCertificatesPage() {
             eyebrow="Queue"
             title="Waiting on a decision"
             noun="record"
-            blurb="Open the file, check the name on it against the name on the row and the claim against what the certificate actually says, then verify it or turn it down. Either way it leaves this list, which is the point: a record nobody can finish deciding about comes back to the top of the queue every morning."
+            blurb="Open the file, check it matches the row, then verify it or turn it down."
             facets={[KIND_FACET, LEVEL_FACET, PROOF_FACET]}
             rows={waiting.map(row)}
             searchPlaceholder="Title, student, PRN, journal, publisher, organiser"
             empty={
               <Empty>
-                Nothing is waiting. Every record on the site has been looked at by somebody.
-                Anything new arrives in this list, because the queue is worked oldest first.
+                Nothing is waiting, and anything new arrives here, oldest first.
               </Empty>
             }
           />
@@ -276,28 +268,24 @@ export default async function AdminCertificatesPage() {
             title="Already decided"
             noun="record"
             startFolded
-            blurb="Most recently decided first, verified and turned down together. Putting one back in the queue clears the mark and the name against it, because a row waiting to be checked should not carry a claim that somebody already checked it. Turning one down takes it out of the queue and nothing else: the row is still on the student record, it still counts towards the ranking, and the file is still in Drive."
+            blurb="Most recently decided first, and putting one back in the queue clears its mark."
             facets={[STATE_FACET, KIND_FACET, LEVEL_FACET, PROOF_FACET]}
             rows={settled.map(row)}
             searchPlaceholder="Title, student, PRN, journal, publisher, organiser"
             empty={
               <Empty>
-                Nothing has been decided yet. Records move down here as they are checked, so one
-                that was marked in error can be put back in the queue.
+                Nothing has been decided yet, and checked records move down here.
               </Empty>
             }
           />
 
           <Panel eyebrow="Export" title="CSV, for the office" aside="Built on the press">
             <p className="serif-it text-[1.02rem] leading-relaxed text-muted">
-              One row per record, whatever state it is in, with the student it belongs to and
-              every Drive link beside it. It is built when you press the button and kept nowhere,
-              so it is never a stale copy of anything.
+              One row per record with the student and every Drive link, built fresh when you press
+              the button.
             </p>
             <p className="serif-it mt-4 text-[1.02rem] leading-relaxed text-muted">
-              It carries real names, real addresses and real PRNs, the same as this page. It is
-              for the department&apos;s own records and for anything that has to go to the office,
-              and it should not travel any further than that.
+              It holds real names, addresses and PRNs, so keep it within the department.
             </p>
 
             {/*
@@ -314,10 +302,8 @@ export default async function AdminCertificatesPage() {
             <div className="mt-8 border-t border-ink/10 pt-7">
               <p className="label text-ink">Straight into Formats.xlsx</p>
               <p className="serif-it mt-2 text-[1rem] leading-relaxed text-muted">
-                These four are the department sheet&rsquo;s own columns, in its own order and its
-                own wording, one file per layout. Open one and paste the block under the headings
-                you already have. The department name, the serial number and &ldquo;data entered
-                by&rdquo; are filled in for you.
+                Each file matches the department sheet&rsquo;s columns, ready to paste under the
+                headings you already have.
               </p>
 
               <div className="mt-5 flex flex-wrap gap-2.5">

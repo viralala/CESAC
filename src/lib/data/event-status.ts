@@ -2,7 +2,7 @@ import "server-only";
 
 import { cache } from "react";
 
-import { createClient } from "@/lib/supabase/server";
+import { publicEventStates } from "@/lib/data/public-cache";
 import { EVENTS, type CesacEvent } from "@/lib/data/cesac";
 
 export type Badge = { label: string; bg: string; fg: string };
@@ -36,9 +36,8 @@ const BADGE: Record<string, Badge> = {
  */
 const liveStates = cache(async (): Promise<Map<string, string>> => {
   try {
-    const supabase = await createClient();
-    const { data, error } = await supabase.rpc("dept_event_states");
-    if (error || !data) return new Map();
+    // Shared across visitors for a minute; see lib/data/public-cache.ts.
+    const data = await publicEventStates();
     return new Map(data.map((row) => [row.slug, row.state]));
   } catch {
     return new Map();

@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 
 import { requireAdmin } from "@/lib/auth/guard";
+import { refreshPublicData } from "@/lib/data/public-cache";
 import { driveCredentials, trashFile } from "@/lib/drive/client";
 import { createClient } from "@/lib/supabase/server";
 import type { Enums } from "@/lib/supabase/database.types";
@@ -212,8 +213,10 @@ export async function setEventState(_state: AdminState, formData: FormData): Pro
   // opened.
   revalidatePath("/dashboard/events");
   revalidatePath("/dashboard");
+  refreshPublicData();
   revalidatePath("/events");
   revalidatePath(`/events/${slug}`);
+  refreshPublicData();
   revalidatePath("/");
 
   return say(
@@ -444,6 +447,7 @@ export async function deleteCertificate(
   revalidatePath("/admin/certificates");
   revalidatePath("/dashboard/certificates");
   revalidatePath("/dashboard/ranking");
+  refreshPublicData();
   revalidatePath("/");
 
   return say(
@@ -482,6 +486,7 @@ export async function saveDeptEvent(_state: AdminState, formData: FormData): Pro
 
   revalidatePath("/admin/entries");
   revalidatePath("/dashboard/events");
+  refreshPublicData();
   revalidatePath("/events");
 
   return say(error, "Saved. A new event starts locked, so open it when you are ready.");
@@ -516,6 +521,7 @@ export async function updateSettings(_state: AdminState, formData: FormData): Pr
   revalidatePath("/admin/site/showcase");
   revalidatePath("/dashboard");
   revalidatePath("/events/attack-on-token");
+  refreshPublicData();
   revalidatePath("/");
 
   return say(error, "Saved.");
@@ -581,6 +587,7 @@ export async function clearPhoto(_state: AdminState, formData: FormData): Promis
   const supabase = await adminClient();
   const { error } = await supabase.rpc("admin_clear_photo", { p_profile_id: id });
 
+  refreshPublicData();
   revalidatePath("/", "layout");
   return say(error, "Photo removed. They are asked for a new one when they next open their console.");
 }
@@ -626,6 +633,7 @@ export async function setEventSchedule(
     p_venue: venue || undefined,
   });
 
+  refreshPublicData();
   revalidatePath("/", "layout");
   return say(
     error,

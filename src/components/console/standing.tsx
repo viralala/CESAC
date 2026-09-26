@@ -40,8 +40,8 @@ export function StandingSummary({ standing }: { standing: Standing | null }) {
       </div>
 
       <p className="serif-it mt-6 text-[0.95rem] leading-relaxed text-muted">
-        Only students who have uploaded something are counted, so the board grows as the
-        department fills it in. Ties are broken by the number of certificates, then alphabetically.
+        Only students who have uploaded something are counted, and no two students ever share a
+        place.
       </p>
     </>
   );
@@ -158,8 +158,7 @@ export function PointsScale({ scale }: { scale: ScaleRow[] }) {
       })}
 
       <p className="serif-it mt-7 border-t border-ink/10 pt-5 text-[0.95rem] leading-relaxed text-muted">
-        Everything on your record counts, from any event or journal, not only ours. Add them on
-        your{" "}
+        Everything on your record counts, from any event or journal, so add them on your{" "}
         <Link href="/dashboard/certificates" className="text-teal hover:underline">
           record page
         </Link>

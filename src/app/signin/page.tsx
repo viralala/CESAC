@@ -10,7 +10,7 @@ export const metadata: Metadata = {
 };
 
 export default async function SignInPage(props: PageProps<"/signin">) {
-  const { next, error, mode } = await props.searchParams;
+  const { next, error } = await props.searchParams;
   const { providers } = await authMethods();
 
   // `next` arrives from the proxy redirect. It is re-checked inside the action
@@ -18,7 +18,6 @@ export default async function SignInPage(props: PageProps<"/signin">) {
   // to pass it along.
   return (
     <SignInPanel
-      initialMode={mode === "signup" ? "signup" : "signin"}
       next={typeof next === "string" ? next : undefined}
       urlError={typeof error === "string" ? error : undefined}
       providers={providers}

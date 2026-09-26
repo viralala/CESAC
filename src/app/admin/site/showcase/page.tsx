@@ -69,9 +69,7 @@ export default async function ShowcasePage() {
         )}
 
         <p className="serif-it text-[1rem] leading-relaxed text-muted">
-          A category with nobody in it is skipped rather than shown empty, so a new one stays
-          invisible until it has somebody to name. Students who have asked not to be named are
-          left out of all of them.
+          A category with nobody in it stays hidden until someone qualifies.
         </p>
 
         <ActionForm action={updateSettings} submit="Save" tone="lime">
@@ -114,9 +112,7 @@ export default async function ShowcasePage() {
       {categories.length === 0 ? (
         <Panel eyebrow="Categories" title="Nothing set up">
           <Empty>
-            No category exists, so the front page shows no standouts. Add one below; the four the
-            site ships with are top of the board, best winning student, most published and best
-            outgoing student.
+            No category exists, so add one below to show standouts on the front page.
           </Empty>
         </Panel>
       ) : null}

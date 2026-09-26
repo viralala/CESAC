@@ -137,8 +137,8 @@ export async function signInWithPassword(
 
   if (error) {
     // An unconfirmed account is a different problem with a different fix, and
-    // the sign-up form already says as much when the address is taken, so
-    // there is nothing left to conceal by hiding it here.
+    // saying so reveals only that the address has an account, which the
+    // department's own roster already makes public knowledge.
     const unconfirmed = error.message.toLowerCase().includes("email not confirmed");
     return {
       error: unconfirmed ? readable(error.message) : GENERIC_SIGN_IN_ERROR,
@@ -151,42 +151,6 @@ export async function signInWithPassword(
   if (viewer?.mustChangePassword) redirect("/account/password?first=1");
 
   redirect(next ?? homeFor(viewer?.role ?? "participant"));
-}
-
-export async function signUpWithPassword(_state: AuthState, formData: FormData): Promise<AuthState> {
-  const name = String(formData.get("name") ?? "").trim();
-  const email = String(formData.get("email") ?? "").trim().toLowerCase();
-  const password = String(formData.get("password") ?? "");
-  const next = safeNext(formData.get("next"));
-
-  if (name.length < 2) return { error: "Enter your name.", field: "name", email };
-  if (!email) return { error: "Enter your email.", field: "email", email };
-  if (password.length < 8) {
-    return { error: "Pick a password of at least 8 characters.", field: "password", email };
-  }
-
-  const supabase = await createClient();
-  const { data, error } = await supabase.auth.signUp({
-    email,
-    password,
-    options: {
-      data: { full_name: name },
-      emailRedirectTo: `${await origin()}/auth/callback${next ? `?next=${encodeURIComponent(next)}` : ""}`,
-    },
-  });
-
-  if (error) return { error: readable(error.message), field: "email", email };
-
-  // No session back means the project requires email confirmation. Say so
-  // rather than dropping them on a gate that will not let them through.
-  if (!data.session) {
-    return {
-      notice: `Account made. Open the link sent to ${email} to confirm it, then sign in.`,
-      email,
-    };
-  }
-
-  redirect(next ?? "/dashboard");
 }
 
 /**
