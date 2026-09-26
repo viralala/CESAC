@@ -15,7 +15,7 @@ export const EVENT = {
   tagline: "Three chapters. One battlefield.",
   jp: "進撃のトークン",
   creed: "Forge the prompt. Survive the token.",
-  dateVenue: "3–4 October 2026 · Venue: TBA",
+  dateVenue: "10 October 2026 · Venue: TBA",
 } as const;
 
 /** The four numbers a team needs before they can decide to enter. */

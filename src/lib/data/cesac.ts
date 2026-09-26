@@ -111,14 +111,14 @@ export const EVENTS: readonly CesacEvent[] = [
     kicker: "Prompt engineering hackathon",
     blurb:
       "Eighty teams of two, three chapters, one champion. Prompt an anime still into a film, survive a locked-prompt leaderboard, then build something out of three drawn chits.",
-    when: "3–4 October 2026 · Venue: TBA",
+    when: "10 October 2026 · Venue: TBA",
     status: "announced",
     href: "/events/attack-on-token",
-    // The two days from the sponsorship deck. No hours and no venue have been
-    // set, so it goes into a calendar as two whole days.
+    // No hours and no venue have been set, so it goes into a calendar as one
+    // whole day.
     schedule: {
-      start: "2026-10-03T00:00:00+05:30",
-      end: "2026-10-04T00:00:00+05:30",
+      start: "2026-10-10T00:00:00+05:30",
+      end: "2026-10-10T23:59:59+05:30",
       allDay: true,
       venue: null,
     },

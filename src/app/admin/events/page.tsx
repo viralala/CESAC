@@ -157,7 +157,7 @@ export default async function AdminEventsPage() {
                             href={`/admin/events/${event.id}`}
                             className="pill pill-ghost shrink-0"
                           >
-                            Entries
+                            {isCommittee ? "Edit event" : "Entries"}
                           </Link>
                         </div>
 
