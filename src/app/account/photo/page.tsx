@@ -14,7 +14,8 @@ export const metadata: Metadata = {
 };
 
 /**
- * The one step every student takes before their console opens.
+ * The one step every student, and every verifier, takes before their console
+ * opens.
  *
  * The boards print a photo next to every name, the front page's standouts
  * included, so a student with no photo would be a row of initials among
@@ -49,17 +50,17 @@ export default async function PhotoPage(props: PageProps<"/account/photo">) {
           </h1>
 
           <p className="serif-it mt-3 text-[1.02rem] leading-relaxed text-muted">
-            {forced
-              ? "Wherever the site ranks students, on the front page, on the standouts list and on the ranking in your console, your name is shown with your photo. Add one now and it is done; nothing else opens until you do."
-              : "The photo shown next to your name on the standouts and the ranking. A new one replaces the old one everywhere at once."}
+            {viewer.isVerifier
+              ? forced
+                ? "Every account that checks student records carries a photo of the person behind it. Add one now and it is done; the queue does not open until you do."
+                : "The photo on your account. A new one replaces the old one everywhere at once."
+              : forced
+                ? "Wherever the site ranks students, on the front page, on the standouts list and on the ranking in your console, your name is shown with your photo. Add one now and it is done; nothing else opens until you do."
+                : "The photo shown next to your name on the standouts and the ranking. A new one replaces the old one everywhere at once."}
           </p>
 
           <PhotoForm current={avatarUrl(viewer.photoPath)} next={back} forced={forced} />
 
-          <p className="serif-it mt-5 text-[0.88rem] leading-relaxed text-muted">
-            If you would rather not appear on the public standouts at all, switch that off in your
-            console under My details. Your photo stays on your account either way.
-          </p>
 
           <div className="mt-6 flex flex-wrap items-center justify-between gap-3 border-t border-ink/10 pt-5">
             {forced ? (

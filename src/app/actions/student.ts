@@ -2,7 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 
-import { requireParticipant } from "@/lib/auth/guard";
+import { requireRecordOwner } from "@/lib/auth/guard";
 import { createClient } from "@/lib/supabase/server";
 
 export type StudentDataState = {
@@ -47,7 +47,10 @@ export async function saveStudentData(
   _state: StudentDataState,
   formData: FormData,
 ): Promise<StudentDataState> {
-  const viewer = await requireParticipant();
+  // A student, or an organiser or the owner editing their own details from
+  // /admin/profile. Only ever the caller's own row: the update below is
+  // pinned to viewer.id, whatever an organiser's People capability allows.
+  const viewer = await requireRecordOwner();
 
   const name = String(formData.get("name") ?? "")
     .trim()
@@ -104,5 +107,6 @@ export async function saveStudentData(
 
   revalidatePath("/dashboard");
   revalidatePath("/dashboard/profile");
+  revalidatePath("/admin/profile");
   return { notice: "Saved." };
 }

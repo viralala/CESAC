@@ -99,6 +99,32 @@ export const SOURCES: Source[] = [
     prnHeader: "prn no",
     divisionHeader: "division",
   },
+  /*
+   * The two SEDA divisions, added on 26 September 2026. SY students, one
+   * sheet each, with the institute's "Subject Registration Report" banner
+   * above the header. Their division is written "CS-SEDA-A", which
+   * divisionLabel keeps as SY-SEDA-A so they are not filed under SY-A.
+   */
+  {
+    file: "SEDA A.xlsx",
+    year: "SY",
+    sheets: (names) => names,
+    nameHeader: "student name",
+    emailHeader: "email",
+    phoneHeader: "mobile no",
+    prnHeader: "prn no",
+    divisionHeader: "division",
+  },
+  {
+    file: "SEDA B.xlsx",
+    year: "SY",
+    sheets: (names) => names,
+    nameHeader: "student name",
+    emailHeader: "email",
+    phoneHeader: "mobile no",
+    prnHeader: "prn no",
+    divisionHeader: "division",
+  },
 ];
 
 /**
@@ -216,8 +242,11 @@ const EXPECTED_DOMAIN = /^(vit|vitpune)\.edu(\.in)?$/;
  * what differs, so the label is built from the year and that.
  */
 function divisionLabel(year: "SY" | "TY", raw: string): string | null {
-  const letter = tidy(raw).toUpperCase().match(/([A-Z])\s*$/);
-  return letter ? `${year}-${letter[1]}` : null;
+  const text = tidy(raw).toUpperCase();
+  const letter = text.match(/([A-Z])\s*$/);
+  if (!letter) return null;
+  // SEDA is its own pair of divisions, not SY-A and SY-B.
+  return /\bSEDA\b/.test(text) ? `${year}-SEDA-${letter[1]}` : `${year}-${letter[1]}`;
 }
 
 function headerIndex(row: ExcelJS.Row, want: string): number | null {

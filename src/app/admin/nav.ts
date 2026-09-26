@@ -3,6 +3,7 @@ export const ADMIN_NAV = [
   { href: "/admin", label: "Command", cap: null },
   { href: "/admin/certificates", label: "Records", cap: "records" },
   { href: "/admin/certificates/mine", label: "My record", cap: null },
+  { href: "/admin/profile", label: "My details", cap: null },
   { href: "/admin/students", label: "Students", cap: "people" },
   { href: "/admin/queries", label: "Questions", cap: "queries" },
   { href: "/admin/entries", label: "Entries", cap: "events" },

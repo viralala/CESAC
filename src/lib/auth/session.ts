@@ -35,12 +35,13 @@ export type Viewer = {
   /** Where this account's photo sits in the avatars bucket, if it has one. */
   photoPath: string | null;
   /**
-   * True for a student who has not added a photo yet. The student console
-   * does not open until they have, because the boards print a photo next to
-   * every name and a board of initials is not what was asked for.
+   * True for a student or a verifier who has not added a photo yet. Neither
+   * console opens until they have. The boards print a photo next to every
+   * student's name, and a board of initials is not what was asked for; the
+   * faculty who check records were asked for a face on the account as well.
    *
-   * Students only. An organiser or a verifier is never on a board, and
-   * holding them at a photo screen would keep the console shut for nothing.
+   * Not organisers. Holding the committee at a photo screen would keep the
+   * console that runs the site shut for nothing.
    */
   needsPhoto: boolean;
 };
@@ -61,7 +62,9 @@ export function viewerFrom(profile: Profile): Viewer {
     // out: without the column there is nowhere to save a photo, and the gate
     // stays open until there is.
     needsPhoto:
-      profile.role === "participant" && "photo_path" in profile && !profile.photo_path,
+      (profile.role === "participant" || profile.role === "verifier") &&
+      "photo_path" in profile &&
+      !profile.photo_path,
   };
 }
 

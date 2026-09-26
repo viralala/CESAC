@@ -1,9 +1,10 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 
 import { signOut } from "@/app/actions/auth";
 import { Container, Label } from "@/components/aot/bits";
 import { PasswordForm } from "@/components/sections/password-form";
-import { getViewer } from "@/lib/auth/guard";
+import { getViewer, homeFor } from "@/lib/auth/guard";
 import { redirect } from "next/navigation";
 
 export const metadata: Metadata = {
@@ -82,7 +83,13 @@ export default async function PasswordPage(props: PageProps<"/account/password">
                 </button>
               </form>
             </div>
-          ) : null}
+          ) : (
+            <div className="mt-6 border-t border-ink/10 pt-5">
+              <Link href={homeFor(viewer.role)} className="label text-teal hover:text-ink">
+                Back to your console
+              </Link>
+            </div>
+          )}
         </div>
       </Container>
     </div>

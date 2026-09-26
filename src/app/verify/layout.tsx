@@ -4,7 +4,7 @@ import { requireVerifier } from "@/lib/auth/guard";
 /**
  * The verifier's chrome.
  *
- * One nav entry, because there is one thing to do here. The bar sits in a
+ * Two nav entries: the one thing to do here, and the password screen. The bar sits in a
  * layout for the same reason the organiser's does: Next keeps a shared layout
  * mounted and interactive while the segment under it loads, so a click keeps
  * the bar and swaps only the middle.
@@ -19,7 +19,15 @@ export default async function VerifyLayout({ children }: LayoutProps<"/verify">)
 
   return (
     <>
-      <ConsoleBar viewer={viewer} area="Checking" nav={[{ href: "/verify", label: "The queue" }]} />
+      <ConsoleBar
+        viewer={viewer}
+        area="Checking"
+        nav={[
+          { href: "/verify", label: "The queue" },
+          // Faculty are handed a generated password; this is where they swap it.
+          { href: "/account/password", label: "Password" },
+        ]}
+      />
       {children}
     </>
   );
