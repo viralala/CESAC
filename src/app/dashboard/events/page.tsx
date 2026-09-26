@@ -4,6 +4,7 @@ import { EventBoard } from "@/components/console/event-board";
 import { Panel } from "@/components/console/shell";
 import { requireParticipant } from "@/lib/auth/guard";
 import { getDeptEvents, getMyRegistrations } from "@/lib/data/dept-events";
+import { getAotContent } from "@/lib/data/event-content";
 import { getSchedules } from "@/lib/data/event-schedule";
 
 export const metadata: Metadata = {
@@ -25,10 +26,11 @@ export const metadata: Metadata = {
 export default async function EventsPage() {
   const viewer = await requireParticipant();
 
-  const [events, registrations, schedules] = await Promise.all([
+  const [events, registrations, schedules, aot] = await Promise.all([
     getDeptEvents(),
     getMyRegistrations(),
     getSchedules(),
+    getAotContent(),
   ]);
 
   const anyOpen = events.some((event) => event.state === "open");
@@ -49,6 +51,7 @@ export default async function EventsPage() {
         registrations={registrations}
         meId={viewer.id}
         schedules={Object.fromEntries(schedules)}
+        form={aot.register}
       />
     </Panel>
   );

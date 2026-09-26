@@ -1,4 +1,4 @@
-import { SPEAKER_TEASE } from "@/lib/data/hr-final-boss";
+import { getHrfbContent } from "@/lib/data/event-content";
 
 import { StatTag } from "./chip";
 
@@ -25,11 +25,13 @@ function LockMark({ className = "" }: { className?: string }) {
  * placeholder that implies one was forgotten. No portrait, no silhouette,
  * nothing figurative behind the lock, in keeping with the rest of the site.
  */
-export function BossFile() {
+export async function BossFile() {
+  const { speaker } = await getHrfbContent();
+
   return (
     <div className="relative overflow-hidden rounded-[var(--r-xl)] border-2 border-hb-azure/30 bg-hb-deutzia shadow-[0_28px_70px_-36px_rgba(7,26,51,0.45)]">
       <div className="flex items-center justify-between gap-4 border-b-2 border-dashed border-hb-azure/25 px-6 py-4 sm:px-9">
-        <p className="label-sm text-hb-azure-deep">{SPEAKER_TEASE.status}</p>
+        <p className="label-sm text-hb-azure-deep">{speaker.status}</p>
         <p className="label-sm text-hb-ink/50">FILE 01 / 01</p>
       </div>
 
@@ -65,13 +67,13 @@ export function BossFile() {
           </span>
 
           <div className="mt-7 grid gap-3 sm:grid-cols-3">
-            {SPEAKER_TEASE.facts.map((f) => (
+            {speaker.facts.map((f) => (
               <StatTag key={f.label} label={f.label} value={f.value} />
             ))}
           </div>
 
           <p className="hb-cursive mt-6 text-[1.15rem] leading-snug text-hb-azure-deep">
-            {SPEAKER_TEASE.note}
+            {speaker.note}
           </p>
         </div>
       </div>

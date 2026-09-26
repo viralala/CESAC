@@ -91,3 +91,29 @@ export const publicEventStates = shared("public:dept_event_states:v1", async () 
   if (error) throw new Error(error.message);
   return data ?? [];
 });
+
+/**
+ * One standout's public profile, shared per student for a minute.
+ *
+ * `standout_profile()` answers only for somebody the standouts board already
+ * names, and only with what their records say they are: never a file, a link,
+ * an amount or a contact detail. Null for anybody else.
+ */
+export function publicStandoutProfile(id: string) {
+  return unstable_cache(
+    async () => {
+      const { data, error } = await anonymous().rpc("standout_profile", { p_id: id });
+      if (error) throw new Error(error.message);
+      return data ?? null;
+    },
+    ["public:standout_profile:v1", id],
+    { revalidate: TTL_SECONDS, tags: [PUBLIC_TAG] },
+  )();
+}
+
+/** What organisers have changed on the running events' pages. */
+export const publicEventContent = shared("public:event_content:v1", async () => {
+  const { data, error } = await anonymous().from("event_content").select("slug, content");
+  if (error) throw new Error(error.message);
+  return data ?? [];
+});

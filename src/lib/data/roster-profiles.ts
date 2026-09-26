@@ -30,6 +30,43 @@ export type RosterProfile = {
   linkedin: string | null;
   github: string | null;
   tenure: string | null;
+  /** The long form, for faculty: see FacultyDetails. Nobody else has one. */
+  details?: FacultyDetails | null;
+};
+
+/**
+ * A faculty member's profile, transcribed from the Institute's own faculty
+ * pages rather than written by us, into roster_people.details.
+ *
+ * Every list can be empty and every string can be null: the page prints the
+ * sections that have something in them and leaves out the rest, so a thin
+ * source makes a short page, never an invented one.
+ */
+export type FacultyDetails = {
+  full_name?: string | null;
+  designation?: string | null;
+  department?: string | null;
+  institute?: string | null;
+  email?: string | null;
+  /** The page it was transcribed from. */
+  source?: string | null;
+  joined?: string | null;
+  experience?: string | null;
+  links?: { label: string; url: string }[];
+  qualifications?: { degree: string; from: string | null; year: string | null }[];
+  career?: { org: string; role: string | null; from: string | null; to: string | null }[];
+  responsibilities?: string[];
+  publications?: { type: string; items: { title: string; venue?: string | null; year?: string | null }[] }[];
+  patents?: string[];
+  projects?: string[];
+  training?: {
+    name: string;
+    note: string | null;
+    type: string;
+    role: string;
+    from: string | null;
+    to: string | null;
+  }[];
 };
 
 export const EMPTY_PROFILE: RosterProfile = {

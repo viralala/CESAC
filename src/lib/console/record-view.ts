@@ -1,48 +1,41 @@
-import { KIND_LABEL, LEVEL_LABEL, isPublication } from "@/lib/console/records";
+import { rupees } from "@/lib/console/options";
+import { KIND_LABEL, LAYOUT, LEVEL_LABEL } from "@/lib/console/records";
 import type { Tables } from "@/lib/supabase/database.types";
 
 /**
  * What one record says about itself, as label and value pairs.
  *
- * Built rather than listed, because five layouts share thirty columns and a
- * fixed list would print nine blanks against every hackathon. Anything not
- * filled in is left out, which is what makes the block read as a summary of
- * the claim being checked rather than a dump of the row.
+ * Built from the record's own layout in records.ts, so each kind prints the
+ * questions it asked, in the words it asked them: an internship's
+ * "Company or organisation" rather than a hackathon's "Organised by". Anything
+ * not filled in is left out, which is what makes the block read as a summary
+ * of the claim being checked rather than a dump of the row.
  *
  * It lives here because two consoles print it now, the organiser's records
  * queue and the verifier's, and two copies of a list this long drift apart the
  * first time a column is added to one of them.
  */
 export function recordFacts(record: Tables<"certificates">): [string, string][] {
-  return (
-    [
-      ["Kind", KIND_LABEL[record.kind] ?? record.kind],
-      ["Level", record.level ? LEVEL_LABEL[record.level] : ""],
-      ["Date", onDay(record.happened_on) ?? ""],
-      ["Year", record.publication_year ? String(record.publication_year) : ""],
-      [
-        isPublication(record.kind) ? "Journal or conference" : "Organised by",
-        record.venue_name ?? "",
-      ],
-      ["Chapter", record.chapter_name ?? ""],
-      ["Primary author", record.primary_author ?? ""],
-      ["Other authors", record.secondary_authors ?? ""],
-      ["Indexing", record.indexing ?? ""],
-      ["Quartile", record.quartile ?? ""],
-      ["Impact factor", record.impact_factor === null ? "" : String(record.impact_factor)],
-      ["Peer reviewed", yesNo(record.peer_reviewed)],
-      ["E-journal", yesNo(record.e_journal)],
-      ["Specialisation", record.specialization ?? ""],
-      ["Volume", record.volume ?? ""],
-      ["Edition", record.edition ?? ""],
-      ["Edited book", yesNo(record.is_edited)],
-      ["ISBN or ISSN", record.isbn_issn ?? ""],
-      ["Publisher", record.publisher ?? ""],
-      ["Place of publication", record.place_of_publication ?? ""],
-      ["Pages", record.page_numbers ?? ""],
-      ["Where", record.location ?? ""],
-    ] as [string, string][]
-  ).filter(([, value]) => Boolean(value));
+  const layout = LAYOUT[record.kind];
+  const row = record as unknown as Record<string, string | number | boolean | null>;
+
+  const facts: [string, string][] = [
+    ["Kind", KIND_LABEL[record.kind] ?? record.kind],
+    ["Level", record.level ? LEVEL_LABEL[record.level] : ""],
+    [layout?.dateLabel ?? "Date", onDay(record.happened_on) ?? ""],
+  ];
+
+  for (const field of layout?.fields ?? []) {
+    const value = row[field.name];
+    if (value === null || value === undefined || value === "") continue;
+    if (field.type === "bool") facts.push([field.label, yesNo(value as boolean)]);
+    else if (field.type === "date") facts.push([field.label, onDay(String(value)) ?? ""]);
+    else if (field.name === "stipend_inr") {
+      facts.push([field.label, Number(value) === 0 ? "Unpaid" : `${rupees(Number(value))} a month`]);
+    } else facts.push([field.label, String(value)]);
+  }
+
+  return facts.filter(([, value]) => Boolean(value));
 }
 
 function yesNo(value: boolean | null): string {

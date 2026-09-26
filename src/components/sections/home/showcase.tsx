@@ -80,37 +80,39 @@ export async function HomeShowcase() {
                   style={{ borderColor: POPS[i % 4] }}
                 >
                   {category.entries.map((entry) => (
-                    <li
-                      key={entry.studentId}
-                      className="flex flex-wrap items-center justify-between gap-x-4 gap-y-1 border-b border-ink/10 py-3 last:border-0"
-                    >
-                      <span className="flex min-w-0 items-center gap-3">
-                        <span className="d-tall w-[1.4rem] shrink-0 text-[1rem] leading-none text-ink/30">
-                          {entry.place}
-                        </span>
-                        <Avatar
-                          key={entry.photo ?? "none"}
-                          name={entry.name}
-                          sources={[entry.photo]}
-                          size={44}
-                        />
-                        <span className="min-w-0">
-                          <span className="block text-[0.98rem] leading-snug text-ink">
-                            {entry.name}
+                    <li key={entry.studentId} className="border-b border-ink/10 last:border-0">
+                      <Link
+                        href={`/standouts/${entry.studentId}`}
+                        className="group flex flex-wrap items-center justify-between gap-x-4 gap-y-1 py-3"
+                      >
+                        <span className="flex min-w-0 items-center gap-3">
+                          <span className="d-tall w-[1.4rem] shrink-0 text-[1rem] leading-none text-ink/30">
+                            {entry.place}
                           </span>
-                          <span className="label-sm block text-muted">
-                            {entry.note ?? entry.year ?? ""}
+                          <Avatar
+                            key={entry.photo ?? "none"}
+                            name={entry.name}
+                            sources={[entry.photo]}
+                            size={44}
+                          />
+                          <span className="min-w-0">
+                            <span className="block text-[0.98rem] leading-snug text-ink decoration-teal decoration-2 underline-offset-4 group-hover:underline">
+                              {entry.name}
+                            </span>
+                            <span className="label-sm block text-muted">
+                              {entry.note ?? entry.year ?? ""}
+                            </span>
                           </span>
                         </span>
-                      </span>
 
-                      {category.metric === "manual" ? null : (
-                        <span className="label-sm shrink-0 text-teal">
-                          {category.metric === "prize_money"
-                            ? rupees(entry.value)
-                            : `${entry.value} ${metricUnit(category.metric)}`}
-                        </span>
-                      )}
+                        {category.metric === "manual" ? null : (
+                          <span className="label-sm shrink-0 text-teal">
+                            {category.metric === "prize_money"
+                              ? rupees(entry.value)
+                              : `${entry.value} ${metricUnit(category.metric)}`}
+                          </span>
+                        )}
+                      </Link>
                     </li>
                   ))}
                 </ol>

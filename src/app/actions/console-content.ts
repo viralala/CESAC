@@ -223,7 +223,9 @@ export async function saveRosterProfile(
   const links = ["photo_url", "instagram", "linkedin", "github"] as const;
   for (const name of links) {
     const value = field(name);
-    if (value && !value.startsWith("https://")) {
+    // A portrait can also be one of this site's own files, under /people/.
+    const local = name === "photo_url" && /^\/people\/[a-z0-9-]+\.(jpg|png|webp)$/.test(value);
+    if (value && !local && !value.startsWith("https://")) {
       return { error: `The ${name.replace("_url", "")} link has to start with https://.` };
     }
   }
@@ -251,6 +253,47 @@ export async function saveRosterProfile(
   if (slug) revalidatePath(`/people/${slug}`);
 
   return say(error, slug ? `Saved. The page is at /people/${slug}.` : "Saved.");
+}
+
+/**
+ * An organiser's own roster page, from My details.
+ *
+ * No capability needed: the database finds the card through the address the
+ * committee linked to this account and refuses anybody whose account is not
+ * linked to one, so the only card this can ever reach is the caller's own.
+ * The name on the card, the rank, the block and the page address are not
+ * parameters at all, so they cannot be changed from here.
+ */
+export async function saveMyRosterProfile(
+  _state: AdminState,
+  formData: FormData,
+): Promise<AdminState> {
+  const field = (name: string) => String(formData.get(name) ?? "").trim();
+  for (const name of ["instagram", "linkedin", "github"] as const) {
+    const value = field(name);
+    if (value && !value.startsWith("https://")) {
+      return { error: `The ${name} link has to start with https://.` };
+    }
+  }
+
+  const supabase = await adminClient();
+  const { data: slug, error } = await supabase.rpc("save_my_roster_profile", {
+    p_preferred_name: field("preferred_name"),
+    p_year_branch: field("year_branch"),
+    p_tagline: field("tagline"),
+    p_about: field("about"),
+    p_hobbies: field("hobbies"),
+    p_fun_fact: field("fun_fact"),
+    p_instagram: field("instagram"),
+    p_linkedin: field("linkedin"),
+    p_github: field("github"),
+  });
+
+  refreshPublic();
+  revalidatePath("/admin/profile");
+  if (slug) revalidatePath(`/people/${slug}`);
+
+  return say(error, slug ? `Saved. Your page is at /people/${slug}.` : "Saved.");
 }
 
 /**

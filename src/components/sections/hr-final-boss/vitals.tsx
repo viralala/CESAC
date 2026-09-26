@@ -1,17 +1,19 @@
 import { Container } from "@/components/aot/bits";
 import { Reveal } from "@/components/aot/reveal";
-import { HR_VITALS } from "@/lib/data/hr-final-boss";
+import { getHrfbContent } from "@/lib/data/event-content";
 
 const POPS = ["var(--hb-azure)", "var(--hb-maya)", "var(--hb-ink)", "var(--hb-azure-deep)"];
 const FG = ["#ffffff", "var(--hb-ink)", "var(--hb-ghost)", "#ffffff"];
 
 /** The four numbers that answer "can I come" before anything else does. */
-export function HrfbVitals() {
+export async function HrfbVitals() {
+  const { vitals } = await getHrfbContent();
+
   return (
     <section className="grid-box py-14 sm:py-20">
       <Container>
         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-          {HR_VITALS.map((v, i) => (
+          {vitals.map((v, i) => (
             <Reveal key={v.label} delay={i * 70}>
               <div
                 className="relative flex h-full flex-col justify-between overflow-hidden rounded-[var(--r-lg)] p-7"

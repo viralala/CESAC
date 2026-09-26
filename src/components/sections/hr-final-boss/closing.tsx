@@ -2,7 +2,7 @@ import Link from "next/link";
 
 import { Container } from "@/components/aot/bits";
 import { Reveal } from "@/components/aot/reveal";
-import { HRFB } from "@/lib/data/hr-final-boss";
+import { getHrfbContent } from "@/lib/data/event-content";
 
 /**
  * The close. No registration link, because there is no registration: entry
@@ -10,7 +10,9 @@ import { HRFB } from "@/lib/data/hr-final-boss";
  * (free, TBA, watch this space) instead of inviting anyone into a form that
  * does not exist.
  */
-export function HrfbClosing() {
+export async function HrfbClosing() {
+  const { event } = await getHrfbContent();
+
   return (
     <section className="grid-box-deep py-16 sm:py-24">
       <Container>
@@ -23,7 +25,7 @@ export function HrfbClosing() {
               The date is not.
             </h2>
             <p className="mt-6 max-w-[54ch] text-[1.05rem] leading-relaxed text-hb-ghost/70">
-              {HRFB.dateVenue}. There is no registration open yet, so there is nothing to sign up
+              {event.dateVenue}. There is no registration open yet, so there is nothing to sign up
               for today. Check back here, or watch CESAC&rsquo;s other channels, once it is
               confirmed.
             </p>

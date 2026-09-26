@@ -1,5 +1,4 @@
 import { Arrow } from "@/components/aot/bits";
-import { REGISTER, REGISTRATION_IS_LIVE } from "@/lib/data/event";
 
 /**
  * The one call to action on the event page, written once and dropped in
@@ -18,14 +17,20 @@ import { REGISTER, REGISTRATION_IS_LIVE } from "@/lib/data/event";
  * The form is somebody else's site, so it opens in its own tab: a reader who
  * fills it in still has the event page, the payment code and the chapter list
  * sitting behind them.
+ *
+ * `formUrl` is passed in, from getAotContent(), because organisers can change
+ * it from the console and one of the callers is a client component.
  */
 export function RegisterButton({
+  formUrl,
   tone = "lime",
   size = "lg",
   label = "Register here",
   fallbackHref = "#register",
   className = "",
 }: {
+  /** The form's address. Empty means the form is not live. */
+  formUrl: string;
   tone?: "lime" | "ghost" | "ghost-light";
   size?: "lg" | "sm";
   label?: string;
@@ -35,7 +40,7 @@ export function RegisterButton({
   const shape = size === "lg" ? "px-8 py-4 text-[0.95rem]" : "px-6 py-2.5 text-[0.8rem]";
   const paint = { lime: "pill-lime", ghost: "pill-ghost", "ghost-light": "pill-ghost-light" }[tone];
 
-  if (!REGISTRATION_IS_LIVE) {
+  if (!formUrl) {
     return (
       <a href={fallbackHref} className={`pill ${paint} ${shape} ${className}`}>
         How to register
@@ -45,7 +50,7 @@ export function RegisterButton({
 
   return (
     <a
-      href={REGISTER.formUrl}
+      href={formUrl}
       target="_blank"
       rel="noopener noreferrer"
       className={`pill ${paint} ${shape} ${className}`}
@@ -64,9 +69,11 @@ export function RegisterButton({
  */
 export function RegisterStrip({
   line,
+  formUrl,
   className = "",
 }: {
   line: string;
+  formUrl: string;
   className?: string;
 }) {
   return (
@@ -74,7 +81,7 @@ export function RegisterStrip({
       <div className="mx-auto w-full max-w-[1280px] px-5 sm:px-8">
         <div className="flex flex-wrap items-center justify-between gap-x-8 gap-y-4 rounded-[var(--r-lg)] border-2 border-ink/12 bg-white px-6 py-5 sm:px-8">
           <p className="serif-it max-w-[46ch] text-[1.02rem] leading-snug text-muted">{line}</p>
-          <RegisterButton size="sm" className="shrink-0" />
+          <RegisterButton formUrl={formUrl} size="sm" className="shrink-0" />
         </div>
       </div>
     </section>

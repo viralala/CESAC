@@ -1,14 +1,16 @@
 import { Container } from "@/components/aot/bits";
 import { Reveal } from "@/components/aot/reveal";
 import { Chip } from "@/components/hrfb/chip";
-import { QUESTION_GROUPS } from "@/lib/data/hr-final-boss";
+import { getHrfbContent } from "@/lib/data/event-content";
 
 /**
  * The kind of questions the floor is open for, floated as chips rather than
  * written out as a paragraph. These are illustrative prompts to get the room
  * thinking, not a submitted question bank, and the copy says so.
  */
-export function HrfbAsk() {
+export async function HrfbAsk() {
+  const { questions } = await getHrfbContent();
+
   return (
     <section id="ask" className="grid-box scroll-mt-24 py-16 sm:py-24">
       <Container>
@@ -30,7 +32,7 @@ export function HrfbAsk() {
         </Reveal>
 
         <div className="mt-14 grid gap-8 lg:grid-cols-3">
-          {QUESTION_GROUPS.map((g, gi) => (
+          {questions.map((g, gi) => (
             <Reveal key={g.id} delay={gi * 90}>
               <div className="h-full rounded-[var(--r-xl)] border-2 border-hb-azure/15 bg-hb-deutzia p-6 sm:p-7">
                 <p className="hb-display text-[1.3rem] uppercase text-hb-azure-deep">{g.title}</p>

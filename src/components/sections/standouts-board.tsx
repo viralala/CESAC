@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useId, useMemo, useState } from "react";
 
 import { Avatar } from "@/components/site/avatar";
@@ -150,33 +151,37 @@ export function StandoutsBoard({
               {shown.map((entry) => {
                 const podium = category.metric !== "manual" && entry.place <= 3;
                 return (
-                  <li
-                    key={entry.studentId}
-                    className="flex flex-wrap items-center justify-between gap-x-6 gap-y-2 border-b border-ink/10 py-4 last:border-0"
-                  >
-                    <span className="flex min-w-0 items-center gap-4">
-                      <span
-                        className={`d-tall grid h-9 w-9 shrink-0 place-items-center rounded-full text-[1.05rem] leading-none ${
-                          podium ? "" : "text-ink/40"
-                        }`}
-                        style={podium ? { background: pop, color: onPop } : undefined}
-                      >
-                        {entry.place}
+                  <li key={entry.studentId} className="border-b border-ink/10 last:border-0">
+                    <Link
+                      href={`/standouts/${entry.studentId}`}
+                      className="group flex flex-wrap items-center justify-between gap-x-6 gap-y-2 py-4"
+                    >
+                      <span className="flex min-w-0 items-center gap-4">
+                        <span
+                          className={`d-tall grid h-9 w-9 shrink-0 place-items-center rounded-full text-[1.05rem] leading-none ${
+                            podium ? "" : "text-ink/40"
+                          }`}
+                          style={podium ? { background: pop, color: onPop } : undefined}
+                        >
+                          {entry.place}
+                        </span>
+                        <Avatar
+                          key={entry.photo ?? "none"}
+                          name={entry.name}
+                          sources={[entry.photo]}
+                          size={52}
+                        />
+                        <span className="min-w-0">
+                          <span className="block text-[1.05rem] leading-snug text-ink decoration-teal decoration-2 underline-offset-4 group-hover:underline">
+                            {entry.name}
+                          </span>
+                          <span className="label-sm block text-muted">{entry.note ?? entry.year ?? ""}</span>
+                        </span>
                       </span>
-                      <Avatar
-                        key={entry.photo ?? "none"}
-                        name={entry.name}
-                        sources={[entry.photo]}
-                        size={52}
-                      />
-                      <span className="min-w-0">
-                        <span className="block text-[1.05rem] leading-snug text-ink">{entry.name}</span>
-                        <span className="label-sm block text-muted">{entry.note ?? entry.year ?? ""}</span>
-                      </span>
-                    </span>
-                    {category.metric === "manual" ? null : (
-                      <span className="label shrink-0 text-teal">{amount(category.metric, entry.value)}</span>
-                    )}
+                      {category.metric === "manual" ? null : (
+                        <span className="label shrink-0 text-teal">{amount(category.metric, entry.value)}</span>
+                      )}
+                    </Link>
                   </li>
                 );
               })}

@@ -2,7 +2,7 @@ import { Container, Label } from "@/components/aot/bits";
 import { Reveal } from "@/components/aot/reveal";
 import { Sticker } from "@/components/aot/stickers";
 import { RegisterButton } from "@/components/sections/event/register-button";
-import { ENTRY, EVENT, REGISTER, REGISTRATION_IS_LIVE } from "@/lib/data/event";
+import { getAotContent } from "@/lib/data/event-content";
 
 /**
  * The close, and the last thing on the page.
@@ -17,12 +17,18 @@ import { ENTRY, EVENT, REGISTER, REGISTRATION_IS_LIVE } from "@/lib/data/event";
  * console, the console no longer takes these entries, and a counter reading
  * zero next to a full event is worse than no counter.
  */
-export function EventRegister() {
+export async function EventRegister() {
+  const { entry, event, register, vitals } = await getAotContent();
+  const perHead = (register.amountInr / 2).toFixed(register.amountInr % 2 ? 2 : 0);
+  // The sticker repeats the cap from the vitals, so changing one changes both.
+  const teams = vitals.find((v) => v.label.trim().toLowerCase() === "teams")?.value;
+
   return (
     <section id="register" className="scroll-mt-24 bg-cream py-10 sm:py-16">
       <Container>
         <Reveal>
           <div className="washi-red-deep deck-frame grain grain-dark relative overflow-hidden rounded-[var(--r-xl)] px-6 py-16 text-cream sm:px-10 sm:py-20 lg:px-14">
+            {teams ? (
             <Sticker
               shape="scallop"
               pop="lime"
@@ -32,11 +38,12 @@ export function EventRegister() {
               className="absolute right-6 top-8 z-20 text-[clamp(0.66rem,1vw,0.8rem)] sm:right-12"
             >
               <span>
-                80
+                {teams}
                 <br />
                 <span className="label-sm opacity-70">teams</span>
               </span>
             </Sticker>
+            ) : null}
 
             <div className="relative max-w-[46ch]">
               <Label tone="lime">Register</Label>
@@ -49,12 +56,12 @@ export function EventRegister() {
                 プロンプトを鍛えろ。トークンを生き延びろ。
               </p>
               <p className="serif-it mt-3 text-[1.05rem] leading-snug text-cream/60">
-                &ldquo;{EVENT.creed}&rdquo;
+                &ldquo;{event.creed}&rdquo;
               </p>
             </div>
 
             <ol className="relative mt-14 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-              {ENTRY.map((e, i) => (
+              {entry.map((e, i) => (
                 <Reveal key={e.step} delay={i * 90} as="li">
                   <div className="h-full rounded-[var(--r-lg)] bg-cream/8 p-7 backdrop-blur-sm">
                     <span className="d-wide text-[2.75rem] leading-none text-lime">{e.step}</span>
@@ -74,16 +81,16 @@ export function EventRegister() {
                 </p>
 
                 <div className="mt-8 flex flex-wrap items-center gap-4">
-                  <RegisterButton />
+                  <RegisterButton formUrl={register.formUrl} />
                   <a href="#chapters" className="pill pill-ghost-light">
                     Re-read the chapters
                   </a>
-                  <p className="label-sm ml-auto text-cream/50">{EVENT.dateVenue}</p>
+                  <p className="label-sm ml-auto text-cream/50">{event.dateVenue}</p>
                 </div>
 
-                {REGISTRATION_IS_LIVE ? (
+                {register.live ? (
                   <p className="serif-it mt-6 max-w-[54ch] text-[0.98rem] leading-relaxed text-cream/55">
-                    &#8377;{REGISTER.amountInr} for the team, so &#8377;62.50 a head. Every payment
+                    &#8377;{register.amountInr} for the team, so &#8377;{perHead} a head. Every payment
                     is checked against the account by hand, so register once and give us a day or
                     two rather than paying twice.
                   </p>

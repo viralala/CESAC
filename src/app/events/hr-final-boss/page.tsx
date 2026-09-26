@@ -9,6 +9,7 @@ import { HrfbClosing } from "@/components/sections/hr-final-boss/closing";
 import { HrfbHero } from "@/components/sections/hr-final-boss/hero";
 import { HrfbLinkedIn } from "@/components/sections/hr-final-boss/linkedin";
 import { HrfbVitals } from "@/components/sections/hr-final-boss/vitals";
+import { getHrfbContent } from "@/lib/data/event-content";
 
 export const metadata: Metadata = {
   title: "HR Final Boss",
@@ -23,7 +24,9 @@ export const metadata: Metadata = {
  * what can I ask, how does the room run, where else to find it, what to do
  * next. No production plan here either, same rule as the other event page.
  */
-export default function HrFinalBossPage() {
+export default async function HrFinalBossPage() {
+  const { linkedin } = await getHrfbContent();
+
   return (
     <>
       <HrfbHero />
@@ -32,7 +35,7 @@ export default function HrFinalBossPage() {
       <HrfbBoss />
       <HrfbAsk />
       <HrfbAgenda />
-      <HrfbLinkedIn />
+      <HrfbLinkedIn linkedin={linkedin} />
       <HrfbClosing />
       <SiteFooter />
     </>

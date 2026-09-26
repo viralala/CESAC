@@ -5,7 +5,7 @@ import { Container } from "@/components/aot/bits";
 import { ParallaxLayer, ParallaxScene } from "@/components/aot/parallax";
 import { CursorTag, Nib, Squiggle, Sticker } from "@/components/aot/stickers";
 import { RegisterButton } from "@/components/sections/event/register-button";
-import { EVENT } from "@/lib/data/event";
+import type { AotContent } from "@/lib/data/event-content";
 
 /**
  * The board.
@@ -47,7 +47,14 @@ function Slash({ className = "" }: { className?: string }) {
   );
 }
 
-export function EventHero() {
+export function EventHero({
+  event,
+  formUrl,
+}: {
+  /** The words at the top of the page, as organisers left them. */
+  event: AotContent["event"];
+  formUrl: string;
+}) {
   return (
     <section className="deck-sky grain grain-dark relative isolate flex min-h-[100svh] flex-col overflow-hidden pt-24 sm:pt-28">
       <ParallaxScene className="pointer-events-none absolute inset-0">
@@ -112,7 +119,7 @@ export function EventHero() {
         aria-hidden
         className="jp pointer-events-none absolute right-3 top-[26%] z-0 hidden select-none text-[3.4rem] leading-[1.05] text-cream/[0.12] [writing-mode:vertical-rl] min-[1400px]:block"
       >
-        {EVENT.jp}
+        {event.jp}
       </span>
 
       {/* the deck's registration marks. On the Container rather than the
@@ -121,9 +128,9 @@ export function EventHero() {
         {/* mb keeps 進撃の, which hangs above the centred block, off this row
             on a short laptop screen. See the note on the home hero. */}
         <div className="relative z-30 mb-4 flex items-start justify-between gap-6 sm:mb-10">
-          <p className="label text-[var(--poster-amber)]">{EVENT.host}</p>
+          <p className="label text-[var(--poster-amber)]">{event.host}</p>
           <p className="label hidden text-right text-[var(--poster-amber)] sm:block">
-            {EVENT.kicker}
+            {event.kicker}
           </p>
         </div>
 
@@ -155,7 +162,7 @@ export function EventHero() {
 
           {/* the tagline, hung off the right of the word so the block closes */}
           <p className="serif-it relative z-30 mt-5 max-w-[30ch] text-[clamp(1rem,1.6vw,1.25rem)] leading-snug text-cream/70 sm:ml-auto sm:mt-6 sm:text-right">
-            {EVENT.tagline}
+            {event.tagline}
           </p>
 
           {/* ---------------------------- the sticker cluster -------------
@@ -256,8 +263,8 @@ export function EventHero() {
             <p className="text-[1.05rem] font-extrabold leading-tight text-teal">
               attack-on-token.exe
             </p>
-            <p className="serif-it mt-1.5 text-[0.9rem] leading-snug text-ink/70">{EVENT.creed}</p>
-            <p className="label-sm mt-4 text-muted">{EVENT.dateVenue}</p>
+            <p className="serif-it mt-1.5 text-[0.9rem] leading-snug text-ink/70">{event.creed}</p>
+            <p className="label-sm mt-4 text-muted">{event.dateVenue}</p>
           </div>
 
           <div className="flex justify-start lg:justify-end">
@@ -265,7 +272,7 @@ export function EventHero() {
               <a href="#chapters" className="toolbar-seg label-sm hidden sm:inline-flex">
                 Open: <span className="text-cream">Chapters</span>
               </a>
-              <RegisterButton size="sm" />
+              <RegisterButton formUrl={formUrl} size="sm" />
               <a href="#prizes" className="toolbar-seg label-sm hidden sm:inline-flex">
                 View: <span className="text-cream">Prizes</span>
               </a>

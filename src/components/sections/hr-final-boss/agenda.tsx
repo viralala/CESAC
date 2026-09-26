@@ -1,12 +1,14 @@
 import { Container } from "@/components/aot/bits";
 import { Reveal } from "@/components/aot/reveal";
-import { AGENDA } from "@/lib/data/hr-final-boss";
+import { getHrfbContent } from "@/lib/data/event-content";
 
 /**
  * A rough shape for the room. Timings are approximate on purpose, the way
  * the copy phrases them, since nothing here is locked yet.
  */
-export function HrfbAgenda() {
+export async function HrfbAgenda() {
+  const { agenda } = await getHrfbContent();
+
   return (
     <section id="agenda" className="grid-box-deep scroll-mt-24 py-16 sm:py-24">
       <Container>
@@ -20,7 +22,7 @@ export function HrfbAgenda() {
         </Reveal>
 
         <ol className="mt-12 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-          {AGENDA.map((a, i) => (
+          {agenda.map((a, i) => (
             <Reveal key={a.step} delay={i * 90} as="li">
               <div className="h-full rounded-[var(--r-lg)] border-2 border-hb-ghost/10 bg-hb-ghost/[0.06] p-6 backdrop-blur-sm">
                 <span className="hb-display text-[2.4rem] leading-none text-hb-maya">

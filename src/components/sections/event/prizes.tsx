@@ -1,7 +1,7 @@
 import { Container, SectionHead } from "@/components/aot/bits";
 import { Reveal } from "@/components/aot/reveal";
 import { Sticker } from "@/components/aot/stickers";
-import { AWARDS } from "@/lib/data/event";
+import { getAotContent } from "@/lib/data/event-content";
 
 const POP: Record<string, string> = {
   azure: "var(--azure)",
@@ -22,13 +22,17 @@ const ON_POP: Record<string, string> = {
  * reader needs is that losing the cut does not end your event — so the chapter
  * marker is the loudest thing on each plate.
  */
-export function EventPrizes() {
+const COUNT = ["No", "One", "Two", "Three", "Four", "Five", "Six", "Seven", "Eight", "Nine", "Ten"];
+
+export async function EventPrizes() {
+  const { awards } = await getAotContent();
+
   return (
     <section id="prizes" className="washi grain relative scroll-mt-24 py-24 sm:py-28">
       <Container className="relative">
         <Reveal>
           <SectionHead
-            eyebrow="Six ways to win"
+            eyebrow={`${COUNT[awards.length] ?? awards.length} ways to win`}
             title={
               <>
                 Every chapter
@@ -41,7 +45,7 @@ export function EventPrizes() {
         </Reveal>
 
         <div className="mt-14 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-          {AWARDS.map((a, i) => (
+          {awards.map((a, i) => (
             <Reveal key={a.title} delay={i * 60}>
               <div className="card group relative h-full overflow-hidden p-7 transition-transform duration-300 hover:-translate-y-1">
                 <span

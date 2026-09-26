@@ -5,6 +5,7 @@ import { notFound } from "next/navigation";
 import { Container, Label } from "@/components/aot/bits";
 import { Reveal } from "@/components/aot/reveal";
 import { FALLBACK_ORDER, POPS } from "@/components/sections/roster";
+import { FacultyProfile } from "@/components/sections/faculty-profile";
 import { Avatar } from "@/components/site/avatar";
 import { SiteFooter } from "@/components/site/footer";
 import { SocialMark, type SocialId } from "@/components/site/social-mark";
@@ -55,6 +56,12 @@ const SOCIALS: { id: SocialId; label: string; key: "instagram" | "linkedin" | "g
  *
  * What is deliberately not here, although the form asked for both: a phone
  * number and an email address. The roster is a public page.
+ *
+ * Faculty are the exception on both counts, by the committee's request on
+ * 27 September 2026: their pages carry the long profile the Institute itself
+ * publishes, including the institute email address it prints there, from
+ * roster_people.details. The personal phone number on that same source is
+ * still left out.
  */
 export default async function PersonPage(props: PageProps<"/people/[slug]">) {
   const { slug } = await props.params;
@@ -76,6 +83,7 @@ export default async function PersonPage(props: PageProps<"/people/[slug]">) {
   ].filter((f): f is { title: string; body: string } => f !== null);
   const wroteSomething = Boolean(profile.about || profile.tagline || facts.length);
   const others = group.people.filter((p) => p.slug !== person.slug);
+  const faculty = profile.details ?? null;
 
   return (
     <>
@@ -108,6 +116,20 @@ export default async function PersonPage(props: PageProps<"/people/[slug]">) {
               <h1 className="d-tall mt-4 text-[clamp(2.6rem,8vw,5.6rem)] text-ink">{person.name}</h1>
               {group.jp ? <p className="jp mt-2 text-[1.1rem] text-muted">{group.jp}</p> : null}
 
+              {faculty?.full_name && faculty.full_name !== person.name ? (
+                <p className="serif-it mt-3 text-[1.1rem] text-muted">
+                  <span className="text-ink">{faculty.full_name}</span> on the Institute&apos;s record
+                </p>
+              ) : null}
+
+              {faculty?.designation ? (
+                <p className="mt-4 text-[1.1rem] leading-snug text-ink/85">
+                  {[faculty.designation, faculty.department, faculty.institute]
+                    .filter(Boolean)
+                    .join(", ")}
+                </p>
+              ) : null}
+
               {profile.preferredName ? (
                 <p className="serif-it mt-3 text-[1.1rem] text-muted">
                   Goes by <span className="text-ink">{profile.preferredName}</span>
@@ -131,6 +153,14 @@ export default async function PersonPage(props: PageProps<"/people/[slug]">) {
                     {profile.tenure}
                   </span>
                 ) : null}
+                {faculty?.email ? (
+                  <a
+                    href={`mailto:${faculty.email}`}
+                    className="label-sm inline-flex items-center gap-2 rounded-full border-2 border-ink/15 px-3.5 py-1.5 text-ink transition-colors hover:border-ink hover:bg-ink hover:text-cream"
+                  >
+                    {faculty.email}
+                  </a>
+                ) : null}
                 {socials.map((s) => (
                   <a
                     key={s.id}
@@ -152,7 +182,14 @@ export default async function PersonPage(props: PageProps<"/people/[slug]">) {
 
       <section className="bg-cream pb-20 pt-4 sm:pb-24">
         <Container>
-          <div className="grid gap-3 lg:grid-cols-[1.5fr_1fr]">
+          {faculty ? (
+            <div className="mb-3">
+              <FacultyProfile details={faculty} />
+            </div>
+          ) : null}
+
+          <div className={`grid gap-3 ${faculty && !profile.about ? "" : "lg:grid-cols-[1.5fr_1fr]"}`}>
+            {faculty && !profile.about ? null : (
             <Reveal>
               <article className="card h-full p-7 sm:p-9">
                 <Label tone="teal">About</Label>
@@ -169,6 +206,7 @@ export default async function PersonPage(props: PageProps<"/people/[slug]">) {
                 )}
               </article>
             </Reveal>
+            )}
 
             <div className="grid content-start gap-3">
               {facts.map((fact, i) => (

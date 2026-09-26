@@ -2,7 +2,8 @@ import { Container, Label } from "@/components/aot/bits";
 import { Reveal } from "@/components/aot/reveal";
 import { Seal } from "@/components/aot/seal";
 import { Sticker } from "@/components/aot/stickers";
-import { CHAPTERS, type Pop } from "@/lib/data/event";
+import { type Chapter, type Pop } from "@/lib/data/event";
+import { getAotContent } from "@/lib/data/event-content";
 
 const POP: Record<Pop, string> = {
   azure: "var(--azure)",
@@ -26,16 +27,35 @@ const ON_POP: Record<Pop, string> = {
  * The old page said "broad entry, sharp filtering, high-touch finale" in a
  * sentence; this says it in a shape you read in under a second.
  */
-function Funnel() {
+const HEIGHTS = [100, 54, 30, 14, 8, 5, 3];
+
+/** Teams in, and teams out of each chapter, from the chapters themselves. */
+function Funnel({ chapters }: { chapters: readonly Chapter[] }) {
   const stages = [
-    { n: "80", label: "Enter", h: 100, fill: "rgba(245,241,231,0.22)", fg: "var(--cream)" },
-    { n: "20", label: "After I", h: 54, fill: POP.azure, fg: ON_POP.azure },
-    { n: "8", label: "After II", h: 30, fill: POP.violet, fg: ON_POP.violet },
-    { n: "1", label: "Champion", h: 14, fill: POP.lime, fg: ON_POP.lime },
+    {
+      n: chapters[0]?.from ?? "",
+      label: "Enter",
+      h: HEIGHTS[0],
+      fill: "rgba(245,241,231,0.22)",
+      fg: "var(--cream)",
+    },
+    ...chapters.map((c, i) => ({
+      n: c.to,
+      label: i === chapters.length - 1 ? "Champion" : `After ${c.numeral}`,
+      h: HEIGHTS[i + 1] ?? 3,
+      fill: POP[c.pop],
+      fg: ON_POP[c.pop],
+    })),
   ];
+  const said = [
+    `${stages[0].n} teams enter`,
+    ...chapters.map((c, i) =>
+      i === chapters.length - 1 ? `${c.to} after the last` : `${c.to} advance after Chapter ${c.numeral}`,
+    ),
+  ].join(", ");
 
   return (
-    <div className="flex items-end gap-2 sm:gap-4" role="img" aria-label="Eighty teams enter, twenty advance after Chapter I, eight after Chapter II, one champion.">
+    <div className="flex items-end gap-2 sm:gap-4" role="img" aria-label={`${said}.`}>
       {stages.map((s, i) => (
         <div key={s.label} className="flex flex-1 items-end gap-2 sm:gap-4">
           <div className="flex-1">
@@ -71,12 +91,12 @@ function Funnel() {
 }
 
 /** Scoring weight as one stacked bar rather than three paragraphs. */
-function WeightBar() {
+function WeightBar({ chapters }: { chapters: readonly Chapter[] }) {
   return (
     <div>
       <Label tone="light">Champion score</Label>
       <div className="mt-4 flex h-5 w-full overflow-hidden rounded-full">
-        {CHAPTERS.map((c) => (
+        {chapters.map((c) => (
           <span
             key={c.id}
             className="h-full"
@@ -85,7 +105,7 @@ function WeightBar() {
         ))}
       </div>
       <div className="mt-4 flex flex-wrap gap-x-6 gap-y-2">
-        {CHAPTERS.map((c) => (
+        {chapters.map((c) => (
           <span key={c.id} className="flex items-center gap-2">
             <span
               aria-hidden
@@ -102,7 +122,12 @@ function WeightBar() {
   );
 }
 
-export function EventChapters() {
+const COUNT = ["No", "One", "Two", "Three", "Four", "Five", "Six"];
+
+export async function EventChapters() {
+  const { chapters } = await getAotContent();
+  const entering = chapters[0]?.from ?? "";
+
   return (
     <section id="chapters" className="scroll-mt-24 bg-cream py-10 sm:py-16">
       <Container>
@@ -131,19 +156,19 @@ export function EventChapters() {
 
               <div className="grid gap-10 lg:grid-cols-[1fr_auto] lg:items-start">
                 <div className="mt-6">
-                  <Label tone="lime">Eighty teams enter</Label>
+                  <Label tone="lime">{entering} teams enter</Label>
                   <h2 className="d-tall mt-4 text-[clamp(2.6rem,7vw,5.25rem)] text-cream">
-                    Three walls.
+                    {COUNT[chapters.length] ?? chapters.length} walls.
                     <br />
                     One breach.
                   </h2>
                 </div>
                 <Seal
                   className="mt-6 hidden w-[140px] text-cream/80 lg:block"
-                  text="VISION FORGE · TOKEN TRIALS · FUSION AWAKENING · "
+                  text={`${chapters.map((c) => c.title.toUpperCase()).join(" · ")} · `}
                   center={
                     <>
-                      80
+                      {entering}
                       <br />
                       Teams
                     </>
@@ -152,13 +177,13 @@ export function EventChapters() {
               </div>
 
               <div className="mt-12 grid gap-12 lg:grid-cols-[1.35fr_0.65fr] lg:items-end">
-                <Funnel />
-                <WeightBar />
+                <Funnel chapters={chapters} />
+                <WeightBar chapters={chapters} />
               </div>
 
               {/* the three chapters */}
               <div className="mt-16 grid gap-4 lg:grid-cols-3">
-                {CHAPTERS.map((c, i) => (
+                {chapters.map((c, i) => (
                   <Reveal key={c.id} delay={i * 110}>
                     <article
                       id={c.id}

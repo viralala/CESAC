@@ -20,7 +20,7 @@ export const metadata: Metadata = {
  *
  * Most organisers on this committee are students in the department too, and
  * asked for the same place to file a hackathon certificate or a publication
- * that any other student gets. It is the same form, the same five layouts and
+ * that any other student gets. It is the same form, the same layouts and
  * the same actions, guarded by requireAdmin instead of requireParticipant:
  * see requireRecordOwner in src/lib/auth/guard.ts for the one place that
  * decides who may call saveRecord and the rest.
@@ -53,40 +53,24 @@ export default async function MyRecordPage() {
           </p>
         </header>
 
-        <div className="mt-10 grid gap-6 lg:grid-cols-[1.45fr_1fr] lg:items-start">
-          <Panel
-            eyebrow="Your record"
-            title="Hackathons and publications"
-            aside={certificates.length ? `${certificates.length} on file` : undefined}
-          >
-            {driveReady ? null : (
-              <div className="mb-6">
+        <div className="mt-10 grid gap-6">
+          <CertificateRecord
+            certificates={certificates}
+            configured={driveReady}
+            emptyNote={t("console.records.empty")}
+            studentName={viewer.name}
+            notice={
+              driveReady ? null : (
                 <Notice tone="error">
                   Uploads are not switched on yet, so records save now and take their files later.
                 </Notice>
-              </div>
-            )}
+              )
+            }
+          />
 
-            <CertificateRecord
-              certificates={certificates}
-              configured={driveReady}
-              emptyNote={t("console.records.empty")}
-              studentName={viewer.name}
-            />
+          <Panel eyebrow="How it counts" title="Points">
+            <PointsScale scale={scale} wide />
           </Panel>
-
-          <div className="grid gap-6">
-            <Panel eyebrow="How it counts" title="Points">
-              <PointsScale scale={scale} />
-            </Panel>
-
-            <Panel eyebrow="The front page" title="Being named publicly">
-              <p className="serif-it text-[0.98rem] leading-relaxed text-muted">
-                The front page names students by year and points, and never shows a record, file,
-                address or PRN.
-              </p>
-            </Panel>
-          </div>
         </div>
       </Container>
     </div>

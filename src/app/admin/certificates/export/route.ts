@@ -5,7 +5,7 @@ import {
   getCertificatesForReview,
   type CertificateForOrganiser,
 } from "@/lib/data/certificates";
-import { LEVEL_LABEL, isPublication } from "@/lib/console/records";
+import { LEVEL_LABEL, isPlaced } from "@/lib/console/records";
 
 /**
  * Student records as CSV, for the department's own files and for the office.
@@ -64,7 +64,7 @@ const COMMON: Column[] = [
   { head: "title", read: (r) => r.event_name },
   { head: "level", read: level },
   { head: "date", read: (r) => r.happened_on ?? "" },
-  { head: "contribution", read: (r) => (isPublication(r.kind) ? "" : r.contribution) },
+  { head: "contribution", read: (r) => (isPlaced(r.kind) ? r.contribution : "") },
   { head: "prize_inr", read: (r) => r.prize_amount_inr ?? "" },
   { head: "primary_author", read: (r) => r.primary_author ?? "" },
   { head: "secondary_authors", read: (r) => r.secondary_authors ?? "" },
@@ -85,6 +85,22 @@ const COMMON: Column[] = [
   { head: "publication_year", read: (r) => r.publication_year ?? "" },
   { head: "page_numbers", read: (r) => r.page_numbers ?? "" },
   { head: "location", read: (r) => r.location ?? "" },
+  { head: "mode", read: (r) => r.mode ?? "" },
+  { head: "role", read: (r) => r.role_title ?? "" },
+  { head: "team_name", read: (r) => r.team_name ?? "" },
+  { head: "team_size", read: (r) => r.team_size ?? "" },
+  { head: "theme", read: (r) => r.theme ?? "" },
+  { head: "project", read: (r) => r.project_title ?? "" },
+  { head: "rank", read: (r) => r.rank_detail ?? "" },
+  { head: "duration", read: (r) => r.duration ?? "" },
+  { head: "ended_on", read: (r) => r.ended_on ?? "" },
+  { head: "stipend_inr", read: (r) => r.stipend_inr ?? "" },
+  { head: "ppo", read: (r) => yesNo(r.ppo) },
+  { head: "skills", read: (r) => r.skills ?? "" },
+  { head: "score", read: (r) => r.score ?? "" },
+  { head: "credential_url", read: (r) => r.credential_url ?? "" },
+  { head: "application_no", read: (r) => r.application_no ?? "" },
+  { head: "patent_status", read: (r) => r.patent_status ?? "" },
   { head: "state", read: (r) => certificateState(r) },
   { head: "verified_by", read: (r) => r.verifier?.full_name ?? "" },
   { head: "verified_at", read: (r) => r.verified_at ?? "" },

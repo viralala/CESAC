@@ -221,11 +221,18 @@ export async function saveRecord(
     return { error: `Put in the ${layout.titleLabel.toLowerCase()}.` };
   }
 
-  const claimedLevel = String(formData.get("level") ?? "");
-  if (!RUNGS.has(claimedLevel)) {
-    return { error: "Say how far this reached: international, national, state, zonal or institute." };
+  // An internship or an online course is not asked how far it reached, and
+  // scores no level, rather than being made to pick a rung that means nothing.
+  let level: Level | null = null;
+  if (layout.leveled) {
+    const claimedLevel = String(formData.get("level") ?? "");
+    if (!RUNGS.has(claimedLevel)) {
+      return {
+        error: "Say how far this reached: international, national, state, zonal or institute.",
+      };
+    }
+    level = claimedLevel as Level;
   }
-  const level = claimedLevel as Level;
 
   const happenedOn = String(formData.get("happened_on") ?? "").trim() || null;
   if (layout.dated && !happenedOn) {
@@ -262,8 +269,12 @@ export async function saveRecord(
   for (const field of layout.fields) {
     const raw = String(formData.get(field.name) ?? "").trim();
 
+    // A yes/no is a dropdown now, with a blank for "not saying". The old
+    // checkbox values are still read, so a form open in a tab from before the
+    // change saves what it meant.
     if (field.type === "bool") {
-      extras[field.name] = raw === "on" || raw === "true";
+      extras[field.name] =
+        raw === "yes" || raw === "on" || raw === "true" ? true : raw === "no" ? false : null;
       continue;
     }
 
@@ -288,6 +299,35 @@ export async function saveRecord(
         return { error: `${field.label} has to be a number, like 3.412.` };
       }
       extras[field.name] = n;
+      continue;
+    }
+
+    if (field.type === "int") {
+      const n = Number(raw.replace(/[,\s₹]/g, ""));
+      const cap = field.name === "team_size" ? 100 : 10_000_000;
+      if (!Number.isInteger(n) || n < 0 || n > cap) {
+        return { error: `${field.label} has to be a whole number.` };
+      }
+      extras[field.name] = field.name === "team_size" && n === 0 ? null : n;
+      continue;
+    }
+
+    if (field.type === "date") {
+      if (!/^\d{4}-\d{2}-\d{2}$/.test(raw)) {
+        return { error: `Write ${field.label.toLowerCase()} as a date, or leave it blank.` };
+      }
+      if (happenedOn && raw < happenedOn) {
+        return { error: `${field.label} cannot be before ${layout.dateLabel.toLowerCase()}.` };
+      }
+      extras[field.name] = raw;
+      continue;
+    }
+
+    if (field.type === "url") {
+      if (!/^https:\/\/\S+$/.test(raw)) {
+        return { error: `${field.label} has to be a full link starting with https://.` };
+      }
+      extras[field.name] = raw.slice(0, 500);
       continue;
     }
 

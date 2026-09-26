@@ -1,5 +1,5 @@
 import { icsFile } from "@/lib/calendar";
-import { EVENTS } from "@/lib/data/cesac";
+import { getEventCards } from "@/lib/data/event-content";
 import { getSchedules, scheduleFor } from "@/lib/data/event-schedule";
 
 /**
@@ -16,7 +16,7 @@ import { getSchedules, scheduleFor } from "@/lib/data/event-schedule";
  */
 export async function GET(request: Request, ctx: RouteContext<"/calendar/[slug]">) {
   const { slug } = await ctx.params;
-  const event = EVENTS.find((e) => e.slug === slug);
+  const event = (await getEventCards()).find((e) => e.slug === slug);
   if (!event) return new Response("There is no event at that address.", { status: 404 });
 
   const schedule = scheduleFor(event, await getSchedules());

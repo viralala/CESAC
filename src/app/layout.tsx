@@ -1,3 +1,4 @@
+import { Analytics } from "@vercel/analytics/next";
 import type { Metadata, Viewport } from "next";
 import { Anton, Archivo, Baloo_2, Kalam, Oswald, Playfair_Display } from "next/font/google";
 
@@ -128,6 +129,8 @@ export default async function RootLayout({ children }: LayoutProps<"/">) {
         <PetalCursor />
         <CursorToggle />
         <ThemeTransition />
+        {/* Visitor counts, cookieless: see the privacy page for what it keeps. */}
+        <Analytics />
       </body>
     </html>
   );

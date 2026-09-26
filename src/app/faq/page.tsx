@@ -5,7 +5,8 @@ import { Container, Label } from "@/components/aot/bits";
 import { Reveal } from "@/components/aot/reveal";
 import { PageHead } from "@/components/sections/page-head";
 import { SiteFooter } from "@/components/site/footer";
-import { FAQ } from "@/lib/data/faq";
+import { getAotContent } from "@/lib/data/event-content";
+import { faqFor } from "@/lib/data/faq";
 
 export const metadata: Metadata = {
   title: "FAQ",
@@ -25,7 +26,8 @@ export const metadata: Metadata = {
  * The words live in lib/data/faq.ts, next to the rule that they describe the
  * site as built.
  */
-export default function FaqPage() {
+export default async function FaqPage() {
+  const FAQ = faqFor((await getAotContent()).register);
   const total = FAQ.reduce((n, g) => n + g.items.length, 0);
 
   return (

@@ -15,8 +15,13 @@ export const metadata: Metadata = {
 const BANDS = [
   {
     band: "contribution",
-    title: "A hackathon or competition",
-    note: "What the student came away with. One of these is the base for every event record.",
+    title: "A hackathon",
+    note: "What the student came away with. One of these is the base for every hackathon.",
+  },
+  {
+    band: "competition",
+    title: "A competition",
+    note: "Coding contests, presentations, quizzes and the like, on their own scale.",
   },
   {
     band: "extracurricular",
@@ -25,13 +30,13 @@ const BANDS = [
   },
   {
     band: "kind",
-    title: "A publication",
-    note: "A paper does not place, so its base is the kind of publication it is.",
+    title: "Records that do not place",
+    note: "Publications, patents, workshops, internships and courses: one base each.",
   },
   {
     band: "level",
     title: "How far it reached",
-    note: "Added on top of whichever base applies, for every kind of record alike.",
+    note: "Added on top of whichever base applies, except internships and courses, which have no level.",
   },
 ] as const;
 

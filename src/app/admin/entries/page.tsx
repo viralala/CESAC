@@ -16,6 +16,7 @@ import { requireAdmin } from "@/lib/auth/guard";
 import { requireCap } from "@/lib/auth/caps";
 import { getDeptEvents, getEventEntries, type Entry } from "@/lib/data/dept-events";
 import { EVENT } from "@/lib/data/event";
+import { EDITABLE_EVENTS } from "@/lib/data/event-content-schema";
 
 export const metadata: Metadata = {
   title: "Entries",
@@ -171,6 +172,11 @@ export default async function EntriesPage() {
                     {event.href ? (
                       <Link href={event.href} className="pill pill-ghost mt-4">
                         Event page
+                      </Link>
+                    ) : null}
+                    {EDITABLE_EVENTS.includes(event.slug) ? (
+                      <Link href={`/admin/entries/${event.slug}`} className="pill pill-lime mt-4">
+                        Edit the event page
                       </Link>
                     ) : null}
                   </div>

@@ -6,7 +6,7 @@ import { Reveal } from "@/components/aot/reveal";
 import { PageHead } from "@/components/sections/page-head";
 import { EventWhen } from "@/components/site/event-when";
 import { SiteFooter } from "@/components/site/footer";
-import { EVENTS } from "@/lib/data/cesac";
+import { getEventCards } from "@/lib/data/event-content";
 import { getSchedules, scheduleFor } from "@/lib/data/event-schedule";
 import { badgeFor, getEventBadges } from "@/lib/data/event-status";
 
@@ -23,7 +23,11 @@ export const metadata: Metadata = {
  * invented past events would be the one thing the brief rules out hardest.
  */
 export default async function EventsPage() {
-  const [badges, schedules] = await Promise.all([getEventBadges(), getSchedules()]);
+  const [events, badges, schedules] = await Promise.all([
+    getEventCards(),
+    getEventBadges(),
+    getSchedules(),
+  ]);
 
   return (
     <>
@@ -36,7 +40,7 @@ export default async function EventsPage() {
       <section className="bg-cream pb-20 pt-4 sm:pb-24">
         <Container>
           <div className="grid gap-3">
-            {EVENTS.map((e, i) => {
+            {events.map((e, i) => {
               const badge = badgeFor(e, badges);
 
               return (

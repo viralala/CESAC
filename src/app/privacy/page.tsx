@@ -7,7 +7,7 @@ import { CESAC, CONTACT } from "@/lib/data/cesac";
 export const metadata: Metadata = {
   title: "Privacy policy",
   description:
-    "What the CESAC website collects, what it does not, and who to contact about it. No analytics and no tracking cookies.",
+    "What the CESAC website collects, what it does not, and who to contact about it. Anonymous visitor counts and no tracking cookies.",
   alternates: { canonical: "/privacy" },
 };
 
@@ -26,7 +26,7 @@ const BLOCKS: readonly LegalBlock[] = [
   {
     heading: "The short version",
     body: [
-      "This website does not track you. It runs no analytics, embeds no social widgets and shows no advertising. Nothing it holds is sold or shared with anyone outside the committee.",
+      "This website does not track you. It counts visits anonymously, with no cookies and nothing that identifies you, and it embeds no social widgets and shows no advertising. Nothing it holds is sold or shared with anyone outside the committee.",
       "You can read every page of this site, including the whole event brief, without signing in and without giving us anything at all. Browsing signed out sets no cookies.",
       "Everything we hold about a person exists because they made an account and registered a team. That is described in full below.",
     ],
@@ -36,14 +36,15 @@ const BLOCKS: readonly LegalBlock[] = [
     body: [
       "Accounts, teams, payments records and chapter hand-ins are stored in a Supabase project hosted in Mumbai, India. Supabase is our database and authentication provider and processes this data on our behalf.",
       "The pages themselves are served by Vercel. Like any web server it records standard request information so pages can be delivered and abuse blocked, typically your IP address, the page requested, the time and your browser's user-agent string. We do not use those logs to build a profile of you and we do not combine them with your account.",
-      "Nothing is copied to a third service for analysis, and no part of this data is used to train anything.",
+      "Visits are counted with Vercel Web Analytics, so the committee can see how many people read the site. It sets no cookies and stores nothing on your device. For each page view it records the page, the site that linked to it, the country, and the browser, operating system and kind of device. A visit is told apart from another by a hash of the request that is thrown away after a day, so it is never tied to you, to your IP address or to your account, and the committee only ever sees totals.",
+      "Beyond those counts nothing is copied to a third service for analysis, and no part of this data is used to train anything.",
     ],
   },
   {
     heading: "Making an account",
     body: [
-      "You can sign up with an email address and a password, or with Google, GitHub or Facebook.",
-      "If you use an email and password, we store your email address, the name you type, and a one-way hash of your password. The hash cannot be turned back into your password, and nobody on the committee can read it. Password checking is handled by Supabase Auth and the password you type is never written to our own tables or logs.",
+      "There is no sign-up form. The department makes an account for every student, on their institute email address, and you sign in with that address and a password, or with Google, GitHub or Facebook on the same address.",
+      "For an email and password account we store your email address, your name, and a one-way hash of your password. The hash cannot be turned back into your password, and nobody on the committee can read it. Password checking is handled by Supabase Auth and the password you type is never written to our own tables or logs.",
       "If you use Google, GitHub or Facebook, you are sent to them to sign in and you give us no password at all. They then tell us your email address, your display name, and the address of your profile picture. We store those three things and nothing else. We do not receive, and cannot see, your password or anything else in that account.",
       "Choosing one of those buttons means your browser contacts that company, and that visit is covered by their privacy policy as well as this one. Nothing on this site contacts them until you press the button.",
     ],
@@ -64,7 +65,7 @@ const BLOCKS: readonly LegalBlock[] = [
       "If you are a student, your console asks you for a photo once, the first time you sign in. Wherever the site ranks students, on the front page's standouts, on the standouts list and on the ranking in the console, your name is shown with it.",
       "Before it leaves your device, your browser crops the photo to a square, shrinks it and saves it as a fresh JPEG. That drops the hidden information a phone photo carries, including the location it was taken at. What is uploaded is only the picture.",
       "It is stored in the committee's Google Drive, in a folder of profile photos, shared so that anyone with its link can view it, because it is printed on public pages. It is not listed in any Drive search. It is fetched by this site's server and served from this site, so a page showing it makes no request from your browser to Google. You can replace it at any time from your console, and the old one is binned. An organiser can take a photo down if it should not be on the front page, and you are then asked for another.",
-      "If you would rather not appear on the public standouts at all, switch that off from My record in your console. You stay on the ranking inside the console, which only signed-in students can see.",
+      "Everyone with something on their record is named on the public standouts, and each name opens a page listing what their records are: the kind, the title, how far it reached, the place, when it was and who ran it. Certificates and other files, Drive links, prize money, stipends and contact details are never on that page.",
     ],
   },
   {
@@ -72,7 +73,8 @@ const BLOCKS: readonly LegalBlock[] = [
     body: [
       "Every committee member has a page under /people. What is on it is what they wrote on the committee's own roster form, where each of them agreed to it being shown on this site: a line about themselves, an about, their interests and the links they chose to give. The form also asked for a phone number and an email address, and neither is published here.",
       "A committee member's portrait is either a Google Drive file they shared, or the photo on their own account. Either way it is fetched by this site's server and served from this site, so opening a profile page makes no request from your browser to Google or anyone else.",
-      "A committee member who wants something on their page changed or removed can ask the committee, who edit it from the console.",
+      "The faculty pages carry what the Institute publishes about them on its own faculty profiles: designation, qualifications, experience, responsibilities, publications, patents, funded projects and training. A personal phone number or date of birth listed there is not copied here.",
+      "An organiser can edit their own page from My details in the console, and anyone else who wants something on their page changed or removed can ask the committee.",
     ],
   },
   {

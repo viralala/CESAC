@@ -1,6 +1,6 @@
 import { Container } from "@/components/aot/bits";
 import { Reveal } from "@/components/aot/reveal";
-import { VITALS } from "@/lib/data/event";
+import { getAotContent } from "@/lib/data/event-content";
 
 /** One colour per plate, so the strip reads as four facts and not one block. */
 const POPS = ["var(--azure)", "var(--violet)", "var(--lime)", "var(--pink)"];
@@ -11,12 +11,14 @@ const FG = ["var(--ink)", "var(--white)", "var(--ink)", "var(--white)"];
  * no supporting paragraph. If a reader takes one thing from the page above the
  * fold, it should be these.
  */
-export function EventVitals() {
+export async function EventVitals() {
+  const { vitals } = await getAotContent();
+
   return (
     <section className="bg-cream py-14 sm:py-20">
       <Container>
         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-          {VITALS.map((v, i) => (
+          {vitals.map((v, i) => (
             <Reveal key={v.label} delay={i * 70}>
               <div
                 className="relative flex h-full flex-col justify-between overflow-hidden rounded-[var(--r-lg)] p-7"

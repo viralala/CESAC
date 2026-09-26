@@ -1,6 +1,6 @@
 import { Container, Label } from "@/components/aot/bits";
 import { EventWhen } from "@/components/site/event-when";
-import { EVENTS } from "@/lib/data/cesac";
+import { getEventCards } from "@/lib/data/event-content";
 import { getSchedules, scheduleFor } from "@/lib/data/event-schedule";
 
 /**
@@ -13,7 +13,7 @@ import { getSchedules, scheduleFor } from "@/lib/data/event-schedule";
  * tokens, so on Attack on Token it comes out in the deck's paper and crimson.
  */
 export async function WhenBand({ slug, ground }: { slug: string; ground: string }) {
-  const event = EVENTS.find((e) => e.slug === slug);
+  const event = (await getEventCards()).find((e) => e.slug === slug);
   if (!event) return null;
   const schedule = scheduleFor(event, await getSchedules());
 

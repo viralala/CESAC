@@ -27,6 +27,11 @@
  * gained `extracurricular` (20260926_add_extracurricular_kind.sql), the one
  * new value on an existing enum, in both places an enum's values are listed
  * below. Regenerating clears this note the same way it did the last two.
+ *
+ * And again on 27 September 2026 for 20260927_more_record_kinds*.sql: five
+ * more `achievement_kind` values and sixteen nullable `certificates` columns,
+ * `standout_profile()`, `roster_people.details`, `save_my_roster_profile()`,
+ * and the `event_content` table with its two admin functions.
  */
 export type Json =
   | string
@@ -44,6 +49,27 @@ export type Database = {
   }
   public: {
     Tables: {
+      event_content: {
+        Row: {
+          content: Json
+          slug: string
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          content?: Json
+          slug: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          content?: Json
+          slug?: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: []
+      }
       admin_emails: {
         Row: {
           added_by: string | null
@@ -206,13 +232,17 @@ export type Database = {
       }
       certificates: {
         Row: {
+          application_no: string | null
           chapter_name: string | null
           contribution: Database["public"]["Enums"]["certificate_contribution"]
           created_at: string
+          credential_url: string | null
           drive_file_id: string | null
           drive_link: string | null
+          duration: string | null
           e_journal: boolean | null
           edition: string | null
+          ended_on: string | null
           entered_by: string | null
           event_name: string
           file_name: string | null
@@ -226,18 +256,30 @@ export type Database = {
           level: Database["public"]["Enums"]["achievement_level"] | null
           location: string | null
           mime_type: string | null
+          mode: string | null
           owner_id: string
           page_numbers: string | null
+          patent_status: string | null
           peer_reviewed: boolean | null
           place_of_publication: string | null
+          ppo: boolean | null
           primary_author: string | null
           prize_amount_inr: number | null
+          project_title: string | null
           publication_year: number | null
           publisher: string | null
           quartile: string | null
+          rank_detail: string | null
+          role_title: string | null
+          score: string | null
           secondary_authors: string | null
           size_bytes: number | null
+          skills: string | null
           specialization: string | null
+          stipend_inr: number | null
+          team_name: string | null
+          team_size: number | null
+          theme: string | null
           venue_name: string | null
           verified: boolean
           verified_at: string | null
@@ -245,13 +287,17 @@ export type Database = {
           volume: string | null
         }
         Insert: {
+          application_no?: string | null
           chapter_name?: string | null
           contribution?: Database["public"]["Enums"]["certificate_contribution"]
           created_at?: string
+          credential_url?: string | null
           drive_file_id?: string | null
           drive_link?: string | null
+          duration?: string | null
           e_journal?: boolean | null
           edition?: string | null
+          ended_on?: string | null
           entered_by?: string | null
           event_name: string
           file_name?: string | null
@@ -265,18 +311,30 @@ export type Database = {
           level?: Database["public"]["Enums"]["achievement_level"] | null
           location?: string | null
           mime_type?: string | null
+          mode?: string | null
           owner_id: string
           page_numbers?: string | null
+          patent_status?: string | null
           peer_reviewed?: boolean | null
           place_of_publication?: string | null
+          ppo?: boolean | null
           primary_author?: string | null
           prize_amount_inr?: number | null
+          project_title?: string | null
           publication_year?: number | null
           publisher?: string | null
           quartile?: string | null
+          rank_detail?: string | null
+          role_title?: string | null
+          score?: string | null
           secondary_authors?: string | null
           size_bytes?: number | null
+          skills?: string | null
           specialization?: string | null
+          stipend_inr?: number | null
+          team_name?: string | null
+          team_size?: number | null
+          theme?: string | null
           venue_name?: string | null
           verified?: boolean
           verified_at?: string | null
@@ -284,13 +342,17 @@ export type Database = {
           volume?: string | null
         }
         Update: {
+          application_no?: string | null
           chapter_name?: string | null
           contribution?: Database["public"]["Enums"]["certificate_contribution"]
           created_at?: string
+          credential_url?: string | null
           drive_file_id?: string | null
           drive_link?: string | null
+          duration?: string | null
           e_journal?: boolean | null
           edition?: string | null
+          ended_on?: string | null
           entered_by?: string | null
           event_name?: string
           file_name?: string | null
@@ -304,18 +366,30 @@ export type Database = {
           level?: Database["public"]["Enums"]["achievement_level"] | null
           location?: string | null
           mime_type?: string | null
+          mode?: string | null
           owner_id?: string
           page_numbers?: string | null
+          patent_status?: string | null
           peer_reviewed?: boolean | null
           place_of_publication?: string | null
+          ppo?: boolean | null
           primary_author?: string | null
           prize_amount_inr?: number | null
+          project_title?: string | null
           publication_year?: number | null
           publisher?: string | null
           quartile?: string | null
+          rank_detail?: string | null
+          role_title?: string | null
+          score?: string | null
           secondary_authors?: string | null
           size_bytes?: number | null
+          skills?: string | null
           specialization?: string | null
+          stipend_inr?: number | null
+          team_name?: string | null
+          team_size?: number | null
+          theme?: string | null
           venue_name?: string | null
           verified?: boolean
           verified_at?: string | null
@@ -827,6 +901,7 @@ export type Database = {
       }
       roster_people: {
         Row: {
+          details: Json | null
           about: string | null
           fun_fact: string | null
           github: string | null
@@ -849,6 +924,7 @@ export type Database = {
           year_branch: string | null
         }
         Insert: {
+          details?: Json | null
           about?: string | null
           fun_fact?: string | null
           github?: string | null
@@ -871,6 +947,7 @@ export type Database = {
           year_branch?: string | null
         }
         Update: {
+          details?: Json | null
           about?: string | null
           fun_fact?: string | null
           github?: string | null
@@ -1745,6 +1822,18 @@ export type Database = {
         Returns: string
       }
       registration_is_open: { Args: never; Returns: boolean }
+      admin_save_event_content: {
+        Args: { p_content: Json; p_slug: string }
+        Returns: undefined
+      }
+      admin_reset_event_section: {
+        Args: { p_section: string; p_slug: string }
+        Returns: undefined
+      }
+      my_roster_person: {
+        Args: never
+        Returns: Database["public"]["Tables"]["roster_people"]["Row"][]
+      }
       roster_photos: {
         Args: never
         Returns: {
@@ -1768,6 +1857,21 @@ export type Database = {
           value: number
           year: string
         }[]
+      }
+      standout_profile: { Args: { p_id: string }; Returns: Json }
+      save_my_roster_profile: {
+        Args: {
+          p_about?: string
+          p_fun_fact?: string
+          p_github?: string
+          p_hobbies?: string
+          p_instagram?: string
+          p_linkedin?: string
+          p_preferred_name?: string
+          p_tagline?: string
+          p_year_branch?: string
+        }
+        Returns: string
       }
       standouts_board: {
         Args: never
@@ -1827,6 +1931,11 @@ export type Database = {
         | "book"
         | "book_chapter"
         | "extracurricular"
+        | "competition"
+        | "workshop"
+        | "internship"
+        | "certification"
+        | "patent"
       achievement_level:
         | "international"
         | "national"
@@ -1978,6 +2087,11 @@ export const Constants = {
         "book",
         "book_chapter",
         "extracurricular",
+        "competition",
+        "workshop",
+        "internship",
+        "certification",
+        "patent",
       ],
       achievement_level: [
         "international",

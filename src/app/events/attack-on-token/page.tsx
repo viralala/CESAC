@@ -9,7 +9,7 @@ import { RegisterStrip } from "@/components/sections/event/register-button";
 import { EventVitals } from "@/components/sections/event/vitals";
 import { WhenBand } from "@/components/sections/event/when-band";
 import { Ribbon } from "@/components/sections/ribbon";
-import { EVENT } from "@/lib/data/event";
+import { getAotContent } from "@/lib/data/event-content";
 
 export const metadata: Metadata = {
   title: "Attack on Token",
@@ -24,13 +24,6 @@ export const viewport: Viewport = {
   themeColor: "#141110",
 };
 
-const WORDS = [
-  EVENT.name,
-  EVENT.jp,
-  "Vision Forge",
-  "Token Trials",
-  "Fusion Awakening",
-] as const;
 
 /**
  * One decision per screen, in the order a prospective team makes them:
@@ -47,23 +40,26 @@ const WORDS = [
  * internal and is deliberately not here.
  */
 export default async function AttackOnTokenPage() {
+  const { event, chapters, register, strips } = await getAotContent();
+  const words = [event.name, event.jp, ...chapters.map((c) => c.title)].filter(Boolean);
+
   return (
     <>
-      <EventHero />
+      <EventHero event={event} formUrl={register.formUrl} />
       <EventVitals />
       <WhenBand slug="attack-on-token" ground="bg-cream" />
-      <RegisterStrip line="Two people, ₹125, one form. That is the whole of getting in." />
+      <RegisterStrip line={strips.one} formUrl={register.formUrl} />
       <section className="bg-cream py-6 sm:py-10">
         <div className="mx-auto w-full max-w-[1280px] px-5 sm:px-8">
           <div className="mx-auto w-full max-w-[720px]">
-            <Ribbon items={WORDS} tone="teal" />
+            <Ribbon items={words} tone="teal" />
           </div>
         </div>
       </section>
       <EventChapters />
-      <RegisterStrip line="Three chapters, and every team starts at the first one." />
+      <RegisterStrip line={strips.two} formUrl={register.formUrl} />
       <EventPrizes />
-      <RegisterStrip line="Six awards, 80 teams, and entries close when the last seat goes." />
+      <RegisterStrip line={strips.three} formUrl={register.formUrl} />
       <EventRegister />
       <SiteFooter />
     </>

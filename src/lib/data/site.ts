@@ -13,9 +13,10 @@ import {
   EMPTY_PROFILE,
   ROSTER_PROFILES,
   rosterSlug,
+  type FacultyDetails,
   type RosterProfile,
 } from "@/lib/data/roster-profiles";
-import { avatarUrl, driveImage } from "@/lib/photos";
+import { avatarUrl, rosterImage } from "@/lib/photos";
 import { publicRoster, publicSiteText, publicStandouts } from "@/lib/data/public-cache";
 import { createClient } from "@/lib/supabase/server";
 import type { Tables } from "@/lib/supabase/database.types";
@@ -75,7 +76,7 @@ const FALLBACK: Record<string, string> = {
   "console.ranking.note":
     "This counts what people have uploaded. An organiser marks a record verified once they have seen it, and until then it still counts, so treat the board as a record of what the department has on file rather than a judgement about anybody.",
   "console.records.empty":
-    "Nothing on your record yet. Anything you add is visible to you and to the committee, and to nobody else on the site.",
+    "Nothing on your record yet. Your files are seen only by you and the committee; the standouts page shows what each record is, never the file.",
 };
 
 export type Copy = (key: string, replacements?: Record<string, string | number>) => string;
@@ -176,7 +177,7 @@ function rosterFallback(): RosterGroup[] {
       visible: true,
       slug: rosterSlug(name),
       profile,
-      photos: [driveImage(profile.photoUrl)].filter((u): u is string => Boolean(u)),
+      photos: [rosterImage(profile.photoUrl)].filter((u): u is string => Boolean(u)),
     };
   };
 
@@ -310,6 +311,7 @@ function buildRoster(
       linkedin: row.linkedin ?? null,
       github: row.github ?? null,
       tenure: row.tenure ?? null,
+      details: (row.details as FacultyDetails | null) ?? null,
     };
 
     const list = byGroup.get(row.group_id) ?? [];
@@ -322,7 +324,7 @@ function buildRoster(
       visible: row.visible,
       slug: row.slug ?? rosterSlug(row.name),
       profile,
-      photos: [driveImage(profile.photoUrl), accountPhoto.get(row.id)].filter(
+      photos: [rosterImage(profile.photoUrl), accountPhoto.get(row.id)].filter(
         (u): u is string => Boolean(u),
       ),
     });
@@ -369,6 +371,16 @@ export const getRosterEmails = cache(async (): Promise<Map<string, string>> => {
   const supabase = await createClient();
   const { data } = await supabase.from("roster_private").select("person_id, email");
   return new Map((data ?? []).filter((r) => r.email).map((r) => [r.person_id, r.email as string]));
+});
+
+/**
+ * The roster card linked to the signed-in organiser's account, for the form
+ * on My details. Null when their address is not linked to any card.
+ */
+export const getMyRosterCard = cache(async (): Promise<Tables<"roster_people"> | null> => {
+  const supabase = await createClient();
+  const { data } = await supabase.rpc("my_roster_person");
+  return data?.[0] ?? null;
 });
 
 /** How many people the roster names. Printed on the /people page. */

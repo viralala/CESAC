@@ -14,7 +14,7 @@ import { EventWhen } from "@/components/site/event-when";
 import { rupees } from "@/lib/console/options";
 import type { EventSchedule } from "@/lib/data/cesac";
 import type { DeptEvent, MyRegistration } from "@/lib/data/dept-events";
-import { REGISTER, REGISTER_SLUG, REGISTRATION_IS_LIVE } from "@/lib/data/event";
+import { REGISTER_SLUG } from "@/lib/data/event";
 
 const STATE: Record<string, { label: string; tone: "lime" | "muted" | "ink" }> = {
   open: { label: "Entries open", tone: "lime" },
@@ -49,8 +49,11 @@ export function EventBoard({
   registrations,
   meId,
   schedules,
+  form,
 }: {
   events: DeptEvent[];
+  /** Attack on Token's form and fee, as organisers left them. */
+  form: { formUrl: string; amountInr: number };
   registrations: MyRegistration[];
   /** When each event is, by slug, for the countdown and the calendar button. */
   schedules: Record<string, EventSchedule | null>;
@@ -123,7 +126,7 @@ export function EventBoard({
             ) : null}
 
             {event.slug === REGISTER_SLUG ? (
-              <OnTheForm entered={Boolean(mine)} />
+              <OnTheForm entered={Boolean(mine)} form={form} />
             ) : mine ? (
               <Entered registration={mine} event={event} meId={meId} />
             ) : event.state === "open" ? (
@@ -272,14 +275,20 @@ function Entered({
  * does not offer an entry of its own: two ways in means two lists, and the one
  * an organiser is not reading is the one a team will have used.
  */
-function OnTheForm({ entered }: { entered: boolean }) {
+function OnTheForm({
+  entered,
+  form,
+}: {
+  entered: boolean;
+  form: { formUrl: string; amountInr: number };
+}) {
   return (
     <div className="mt-5 border-t border-ink/10 pt-5">
       <p className="label text-teal">Entries are on a form</p>
       <p className="serif-it mt-2.5 text-[0.98rem] leading-relaxed text-muted">
         This one does not run through the console. Both of you go on one form, and the
         {" "}
-        {rupees(REGISTER.amountInr)} is paid on the form itself, by scanning the UPI code beside
+        {rupees(form.amountInr)} is paid on the form itself, by scanning the UPI code beside
         the box that asks for the reference. That is the whole of it.
       </p>
 
@@ -292,9 +301,9 @@ function OnTheForm({ entered }: { entered: boolean }) {
       ) : null}
 
       <div className="mt-5 flex flex-wrap items-center gap-3">
-        {REGISTRATION_IS_LIVE ? (
+        {form.formUrl ? (
           <a
-            href={REGISTER.formUrl}
+            href={form.formUrl}
             target="_blank"
             rel="noopener noreferrer"
             className="pill pill-lime"

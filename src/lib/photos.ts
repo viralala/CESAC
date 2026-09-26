@@ -89,6 +89,17 @@ export function driveImage(link: string | null | undefined): string | null {
   return id ? `https://lh3.googleusercontent.com/d/${id}=w800` : null;
 }
 
+/**
+ * A roster portrait: a file this site serves itself under /people/, or a
+ * Drive share link turned into an image by driveImage().
+ */
+export function rosterImage(link: string | null | undefined): string | null {
+  if (!link) return null;
+  const s = link.trim();
+  if (/^\/people\/[a-z0-9-]+\.(jpg|png|webp)$/.test(s)) return s;
+  return driveImage(s);
+}
+
 /** Up to two initials, for the avatar that has no photo to show. */
 export function initials(name: string): string {
   const words = name

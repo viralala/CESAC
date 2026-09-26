@@ -1,4 +1,5 @@
 import Link from "next/link";
+import type { ReactNode } from "react";
 
 import { Chip, Empty, Stat } from "@/components/console/shell";
 import { Avatar } from "@/components/site/avatar";
@@ -102,25 +103,11 @@ export function RankingTable({ rows, meId }: { rows: BoardRow[]; meId: string })
  * participation while the board awards 40 is a console lying to a student
  * about their own total.
  *
- * Two bands, because a score is the sum of two things. What you came away with
- * (or what kind of publication it is) and how far it reached.
+ * As tables, because a score is the sum of two things and a table says so
+ * at a glance: a base for what you came away with, or for the kind of record
+ * it is, and a level added on top for how far it reached.
  */
-export function PointsScale({ scale }: { scale: ScaleRow[] }) {
-  const bands: { band: string; title: string; note: string }[] = [
-    {
-      band: "contribution",
-      title: "A hackathon or competition",
-      note: "What you came away with.",
-    },
-    {
-      band: "extracurricular",
-      title: "A non-technical or extracurricular activity",
-      note: "What you came away with. Its own scale, separate from a hackathon's.",
-    },
-    { band: "kind", title: "A publication", note: "What kind of thing it is." },
-    { band: "level", title: "Added for how far it reached", note: "On top of either of the above." },
-  ];
-
+export function PointsScale({ scale, wide = false }: { scale: ScaleRow[]; wide?: boolean }) {
   if (scale.length === 0) {
     return (
       <Empty>
@@ -130,40 +117,159 @@ export function PointsScale({ scale }: { scale: ScaleRow[] }) {
     );
   }
 
+  const points = new Map(scale.map((s) => [s.key, s.points]));
+  const placed = PLACED_BANDS.filter((b) => scale.some((s) => s.band === b.band));
+  const flat = scale.filter((s) => s.band === "kind").sort((a, b) => a.position - b.position);
+  const levels = scale.filter((s) => s.band === "level").sort((a, b) => a.position - b.position);
+
   return (
     <>
-      {bands.map((band) => {
-        const rows = scale.filter((s) => s.band === band.band);
-        if (!rows.length) return null;
-
-        return (
-          <div key={band.band} className="mt-6 first:mt-0">
-            <p className="label text-ink">{band.title}</p>
-            <p className="serif-it mt-1 text-[0.85rem] leading-snug text-muted">{band.note}</p>
-            <dl className="mt-3 grid gap-0">
-              {rows.map((step) => (
-                <div
-                  key={step.key}
-                  className="flex items-baseline justify-between gap-6 border-b border-ink/10 py-2.5 last:border-0"
-                >
-                  <dt className="label text-muted">{step.label}</dt>
-                  <dd className="d-tall text-[1.15rem] text-ink">
-                    {step.band === "level" ? `+${step.points}` : step.points}
-                  </dd>
-                </div>
+      <div className={`grid gap-8 ${wide ? "xl:grid-cols-[1.5fr_1fr_1fr]" : ""}`}>
+        {placed.length ? (
+          <ScaleTable caption="Records that place" note="What you came away with.">
+            <thead>
+              <tr>
+                <Th>Record</Th>
+                {RESULTS.map((r) => (
+                  <Th key={r.key} end>
+                    {r.label}
+                  </Th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {placed.map((band) => (
+                <tr key={band.band}>
+                  <Td>{band.title}</Td>
+                  {RESULTS.map((r) => (
+                    <Td key={r.key} end strong>
+                      {points.get(`${band.band}:${r.key}`) ?? "–"}
+                    </Td>
+                  ))}
+                </tr>
               ))}
-            </dl>
-          </div>
-        );
-      })}
+            </tbody>
+          </ScaleTable>
+        ) : null}
+
+        {flat.length ? (
+          <ScaleTable caption="Records that do not place" note="One base for the kind of record.">
+            <thead>
+              <tr>
+                <Th>Record</Th>
+                <Th end>Points</Th>
+              </tr>
+            </thead>
+            <tbody>
+              {flat.map((row) => (
+                <tr key={row.key}>
+                  <Td>{row.label}</Td>
+                  <Td end strong>
+                    {row.points}
+                  </Td>
+                </tr>
+              ))}
+            </tbody>
+          </ScaleTable>
+        ) : null}
+
+        {levels.length ? (
+          <ScaleTable caption="Added for how far it reached" note="On top of either base.">
+            <thead>
+              <tr>
+                <Th>Level</Th>
+                <Th end>Added</Th>
+              </tr>
+            </thead>
+            <tbody>
+              {levels.map((row) => (
+                <tr key={row.key}>
+                  <Td>{row.label}</Td>
+                  <Td end strong>
+                    +{row.points}
+                  </Td>
+                </tr>
+              ))}
+            </tbody>
+          </ScaleTable>
+        ) : null}
+      </div>
 
       <p className="serif-it mt-7 border-t border-ink/10 pt-5 text-[0.95rem] leading-relaxed text-muted">
-        Everything on your record counts, from any event or journal, so add them on your{" "}
+        Internships and online courses score their base alone, and everything on your record
+        counts, so add it all on your{" "}
         <Link href="/dashboard/certificates" className="text-teal hover:underline">
           record page
         </Link>
         .
       </p>
     </>
+  );
+}
+
+/** The three scales that place, by the band their rows are keyed under. */
+const PLACED_BANDS = [
+  { band: "contribution", title: "Hackathon" },
+  { band: "competition", title: "Competition" },
+  { band: "extracurricular", title: "Non-technical or extracurricular" },
+] as const;
+
+const RESULTS = [
+  { key: "participation", label: "Took part" },
+  { key: "third", label: "Third" },
+  { key: "second", label: "Second" },
+  { key: "first", label: "First" },
+] as const;
+
+function ScaleTable({
+  caption,
+  note,
+  children,
+}: {
+  caption: string;
+  note: string;
+  children: ReactNode;
+}) {
+  return (
+    <div className="min-w-0">
+      <p className="label text-ink">{caption}</p>
+      <p className="serif-it mt-1 text-[0.85rem] leading-snug text-muted">{note}</p>
+      <div className="mt-3 overflow-x-auto">
+        <table className="w-full border-collapse text-left">{children}</table>
+      </div>
+    </div>
+  );
+}
+
+function Th({ children, end = false }: { children: ReactNode; end?: boolean }) {
+  return (
+    <th
+      scope="col"
+      className={`label-sm border-b-2 border-ink/15 px-2 py-2 font-normal text-muted first:pl-0 last:pr-0 ${
+        end ? "text-right" : ""
+      }`}
+    >
+      {children}
+    </th>
+  );
+}
+
+function Td({
+  children,
+  end = false,
+  strong = false,
+}: {
+  children: ReactNode;
+  end?: boolean;
+  strong?: boolean;
+}) {
+  return (
+    <td
+      className={`border-b border-ink/10 px-2 py-2.5 first:pl-0 last:pr-0 ${end ? "text-right" : ""} ${
+        strong ? "d-tall text-[1.1rem] text-ink" : "text-[0.95rem] text-ink/85"
+      }`}
+    >
+      {children}
+    </td>
   );
 }

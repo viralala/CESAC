@@ -4,7 +4,7 @@ import { useEffect } from "react";
 
 import { Container } from "@/components/aot/bits";
 import { Reveal } from "@/components/aot/reveal";
-import { LINKEDIN } from "@/lib/data/hr-final-boss";
+import type { HrfbContent } from "@/lib/data/event-content";
 
 const BADGE_SCRIPT = "https://platform.linkedin.com/badges/js/profile.js";
 
@@ -17,7 +17,7 @@ function LinkedInMark({ className = "" }: { className?: string }) {
 }
 
 /**
- * A slot, not a promise. LINKEDIN.username is empty until someone sets it in
+ * A slot, not a promise. linkedin.username is empty until someone sets it in
  * the data file; this renders a placeholder card until then, and LinkedIn's
  * own public profile badge once it is set. That badge is worth a second look
  * before it goes live, though: it carries a name and a photo, which is the
@@ -25,8 +25,8 @@ function LinkedInMark({ className = "" }: { className?: string }) {
  * sets the handle should decide whether this goes up before or after the
  * reveal.
  */
-export function HrfbLinkedIn() {
-  const hasHandle = LINKEDIN.username.length > 0;
+export function HrfbLinkedIn({ linkedin }: { linkedin: HrfbContent["linkedin"] }) {
+  const hasHandle = linkedin.username.length > 0;
 
   useEffect(() => {
     if (!hasHandle) return;
@@ -49,7 +49,7 @@ export function HrfbLinkedIn() {
                 <LinkedInMark className="h-6 w-6" />
               </span>
               <div>
-                <p className="hb-display text-[1.4rem] uppercase text-hb-ink">{LINKEDIN.label}</p>
+                <p className="hb-display text-[1.4rem] uppercase text-hb-ink">{linkedin.label}</p>
                 <p className="mt-1 text-[0.9rem] text-hb-ink/60">
                   {hasHandle
                     ? "Live from LinkedIn."
@@ -65,12 +65,12 @@ export function HrfbLinkedIn() {
                 data-size="large"
                 data-theme="light"
                 data-type="VERTICAL"
-                data-vanity={LINKEDIN.username}
+                data-vanity={linkedin.username}
                 data-version="v1"
               >
                 <a
                   className="badge-base__link LI-simple-link"
-                  href={`https://www.linkedin.com/in/${LINKEDIN.username}?trk=profile-badge`}
+                  href={`https://www.linkedin.com/in/${linkedin.username}?trk=profile-badge`}
                 >
                   View LinkedIn profile
                 </a>

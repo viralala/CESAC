@@ -17,7 +17,7 @@ import {
 } from "@/lib/data/console";
 import { getDeptEvents, getMyRegistrations, type MyRegistration } from "@/lib/data/dept-events";
 import { handInFor } from "@/lib/data/hand-ins";
-import { EVENT, REGISTER, REGISTRATION_IS_LIVE } from "@/lib/data/event";
+import { getAotContent } from "@/lib/data/event-content";
 
 export const metadata: Metadata = {
   title: "Attack on Token",
@@ -44,13 +44,14 @@ export default async function AttackOnTokenConsole() {
   const event = events.find((e) => e.slug === "attack-on-token");
   if (!event || event.state === "locked") redirect("/dashboard/events");
 
-  const [team, settings, chapters, submissions, board, registrations] = await Promise.all([
+  const [team, settings, chapters, submissions, board, registrations, aot] = await Promise.all([
     getMyTeam(),
     getSettings(),
     getChapters(),
     getMySubmissions(),
     getLeaderboard(),
     getMyRegistrations(),
+    getAotContent(),
   ]);
 
   // The fee is collected on the events page and nowhere else. This console
@@ -67,8 +68,8 @@ export default async function AttackOnTokenConsole() {
   return (
     <>
       <header className="max-w-[46ch]">
-        <Label tone="teal">{EVENT.kicker}</Label>
-        <h1 className="d-tall mt-4 text-[clamp(2.4rem,6.5vw,4rem)] text-ink">{EVENT.name}</h1>
+        <Label tone="teal">{aot.event.kicker}</Label>
+        <h1 className="d-tall mt-4 text-[clamp(2.4rem,6.5vw,4rem)] text-ink">{aot.event.name}</h1>
         <p className="serif-it mt-4 text-[1.05rem] leading-relaxed text-muted">
           {team
             ? registered
@@ -178,7 +179,7 @@ export default async function AttackOnTokenConsole() {
               ) : null}
             </Panel>
 
-            <EntryFee entry={entry} fee={event.fee_inr} />
+            <EntryFee entry={entry} fee={event.fee_inr} form={aot.register} />
           </div>
 
           <div className="mt-6 grid gap-6 lg:grid-cols-2">
@@ -236,7 +237,7 @@ export default async function AttackOnTokenConsole() {
           <section className="mt-6">
             <header className="flex flex-wrap items-baseline justify-between gap-4">
               <h2 className="d-tall text-[1.9rem] text-ink">Three chapters</h2>
-              <p className="label text-muted">{EVENT.tagline}</p>
+              <p className="label text-muted">{aot.event.tagline}</p>
             </header>
 
             {!registered ? (
@@ -277,7 +278,15 @@ export default async function AttackOnTokenConsole() {
  * account, so the only useful thing this panel can do is send somebody who
  * landed here first to the place that actually takes them.
  */
-function EntryFee({ entry, fee }: { entry: MyRegistration | null; fee: number }) {
+function EntryFee({
+  entry,
+  fee,
+  form,
+}: {
+  entry: MyRegistration | null;
+  fee: number;
+  form: { formUrl: string; live: boolean };
+}) {
   const paid = entry?.payment_status === "verified";
 
   return (
@@ -298,9 +307,9 @@ function EntryFee({ entry, fee }: { entry: MyRegistration | null; fee: number })
             card checkout on this site.
           </p>
           <p className="label mt-6">
-            {REGISTRATION_IS_LIVE ? (
+            {form.live ? (
               <a
-                href={REGISTER.formUrl}
+                href={form.formUrl}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="text-teal hover:underline"

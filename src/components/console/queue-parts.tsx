@@ -2,7 +2,7 @@ import type { ReactNode } from "react";
 
 import { Chip, type ChipTone } from "@/components/console/shell";
 import { CONTRIBUTION_LABEL, TOPIC_LABEL, rupees } from "@/lib/console/options";
-import { KIND_LABEL, LEVEL_LABEL, SLOT_LABEL, isPublication } from "@/lib/console/records";
+import { KIND_LABEL, LEVEL_LABEL, SLOT_LABEL, isPlaced } from "@/lib/console/records";
 import { FILE_KIND, humanBytes, recordFacts, recordState, stamp, waited } from "@/lib/console/record-view";
 import type { Tables } from "@/lib/supabase/database.types";
 
@@ -104,11 +104,11 @@ export function RecordSummary({
         <Chip tone={STATE_TONE[state]}>{state}</Chip>
         <Chip tone="ink">{KIND_LABEL[record.kind] ?? record.kind}</Chip>
         {record.level ? <Chip tone="teal">{LEVEL_LABEL[record.level]}</Chip> : null}
-        {isPublication(record.kind) ? null : (
+        {isPlaced(record.kind) ? (
           <Chip tone={PLACE_TONE[record.contribution] ?? "muted"}>
             {CONTRIBUTION_LABEL[record.contribution] ?? record.contribution}
           </Chip>
-        )}
+        ) : null}
         {record.prize_amount_inr ? <Chip tone="ink">{rupees(record.prize_amount_inr)}</Chip> : null}
       </div>
 

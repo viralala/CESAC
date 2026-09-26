@@ -16,10 +16,11 @@ export const metadata: Metadata = {
 /**
  * Everything the student has to show for themselves.
  *
- * It was certificates and nothing else. It is now six kinds of record: the
- * hackathon certificate it always held, a non-technical or extracurricular
- * one alongside it, and the four publication layouts the department files
- * on, each asking for what its own layout asks for and nothing more.
+ * It was certificates and nothing else. It is now eleven kinds of record,
+ * from hackathons and competitions to internships, courses, patents and the
+ * four publication layouts the department files on, each asking for what its
+ * own layout asks for and nothing more. Adding one is what the page is for,
+ * so the form leads and the points table sits underneath everything.
  *
  * The files live in Google Drive, in a folder made for this student on their
  * first upload. Nothing is stored in the app, so there is one copy of each
@@ -38,43 +39,29 @@ export default async function CertificatesPage() {
   const driveReady = driveConfigured();
 
   return (
-    <div className="grid gap-6 lg:grid-cols-[1.45fr_1fr] lg:items-start">
-      <Panel
-        eyebrow="Your record"
-        title="Hackathons and publications"
-        aside={certificates.length ? `${certificates.length} on file` : undefined}
-      >
-        {driveReady ? null : (
-          <div className="mb-6">
+    <div className="grid gap-6">
+      <CertificateRecord
+        certificates={certificates}
+        configured={driveReady}
+        emptyNote={t("console.records.empty")}
+        studentName={viewer.name}
+        notice={
+          driveReady ? null : (
             <Notice tone="error">
               Uploads are not switched on yet, so a record can be saved but no file can be
-              attached to it. Everything you add now keeps its place and takes its files later.
+              attached to it.
             </Notice>
-          </div>
-        )}
+          )
+        }
+      />
 
-        <CertificateRecord
-          certificates={certificates}
-          configured={driveReady}
-          emptyNote={t("console.records.empty")}
-          studentName={viewer.name}
-        />
+      <Panel eyebrow="How it counts" title="Points">
+        <PointsScale scale={scale} wide />
+        <p className="serif-it mt-5 text-[0.95rem] leading-relaxed text-muted">
+          Your name, year, points and what you have done are shown on the public standouts page,
+          never your files, address or PRN.
+        </p>
       </Panel>
-
-      <div className="grid gap-6">
-        <Panel eyebrow="How it counts" title="Points">
-          <PointsScale scale={scale} />
-        </Panel>
-
-        <Panel eyebrow="The front page" title="Being named publicly">
-          <p className="serif-it text-[0.98rem] leading-relaxed text-muted">
-            The front page of the site names a few students each term, with their year and one
-            number, worked out from what is on their record. It never shows a record, a file, an
-            address or a PRN. Every student on the board is named; there is no switch to come off
-            it.
-          </p>
-        </Panel>
-      </div>
     </div>
   );
 }

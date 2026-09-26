@@ -7,7 +7,7 @@ import { Reveal } from "@/components/aot/reveal";
 import { Sticker } from "@/components/aot/stickers";
 import { EventWhen } from "@/components/site/event-when";
 import { RegisterButton } from "@/components/sections/event/register-button";
-import { EVENTS } from "@/lib/data/cesac";
+import { getAotContent, getEventCards } from "@/lib/data/event-content";
 import { getSchedules, scheduleFor } from "@/lib/data/event-schedule";
 import { REGISTER_SLUG } from "@/lib/data/event";
 import { badgeFor, getEventBadges } from "@/lib/data/event-status";
@@ -24,8 +24,14 @@ import { getCopy } from "@/lib/data/site";
  * list, that is the honest state of the calendar, not a bug to pad.
  */
 export async function HomeEvents() {
-  const [feature, ...rest] = EVENTS;
-  const [badges, t, schedules] = await Promise.all([getEventBadges(), getCopy(), getSchedules()]);
+  const [events, badges, t, schedules, aot] = await Promise.all([
+    getEventCards(),
+    getEventBadges(),
+    getCopy(),
+    getSchedules(),
+    getAotContent(),
+  ]);
+  const [feature, ...rest] = events;
   const featureBadge = feature ? badgeFor(feature, badges) : null;
 
   return (
@@ -89,6 +95,7 @@ export async function HomeEvents() {
                         that leads nowhere near it. */}
                     {feature.slug === REGISTER_SLUG ? (
                       <RegisterButton
+                        formUrl={aot.register.formUrl}
                         tone="ghost-light"
                         fallbackHref={`${feature.href}#register`}
                       />
