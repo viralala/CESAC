@@ -6,7 +6,7 @@ import { Chip, Empty, Notice, Panel, Row } from "@/components/console/shell";
 import { StandingSummary } from "@/components/console/standing";
 import { requireParticipant } from "@/lib/auth/guard";
 import { CONTRIBUTION_LABEL } from "@/lib/console/options";
-import { KIND_LABEL, LEVEL_LABEL } from "@/lib/console/records";
+import { KIND_LABEL, LEVEL_LABEL, isPublication } from "@/lib/console/records";
 import { getMyCertificates } from "@/lib/data/certificates";
 import { getSettings } from "@/lib/data/console";
 import { getDeptEvents, getMyRegistrations } from "@/lib/data/dept-events";
@@ -148,10 +148,11 @@ export default async function ConsolePage() {
                   <span className="min-w-0 text-[1.02rem] text-ink">{certificate.event_name}</span>
                   <span className="label-sm text-muted">
                     {/* A publication has no place, so it is named by what it
-                        is. A hackathon is named by what they came away with. */}
-                    {certificate.kind === "event"
-                      ? (CONTRIBUTION_LABEL[certificate.contribution] ?? "Participation")
-                      : (KIND_LABEL[certificate.kind] ?? "Publication")}{" "}
+                        is. Anything that places (a hackathon or an
+                        extracurricular) is named by what they came away with. */}
+                    {isPublication(certificate.kind)
+                      ? (KIND_LABEL[certificate.kind] ?? "Publication")
+                      : (CONTRIBUTION_LABEL[certificate.contribution] ?? "Participation")}{" "}
                     {"·"}{" "}
                     {certificate.level ? `${LEVEL_LABEL[certificate.level]} · ` : ""}
                     {when(certificate.created_at)}

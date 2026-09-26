@@ -19,6 +19,11 @@ const BANDS = [
     note: "What the student came away with. One of these is the base for every event record.",
   },
   {
+    band: "extracurricular",
+    title: "A non-technical or extracurricular activity",
+    note: "What the student came away with. Its own scale, separate from a hackathon's.",
+  },
+  {
     band: "kind",
     title: "A publication",
     note: "A paper does not place, so its base is the kind of publication it is.",
@@ -58,6 +63,7 @@ export default async function PointsPage() {
   const nationalParticipation = example("contribution:participation", "level:national");
   const internationalFirst = example("contribution:first", "level:international");
   const nationalJournal = example("kind:journal", "level:national");
+  const stateExtracurricular = example("extracurricular:participation", "level:state");
 
   return (
     <>
@@ -70,8 +76,8 @@ export default async function PointsPage() {
 
         <p className="serif-it mt-6 text-[1rem] leading-relaxed text-muted">
           A record scores a base plus a level. The base is what the student came away with for a
-          hackathon, or the kind of publication it is for a paper. Three worked examples on
-          today&rsquo;s numbers:
+          hackathon or an extracurricular activity, or the kind of publication it is for a paper.
+          Four worked examples on today&rsquo;s numbers:
         </p>
 
         <dl className="mt-5 grid gap-2.5">
@@ -82,6 +88,10 @@ export default async function PointsPage() {
             },
             { k: "First prize at an international hackathon", v: internationalFirst },
             { k: "A journal paper at national level", v: nationalJournal },
+            {
+              k: "A state-level extracurricular activity they entered and did not place in",
+              v: stateExtracurricular,
+            },
           ].map((row) => (
             <div
               key={row.k}

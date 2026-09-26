@@ -223,8 +223,9 @@ export default async function AdminCertificatesPage() {
           <Label tone="teal">{EVENT.host}</Label>
           <h1 className="d-tall mt-4 text-[clamp(2.4rem,6vw,4rem)] text-ink">Records</h1>
           <p className="serif-it mt-4 text-[1.1rem] leading-relaxed text-muted">
-            Everything students have filed: hackathon certificates and the four publication
-            layouts from the department sheet. The files are in the department Drive and the row
+            Everything students have filed: hackathon certificates, non-technical and
+            extracurricular certificates, and the four publication layouts from the department
+            sheet. The files are in the department Drive and the row
             here is only the claim made about them, so opening the link is the only thing that
             actually decides anything. Since 22 September a student cannot file a record without
             attaching something, so a row with nothing on it was either typed in here by an

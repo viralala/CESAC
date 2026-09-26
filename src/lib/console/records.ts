@@ -1,12 +1,16 @@
 import type { Enums } from "@/lib/supabase/database.types";
 
 /**
- * The five shapes a student record can take, and every field each one asks for.
+ * The six shapes a student record can take, and every field each one asks for.
  *
  * Four of them are transcribed from "Formats.xlsx", the sheet the department
  * actually files its publications on: journal, conference, book, book chapter.
- * The fifth, `event`, is the hackathon and competition record the site already
- * had, now carrying a level and a date like the rest.
+ * `event` is the hackathon and competition record the site already had, now
+ * carrying a level and a date like the rest. `extracurricular` is the sixth,
+ * for sports, cultural events, NCC, NSS, social work or anything else outside
+ * the technical space: the same shape as `event` (it places, it has a level
+ * and a date) but scored from its own band so a sports certificate and a
+ * hackathon win are not silently the same number.
  *
  * This is a plain data file, imported by both sides, for the same reason
  * options.ts is: the form renders itself from this list and the server action
@@ -115,6 +119,41 @@ export const LAYOUTS: readonly Layout[] = [
     dated: true,
     dateLabel: "Date of the event",
     fields: [
+      {
+        name: "venue_name",
+        label: "Organised by",
+        type: "text",
+        hint: "The institute, company or body that ran it.",
+        half: true,
+      },
+      {
+        name: "location",
+        label: "Where it was held",
+        type: "text",
+        placeholder: "Pune",
+        half: true,
+      },
+    ],
+  },
+  {
+    kind: "extracurricular",
+    label: "Non-technical / extracurricular",
+    blurb:
+      "Sports, cultural events, NCC, NSS, social work, a club or society, or anything else outside the technical space that you have a certificate for.",
+    titleLabel: "Name of the activity",
+    titlePlaceholder: "Inter-college basketball tournament",
+    placed: true,
+    dated: true,
+    dateLabel: "Date of the activity",
+    fields: [
+      {
+        name: "specialization",
+        label: "Type of activity",
+        type: "text",
+        options: ["Sports", "Cultural", "NCC", "NSS", "Social work", "Club or society", "Other"],
+        placeholder: "Sports",
+        half: true,
+      },
       {
         name: "venue_name",
         label: "Organised by",
@@ -268,9 +307,17 @@ export const KIND_LABEL: Record<string, string> = Object.fromEntries(
   LAYOUTS.map((l) => [l.kind, l.label]),
 );
 
-/** Publications, as one test, because six places ask the same question. */
+const PUBLICATION_KINDS = new Set<Kind>(["journal", "conference", "book", "book_chapter"]);
+
+/**
+ * Publications, as one test, because six places ask the same question.
+ *
+ * Not "anything that is not an event" any more: `extracurricular` is not an
+ * event and not a publication either, so this names the four publication
+ * kinds directly rather than inferring them by elimination.
+ */
 export function isPublication(kind: Kind): boolean {
-  return kind !== "event";
+  return PUBLICATION_KINDS.has(kind);
 }
 
 /**

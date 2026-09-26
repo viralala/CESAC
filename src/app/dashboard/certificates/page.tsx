@@ -19,10 +19,10 @@ export const metadata: Metadata = {
 /**
  * Everything the student has to show for themselves.
  *
- * It was certificates and nothing else. It is now five kinds of record: the
- * hackathon certificate it always held, and the four publication layouts the
- * department files on, each asking for what its own layout asks for and
- * nothing more.
+ * It was certificates and nothing else. It is now six kinds of record: the
+ * hackathon certificate it always held, a non-technical or extracurricular
+ * one alongside it, and the four publication layouts the department files
+ * on, each asking for what its own layout asks for and nothing more.
  *
  * The files live in Google Drive, in a folder made for this student on their
  * first upload. Nothing is stored in the app, so there is one copy of each

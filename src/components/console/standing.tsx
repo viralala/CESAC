@@ -112,6 +112,11 @@ export function PointsScale({ scale }: { scale: ScaleRow[] }) {
       title: "A hackathon or competition",
       note: "What you came away with.",
     },
+    {
+      band: "extracurricular",
+      title: "A non-technical or extracurricular activity",
+      note: "What you came away with. Its own scale, separate from a hackathon's.",
+    },
     { band: "kind", title: "A publication", note: "What kind of thing it is." },
     { band: "level", title: "Added for how far it reached", note: "On top of either of the above." },
   ];

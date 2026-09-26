@@ -5,7 +5,7 @@ import {
   getCertificatesForReview,
   type CertificateForOrganiser,
 } from "@/lib/data/certificates";
-import { LEVEL_LABEL } from "@/lib/console/records";
+import { LEVEL_LABEL, isPublication } from "@/lib/console/records";
 
 /**
  * Student records as CSV, for the department's own files and for the office.
@@ -64,7 +64,7 @@ const COMMON: Column[] = [
   { head: "title", read: (r) => r.event_name },
   { head: "level", read: level },
   { head: "date", read: (r) => r.happened_on ?? "" },
-  { head: "contribution", read: (r) => (r.kind === "event" ? r.contribution : "") },
+  { head: "contribution", read: (r) => (isPublication(r.kind) ? "" : r.contribution) },
   { head: "prize_inr", read: (r) => r.prize_amount_inr ?? "" },
   { head: "primary_author", read: (r) => r.primary_author ?? "" },
   { head: "secondary_authors", read: (r) => r.secondary_authors ?? "" },

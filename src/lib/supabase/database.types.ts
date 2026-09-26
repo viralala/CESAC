@@ -22,6 +22,11 @@
  * dept_events, and the functions that migration adds. The lines had been
  * written by hand first, and the generator agreed with them apart from where
  * one function sat in the alphabet.
+ *
+ * Hand-edited on 26 September 2026, not regenerated: `achievement_kind`
+ * gained `extracurricular` (20260926_add_extracurricular_kind.sql), the one
+ * new value on an existing enum, in both places an enum's values are listed
+ * below. Regenerating clears this note the same way it did the last two.
  */
 export type Json =
   | string
@@ -1821,6 +1826,7 @@ export type Database = {
         | "conference"
         | "book"
         | "book_chapter"
+        | "extracurricular"
       achievement_level:
         | "international"
         | "national"
@@ -1971,6 +1977,7 @@ export const Constants = {
         "conference",
         "book",
         "book_chapter",
+        "extracurricular",
       ],
       achievement_level: [
         "international",
