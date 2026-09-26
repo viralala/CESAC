@@ -2,7 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 
-import { requireParticipant } from "@/lib/auth/guard";
+import { requireRecordOwner } from "@/lib/auth/guard";
 import { MAX_CERTIFICATE_BYTES, MAX_CERTIFICATE_LABEL } from "@/lib/console/limits";
 import { CONTRIBUTIONS, type Contribution } from "@/lib/console/options";
 import { LAYOUT, LEVELS, SLOTS, type Kind, type Level, type Slot } from "@/lib/console/records";
@@ -205,7 +205,7 @@ export async function saveRecord(
   formData: FormData,
 ): Promise<CertificateState> {
   // Also bounces anyone whose password is still their email address.
-  const viewer = await requireParticipant();
+  const viewer = await requireRecordOwner();
 
   const editing = String(formData.get("record_id") ?? "").trim() || null;
 
@@ -405,7 +405,7 @@ export async function uploadRecordFile(
   _state: CertificateState,
   formData: FormData,
 ): Promise<CertificateState> {
-  const viewer = await requireParticipant();
+  const viewer = await requireRecordOwner();
 
   const recordId = String(formData.get("record_id") ?? "").trim();
   const claimedSlot = String(formData.get("slot") ?? "");
@@ -517,7 +517,7 @@ export async function removeRecordFile(
   _state: CertificateState,
   formData: FormData,
 ): Promise<CertificateState> {
-  const viewer = await requireParticipant();
+  const viewer = await requireRecordOwner();
 
   const fileId = String(formData.get("file_id") ?? "").trim();
   if (!fileId) return { error: "That file is not on the page any more. Reload it." };
@@ -555,7 +555,7 @@ export async function deleteRecord(
   _state: CertificateState,
   formData: FormData,
 ): Promise<CertificateState> {
-  const viewer = await requireParticipant();
+  const viewer = await requireRecordOwner();
 
   const recordId = String(formData.get("record_id") ?? "").trim();
   if (!recordId) return { error: "That record is not on the page any more. Reload it." };
@@ -608,7 +608,7 @@ export async function setShowcaseOptOut(
   _state: CertificateState,
   formData: FormData,
 ): Promise<CertificateState> {
-  const viewer = await requireParticipant();
+  const viewer = await requireRecordOwner();
   const out = String(formData.get("opt_out") ?? "") === "true";
 
   const supabase = await createClient();

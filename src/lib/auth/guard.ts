@@ -53,12 +53,15 @@ function toGate(want: Want, next: string): never {
   redirect(`/signin?next=${encodeURIComponent(next)}${want === "admin" ? "&role=admin" : ""}`);
 }
 
-/** The three consoles, as the thing a page asks for. */
-type Want = "participant" | "admin" | "verifier";
+/** The three consoles, as the thing a page asks for, plus one crosscutting one. */
+type Want = "participant" | "admin" | "verifier" | "record";
 
 function holds(viewer: Viewer, want: Want): boolean {
   if (want === "admin") return viewer.isAdmin;
   if (want === "verifier") return viewer.isVerifier;
+  // Most organisers are students too, and file a certificate like any other
+  // student. Everything else behind requireParticipant stays theirs alone.
+  if (want === "record") return viewer.role === "participant" || viewer.isAdmin;
   return viewer.role === "participant";
 }
 
@@ -138,6 +141,15 @@ export function requireAdmin(): Promise<Viewer> {
  */
 export function requireVerifier(): Promise<Viewer> {
   return requireRole("verifier", "/verify");
+}
+
+/**
+ * Whoever a record actually belongs to: a participant, or an organiser filing
+ * their own. Used by the certificate actions only; the review queue and every
+ * other participant page still go through requireParticipant.
+ */
+export function requireRecordOwner(): Promise<Viewer> {
+  return requireRole("record", "/dashboard");
 }
 
 export { homeFor };
