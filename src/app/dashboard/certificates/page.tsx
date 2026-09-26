@@ -1,14 +1,11 @@
 import type { Metadata } from "next";
 
 import { CertificateRecord } from "@/components/console/certificate-record";
-import { ActionForm } from "@/components/console/action-form";
 import { Notice, Panel } from "@/components/console/shell";
 import { PointsScale } from "@/components/console/standing";
-import { setShowcaseOptOut } from "@/app/actions/certificates";
 import { requireParticipant } from "@/lib/auth/guard";
 import { getMyCertificates } from "@/lib/data/certificates";
 import { getCopy, getScale } from "@/lib/data/site";
-import { getMyProfile } from "@/lib/data/student";
 import { driveConfigured } from "@/lib/drive/client";
 
 export const metadata: Metadata = {
@@ -32,15 +29,13 @@ export const metadata: Metadata = {
 export default async function CertificatesPage() {
   const viewer = await requireParticipant();
 
-  const [certificates, profile, scale, t] = await Promise.all([
+  const [certificates, scale, t] = await Promise.all([
     getMyCertificates(),
-    getMyProfile(),
     getScale(),
     getCopy(),
   ]);
 
   const driveReady = driveConfigured();
-  const optedOut = profile?.showcase_opt_out ?? false;
 
   return (
     <div className="grid gap-6 lg:grid-cols-[1.45fr_1fr] lg:items-start">
@@ -61,7 +56,6 @@ export default async function CertificatesPage() {
         <CertificateRecord
           certificates={certificates}
           configured={driveReady}
-          optedOut={optedOut}
           emptyNote={t("console.records.empty")}
           studentName={viewer.name}
         />
@@ -76,20 +70,9 @@ export default async function CertificatesPage() {
           <p className="serif-it text-[0.98rem] leading-relaxed text-muted">
             The front page of the site names a few students each term, with their year and one
             number, worked out from what is on their record. It never shows a record, a file, an
-            address or a PRN. This switch is about that page only: your standing on the signed-in
-            ranking does not change either way.
+            address or a PRN. Every student on the board is named; there is no switch to come off
+            it.
           </p>
-
-          <ActionForm
-            action={setShowcaseOptOut}
-            submit={optedOut ? "Let the front page name me" : "Keep me off the front page"}
-            tone={optedOut ? "lime" : "ghost"}
-          >
-            <input type="hidden" name="opt_out" value={optedOut ? "false" : "true"} />
-            <p className="label mt-4 text-ink">
-              {optedOut ? "You are not being named." : "You can be named."}
-            </p>
-          </ActionForm>
         </Panel>
       </div>
     </div>

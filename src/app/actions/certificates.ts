@@ -596,34 +596,3 @@ export async function deleteRecord(
   refresh();
   return { notice: `${record.event_name} removed from your record.`, at: Date.now() };
 }
-
-/**
- * Whether the student wants to be named on the public front page.
- *
- * The showcase prints a name, a year and a number to anybody who loads the
- * site. The signed-in ranking is a different thing and is not affected: this
- * switch is about the public page only, which is what it says on the screen.
- */
-export async function setShowcaseOptOut(
-  _state: CertificateState,
-  formData: FormData,
-): Promise<CertificateState> {
-  const viewer = await requireRecordOwner();
-  const out = String(formData.get("opt_out") ?? "") === "true";
-
-  const supabase = await createClient();
-  const { error } = await supabase
-    .from("profiles")
-    .update({ showcase_opt_out: out })
-    .eq("id", viewer.id);
-
-  if (error) return { error: error.message.replace(/^.*?:\s*/, "") };
-
-  refresh();
-  return {
-    notice: out
-      ? "You will not be named on the front page."
-      : "You can be named on the front page again.",
-    at: Date.now(),
-  };
-}

@@ -74,13 +74,11 @@ const ACCEPT = ".pdf,.jpg,.jpeg,.png,application/pdf,image/jpeg,image/png";
 export function CertificateRecord({
   certificates,
   configured,
-  optedOut,
   emptyNote,
   studentName,
 }: {
   certificates: CertificateWithFiles[];
   configured: boolean;
-  optedOut: boolean;
   emptyNote: string;
   /** Prefilled as the primary author, because usually it is them. */
   studentName: string;
@@ -96,12 +94,7 @@ export function CertificateRecord({
       ) : (
         <ul className="grid gap-3">
           {certificates.map((record) => (
-            <RecordCard
-              key={record.id}
-              record={record}
-              configured={configured}
-              optedOut={optedOut}
-            />
+            <RecordCard key={record.id} record={record} configured={configured} />
           ))}
         </ul>
       )}
@@ -159,11 +152,9 @@ function AddPanel({
 function RecordCard({
   record,
   configured,
-  optedOut,
 }: {
   record: CertificateWithFiles;
   configured: boolean;
-  optedOut: boolean;
 }) {
   const [editing, setEditing] = useState(false);
   const [showFiles, setShowFiles] = useState(false);
@@ -265,9 +256,7 @@ function RecordCard({
         </div>
       ) : null}
 
-      {showFiles ? (
-        <Files record={record} locked={record.verified} optedOut={optedOut} />
-      ) : null}
+      {showFiles ? <Files record={record} locked={record.verified} /> : null}
 
       {editing ? (
         <div className="mt-6 border-t-2 border-ink/10 pt-6">
@@ -299,19 +288,17 @@ function RecordCard({
 function Files({
   record,
   locked,
-  optedOut,
 }: {
   record: CertificateWithFiles;
   locked: boolean;
-  optedOut: boolean;
 }) {
   const bySlot = new Map(record.files.map((f) => [f.slot, f]));
 
   return (
     <div className="mt-5 grid gap-3 border-t border-ink/10 pt-5">
       <p className="serif-it text-[0.9rem] leading-relaxed text-muted">
-        All four are optional. Upload what you have; an empty slot costs you nothing.
-        {optedOut ? null : " Nothing here is shown on the public site."}
+        All four are optional. Upload what you have; an empty slot costs you nothing. Nothing here
+        is shown on the public site.
       </p>
 
       <SlotRow

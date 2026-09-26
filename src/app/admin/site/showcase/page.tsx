@@ -39,9 +39,9 @@ export const metadata: Metadata = {
  *
  * **What the public page shows is deliberately thin**: a name, a year and one
  * number. The database function it reads returns nothing else, so a page
- * written later cannot print an address or a PRN by accident, and any student
- * who has switched themselves off on their own console is left out of every
- * category including one they were picked for.
+ * written later cannot print an address or a PRN by accident. There is no
+ * per-student opt-out any more; everybody with a record who is picked for a
+ * category, or who scores into a counted one, is named.
  */
 export default async function ShowcasePage() {
   await requireAdmin();

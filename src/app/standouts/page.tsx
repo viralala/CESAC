@@ -19,9 +19,10 @@ export const metadata: Metadata = {
  * The whole list behind the front page's top three.
  *
  * The same categories, the same counting and the same thin shape: a name, a
- * year, one number and a photo. Nobody who has switched themselves off the
- * showcase is on it, and when the committee has the showcase switched off
- * this page says so rather than showing it anyway.
+ * year, one number and a photo. Every student who has a record is on it;
+ * there is no per-student opt-out any more. When the committee has the
+ * showcase switched off entirely, this page says so rather than showing it
+ * anyway.
  */
 export default async function StandoutsPage(props: PageProps<"/standouts">) {
   const [categories, settings, t, { c }] = await Promise.all([
@@ -56,8 +57,7 @@ export default async function StandoutsPage(props: PageProps<"/standouts">) {
           )}
 
           <p className="serif-it mt-6 max-w-[70ch] text-[0.98rem] leading-relaxed text-muted">
-            {t("home.showcase.foot")} A student who would rather not be named can switch themselves
-            off it from their own console.
+            {t("home.showcase.foot")}
           </p>
 
           <Link
